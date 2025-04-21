@@ -1,0 +1,100 @@
+
+:where([class^="ri-"])::before { content: "\f3c2"; }
+body {
+  font-family: 'Inter', sans-serif;
+  color: #1a1a1a;
+  background-color: #f8f9fa;
+}
+.paper-texture {
+  background-image: url('https://readdy.ai/api/search-image?query=Extremely%20subtle%20and%20minimal%20paper%20texture%2C%20almost%20completely%20white%20with%20very%20faint%20natural%20fiber%20patterns%20visible%20only%20upon%20close%20inspection.%20The%20texture%20is%20incredibly%20delicate%20and%20refined%2C%20providing%20just%20a%20hint%20of%20organic%20material%20quality%20while%20maintaining%20a%20clean%2C%20sophisticated%20appearance.%20Perfect%20for%20a%20minimalist%20design%20background%20that%20needs%20just%20a%20touch%20of%20warmth%20and%20depth%20without%20any%20distracting%20elements.&width=200&height=200&seq=123457&orientation=squarish');
+  background-repeat: repeat;
+}
+.signup-container {
+  max-width: 900px;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+.image-side {
+  background-image: url("../assets/herosection.jpg");
+  background-size: cover;
+  background-position: center;
+  position: relative;
+}
+.overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 1.5rem;
+}
+.form-side {
+  padding: 1.5rem;
+}
+.form-control {
+  padding: 0.6rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid #e2e2e2;
+}
+.form-control:focus {
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
+  border-color: #000;
+}
+.btn-primary {
+  background-color: #000;
+  border-color: #000;
+  border-radius: 8px;
+  padding: 0.6rem 0.75rem;
+}
+.btn-primary:hover {
+  background-color: #333;
+  border-color: #333;
+}
+.btn-outline-secondary {
+  border-color: #000;
+  color: #000;
+  border-radius: 8px;
+  padding: 0.6rem 0.75rem;
+}
+.btn-outline-secondary:hover {
+  background-color: #000;
+  border-color: #000;
+  color: #fff;
+}
+.divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 1rem 0;
+}
+.divider::before, .divider::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid #e2e2e2;
+}
+.divider span {
+  padding: 0 1rem;
+  color: #6c757d;
+  font-size: 0.875rem;
+}
+.logo-text {
+  font-weight: bold;
+}
+.form-label {
+  margin-bottom: 0.25rem;
+  font-size: 0.875rem;
+}
+.compact-mb {
+  margin-bottom: 0.75rem;
+}
+@media (max-width: 767.98px) {
+  .image-side {
+    height: 150px;
+  }
+}
+

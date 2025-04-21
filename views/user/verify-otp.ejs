@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OTP Verification</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <style>
+      body {
+        font-family: "Inter", sans-serif;
+        background-color: #f8f9fa;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0;
+        padding: 0;
+      }
+      .container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 100%;
+      }
+      .otp-card {
+        background-color: #fff;
+        border-radius: 1rem;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+        overflow: hidden;
+        width: 100%;
+        max-width: 450px;
+        margin: 2rem auto;
+      }
+      .otp-header {
+        background-color: #000;
+        color: #fff;
+        padding: 1.5rem;
+        text-align: center;
+      }
+      .otp-body {
+        padding: 2rem;
+      }
+      .otp-inputs {
+        display: flex;
+        justify-content: center;
+        gap: 0.75rem;
+        margin: 2rem 0;
+      }
+      .otp-input {
+        width: 3rem;
+        height: 3.5rem;
+        font-size: 1.5rem;
+        text-align: center;
+        border: 2px solid #dee2e6;
+        border-radius: 0.5rem;
+        background-color: #f8f9fa;
+        transition: all 0.3s ease;
+      }
+      .otp-input:focus {
+        border-color: #000;
+        background-color: #fff;
+        box-shadow: 0 0 0 0.25rem rgba(0, 0, 0, 0.1);
+        outline: none;
+      }
+      .btn-verify {
+        background-color: #000;
+        border-color: #000;
+        border-radius: 0.5rem;
+        padding: 0.75rem 1.5rem;
+        font-weight: 500;
+        transition: all 0.3s ease;
+      }
+      .btn-verify:hover {
+        background-color: #333;
+        border-color: #333;
+      }
+      .btn-resend {
+        color: #000;
+        text-decoration: none;
+        font-weight: 500;
+        transition: all 0.3s ease;
+      }
+      .btn-resend:hover {
+        color: #333;
+        text-decoration: underline;
+      }
+      .status-message {
+        margin-top: 1rem;
+        padding: 0.75rem;
+        border-radius: 0.5rem;
+        text-align: center;
+        display: none;
+      }
+      .status-success {
+        background-color: #d1e7dd;
+        color: #0f5132;
+      }
+      .status-error {
+        background-color: #f8d7da;
+        color: #842029;
+      }
+      @media (max-width: 576px) {
+        .otp-card {
+          border-radius: 0;
+          box-shadow: none;
+          max-width: 100%;
+        }
+        .otp-inputs {
+          gap: 0.5rem;
+        }
+        .otp-input {
+          width: 2.5rem;
+          height: 3rem;
+          font-size: 1.25rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="otp-card">
+        <div class="otp-header">
+          <i class="fas fa-shield-alt otp-icon"></i>
+          <h3 class="mb-0">OTP Verification</h3>
+        </div>
+
+        <div class="otp-body">
+          <p class="text-center mb-1">Enter the verification code sent to</p>
+          <h5 class="text-center mb-4" id="userEmail">
+            your_email@example.com
+          </h5>
+
+          <form id="otpForm">
+            <div class="otp-inputs">
+              <input
+                type="text"
+                class="otp-input"
+                name="digit1"
+                maxlength="1"
+                required
+              />
+              <input
+                type="text"
+                class="otp-input"
+                name="digit2"
+                maxlength="1"
+                required
+              />
+              <input
+                type="text"
+                class="otp-input"
+                name="digit3"
+                maxlength="1"
+                required
+              />
+              <input
+                type="text"
+                class="otp-input"
+                name="digit4"
+                maxlength="1"
+                required
+              />
+              <input
+                type="text"
+                class="otp-input"
+                name="digit5"
+                maxlength="1"
+                required
+              />
+              <input
+                type="text"
+                class="otp-input"
+                name="digit6"
+                maxlength="1"
+                required
+              />
+            </div>
+
+            <div class="d-grid gap-2">
+              <button type="submit" class="btn btn-verify btn-primary">
+                Verify
+              </button>
+            </div>
+          </form>
+
+          <div id="statusMessage" class="status-message"></div>
+
+          <div class="text-center mt-4">
+            <p class="mb-1">Didn't receive the code?</p>
+            <a href="#" class="btn-resend" id="resendBtn">Resend Code</a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script>
+      const inputs = document.querySelectorAll(".otp-input");
+      const otpForm = document.getElementById("otpForm");
+      const statusMessage = document.getElementById("statusMessage");
+      const resendBtn = document.getElementById("resendBtn");
+
+      // Auto-advance to next input field
+      inputs.forEach((input, index) => {
+        input.addEventListener("input", () => {
+          const value = input.value;
+          if (value.length === 1 && index < inputs.length - 1) {
+            inputs[index + 1].focus();
+          }
+        });
+
+        input.addEventListener("keydown", (e) => {
+          if (e.key === "Backspace" && input.value === "" && index > 0) {
+            inputs[index - 1].focus();
+          }
+        });
+      });
+
+      // Handle form submission
+      otpForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        
+        // Collect OTP digits
+        const otpDigits = Array.from(inputs).map(input => input.value);
+        const otpCode = otpDigits.join('');
+        
+        // Check if all digits are filled
+        if (otpDigits.some(digit => digit === '')) {
+          showStatus('Please enter all 6 digits of the OTP code', 'error');
+          return;
+        }
+        
+        // Prepare data for submission
+        const formData = {
+          otp: otpCode,
+          email: document.getElementById('userEmail').textContent.trim()
+        };
+        
+        try {
+          // Show loading state
+          const submitBtn = otpForm.querySelector('button[type="submit"]');
+          const originalBtnText = submitBtn.textContent;
+          submitBtn.disabled = true;
+          submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Verifying...';
+          
+          // Send OTP to backend
+          const response = await fetch('/verify-otp', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(formData)
+          });
+          
+          const data = await response.json();
+          
+          // Reset button state
+          submitBtn.disabled = false;
+          submitBtn.textContent = originalBtnText;
+          
+          if (response.success) {
+            showStatus('OTP verified successfully! Redirecting...', 'success');
+            // Redirect after successful verification (optional)
+            setTimeout(() => {
+              window.location.href = '/home'; // Change to your redirect URL
+            }, 2000);
+          } else {
+            showStatus(data.message || 'Invalid OTP. Please try again.', 'error');
+          }
+        } catch (error) {
+          console.error('Error:', error);
+          showStatus('Failed to verify OTP. Please try again.', 'error');
+          submitBtn.disabled = false;
+          submitBtn.textContent = originalBtnText;
+        }
+      });
+      
+      // Handle resend code
+      resendBtn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        const email = document.getElementById('userEmail').textContent.trim();
+        
+        try {
+          resendBtn.textContent = 'Sending...';
+          resendBtn.style.pointerEvents = 'none';
+          
+          const response = await fetch('/resend-otp', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ email })
+          });
+          
+          const data = await response.json();
+          
+          if (response.success) {
+            showStatus('New OTP code sent successfully!', 'success');
+            // Clear previous inputs
+            inputs.forEach(input => {
+              input.value = '';
+            });
+            inputs[0].focus();
+          } else {
+            showStatus(data.message || 'Failed to resend OTP. Please try again.', 'error');
+          }
+        } catch (error) {
+          console.error('Error:', error);
+          showStatus('Failed to resend OTP. Please try again.', 'error');
+        } finally {
+          resendBtn.textContent = 'Resend Code';
+          resendBtn.style.pointerEvents = 'auto';
+        }
+      });
+      
+      // Helper function to show status messages
+      function showStatus(message, type) {
+        statusMessage.textContent = message;
+        statusMessage.className = 'status-message';
+        statusMessage.classList.add(type === 'success' ? 'status-success' : 'status-error');
+        statusMessage.style.display = 'block';
+        
+        // Hide message after 5 seconds
+        setTimeout(() => {
+          statusMessage.style.display = 'none';
+        }, 5000);
+      }
+    </script>
+  </body>
+</html>

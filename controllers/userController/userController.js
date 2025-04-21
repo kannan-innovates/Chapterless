@@ -7,10 +7,6 @@ const pageNotFound = async (req,res) => {
   }
 }
 
-
-
-
-
 const loadHomePage = async (req, res) => {
   try {
     return res.render("home");
