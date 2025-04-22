@@ -165,7 +165,7 @@
     const password = document.getElementById("password").value;
     const confirmPassword = document.getElementById("confirmPassword").value;
 
-    // Clear all previous error messages
+    
     document.getElementById("fullNameError").textContent = "";
     document.getElementById("emailError").textContent = "";
     document.getElementById("phoneNumberError").textContent = "";
@@ -174,7 +174,7 @@
 
     let isValid = true;
 
-    // Basic Validation
+  
     if (!fullName) {
       document.getElementById("fullNameError").textContent = "Full name is required.";
       isValid = false;

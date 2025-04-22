@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login - Chapterless</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <link rel="stylesheet" href="/styles/loginPage.css" />
+  </head>
+  <body
+    class="paper-texture d-flex align-items-center justify-content-center min-vh-100 py-3"
+  >
+    <div class="container">
+      <div class="login-container mx-auto bg-white row">
+        <!-- Left image side -->
+        <div class="col-md-5 p-0 image-side d-none d-md-block">
+          <div class="overlay">
+            <div class="text-white">
+              <h2 class="h3 fw-bold mb-1">Welcome Back</h2>
+              <p class="mb-0 small">Continue your literary journey.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right form side -->
+        <div class="col-12 col-md-7 form-side">
+          <div class="text-center mb-4">
+            <div class="d-flex align-items-center justify-content-center mb-2">
+              <img
+                src="https://readdy.ai/api/search-image?query=Minimalist%20black%20logo%20of%20stacked%20books%2C%20clean%20lines%2C%20simple%20geometric%20shapes%2C%20professional%20design%2C%20high%20contrast%2C%20vector%20style%2C%20transparent%20background&width=50&height=50&seq=123458&orientation=squarish"
+                alt="Chapterless Logo"
+                class="me-2"
+                height="30"
+              />
+              <span class="logo-text fs-4">Chapterless</span>
+            </div>
+            <h2 class="fw-bold h4">Log in to your account</h2>
+            <p class="text-muted small mb-3">Pick up where you left off</p>
+          </div>
+
+          <form id="userLogin" method="post">
+            <div class="compact-mb">
+              <label for="email" class="form-label">Email Address</label>
+              <input
+                type="email"
+                name="email"
+                class="form-control form-control-sm"
+                id="email"
+                placeholder="Enter your email"
+              />
+              <div id="emailError" class="text-danger small mt-1"></div>
+            </div>
+            <div class="compact-mb">
+              <label for="password" class="form-label">Password</label>
+              <input
+                type="password"
+                name="password"
+                class="form-control form-control-sm"
+                id="password"
+                placeholder="Enter your password"
+              />
+              <div id="passwordError" class="text-danger small mt-1"></div>
+            </div>
+
+            <a href="#" class="forgot-password text-decoration-none"
+              >Forgot password?</a
+            >
+
+            <button
+              type="submit"
+              class="btn btn-primary btn-sm w-100 mb-2 py-2"
+            >
+              Log In
+            </button>
+
+            <div class="divider">
+              <span>OR</span>
+            </div>
+
+            <a href="#" class="btn btn-google w-100 mb-3">
+              <i class="ri-google-fill"></i>
+              Continue with Google
+            </a>
+          </form>
+
+          <div class="text-center mt-3">
+            <p class="small text-muted mb-0">
+              Don't have an account?
+              <a href="#" class="text-decoration-none fw-medium">Sign up</a>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script>
+      document
+        .getElementById("userLogin")
+        .addEventListener("submit", async (event) => {
+          event.preventDefault();
+
+          const email = document.getElementById("email").value.trim();
+          const password = document.getElementById("password").value.trim();
+
+          const emailError = (document.getElementById(
+            "emailError"
+          ).textContent = "");
+          const passwordError = (document.getElementById(
+            "passwordError"
+          ).textContent = "");
+
+          let isValid = true;
+
+          if (!email || !/^\S+@\S+\.\S+$/.test(email)) {
+            document.getElementById("emailError").textContent =
+              "Valid email is required.";
+            isValid = false;
+          }
+
+          if (!password || password.length < 6) {
+            document.getElementById("passwordError").textContent =
+              "Password must be at least 6 characters.";
+            isValid = false;
+          }
+
+          if (isValid) {
+            try {
+              const response = await fetch("/login", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  email,
+                  password,
+                }),
+              });
+
+              const result = await response.json();
+              if (result.success) {
+                Swal.fire({
+                  icon: "success",
+                  title: "Sign in Successful",
+                  text: result.message||'Welcome to chapterless',
+                  confirmButtonText: "Proceed to Home Page",
+                })
+                 .then(() => {
+                  window.location.href =  "/";
+                });
+              } else {
+                if (
+                  response.status === 403 &&
+                  result.redirectTO === "/verify-otp"
+                ) {
+                  Swal.fire({
+                    icon: "warning",
+                    title: "verification required",
+                    text: "Please verify your email first",
+                  }).then(() => {
+                    window.location.href("/verify-otp");
+                  });
+                } else {
+                  Swal.fire({
+                    icon: "error",
+                    title: "Sign in Error",
+                    text: result.message || "Something went wrong!",
+                  });
+                }
+              }
+            } catch (error) {
+              console.log("Signing in error", error);
+              Swal.fire({
+                icon: "error",
+                title: "error",
+                text: "Server not responding. Try again later.",
+              });
+            }
+          }
+        });
+    </script>
+  </body>
+</html>

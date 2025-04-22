@@ -268,12 +268,12 @@
           submitBtn.disabled = false;
           submitBtn.textContent = originalBtnText;
           
-          if (response.success) {
+          if (data.success) {
             showStatus('OTP verified successfully! Redirecting...', 'success');
             // Redirect after successful verification (optional)
             setTimeout(() => {
-              window.location.href = '/home'; // Change to your redirect URL
-            }, 2000);
+              window.location.href = '/login'; // Change to your redirect URL
+            }, 1000);
           } else {
             showStatus(data.message || 'Invalid OTP. Please try again.', 'error');
           }
@@ -303,16 +303,24 @@
           });
           
           const data = await response.json();
-          
-          if (response.success) {
+          console.log(data);
+          if (data.success) {
             showStatus('New OTP code sent successfully!', 'success');
             // Clear previous inputs
             inputs.forEach(input => {
               input.value = '';
             });
             inputs[0].focus();
+
+
+          setTimeout(()=>{
+            window.location.href = '/you have write crontroller';
+          },1000)
+
+           
           } else {
             showStatus(data.message || 'Failed to resend OTP. Please try again.', 'error');
+
           }
         } catch (error) {
           console.error('Error:', error);
