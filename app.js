@@ -5,6 +5,7 @@ const env = require("dotenv").config();
 const session = require("express-session");
 const connectDB = require("./config/db");
 const userRouter = require("./routes/userRoutes/userRouter");
+const passport = require("./config/passport")
 
 connectDB();
 
@@ -23,6 +24,9 @@ app.use(
     },
   })
 );
+
+app.use(passport.initialize());
+app.use(passport.session())
 
 app.use((req, res, next) => {
   res.set("Cache-Control", "no-store");

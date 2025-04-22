@@ -8,8 +8,10 @@ const userSchema = new mongoose.Schema({
   },
   phone:{
     type: String,
-    required: true,
-    unique: true
+    required: false,
+    unique: true,
+    sparse:  true,
+    default: null
   },
   email: {
     type: String,
@@ -26,7 +28,7 @@ const userSchema = new mongoose.Schema({
   googleId: {
     type: String,
     unique: true,
-    sparse: true,
+    // sparse: true,
     // default: null, 
   },
   otp: {
