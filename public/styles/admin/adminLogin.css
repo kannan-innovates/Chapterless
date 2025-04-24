@@ -1,0 +1,92 @@
+body {
+     background-color: #f5f5f5;
+     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+   }
+   
+   .paper-texture {
+     background-image: url("/assets/texture.png");
+     background-repeat: repeat;
+   }
+   
+   .login-container {
+     max-width: 800px;
+     box-shadow: 0 12px 30px rgba(0, 0, 0, 0.1);
+     border-radius: 10px;
+     overflow: hidden;
+   }
+   
+   .image-side {
+     background-image: url("../../assets/adminLogin.jpeg");
+     background-size: cover;
+     background-position: center;
+     position: relative;
+   }
+   
+   .overlay {
+     position: absolute;
+     bottom: 0;
+     left: 0;
+     right: 0;
+     padding: 2rem;
+     background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
+     height: 100%;
+     display: flex;
+     align-items: flex-end;
+   }
+   
+   .form-side {
+     padding: 2rem;
+   }
+   
+   .compact-mb {
+     margin-bottom: 1rem;
+   }
+   
+   .logo-text {
+     font-family: 'Montserrat', sans-serif;
+     font-weight: 700;
+     color: #333;
+     letter-spacing: 1px;
+   }
+   
+   .forgot-password {
+     display: block;
+     text-align: right;
+     font-size: 0.8rem;
+     margin-bottom: 1.5rem;
+     color: #6c757d;
+   }
+   
+   .btn-primary {
+     background-color: #4A62D8;
+     border: none;
+   }
+   
+   .btn-primary:hover {
+     background-color: #3a4fb0;
+   }
+   
+   /* Admin specific styling */
+   .admin-badge {
+     background-color: #dc3545;
+     color: white;
+     padding: 3px 8px;
+     border-radius: 4px;
+     font-size: 0.7rem;
+     font-weight: bold;
+     text-transform: uppercase;
+     letter-spacing: 1px;
+   }
+   
+   .admin-notify {
+     font-size: 0.75rem;
+     color: #6c757d;
+   }
+
+   
+
+   .logo-container {
+    display: flex;
+    align-items: center;
+    min-height: 40px; /* Adjust as needed */
+  }

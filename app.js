@@ -5,7 +5,10 @@ const env = require("dotenv").config();
 const session = require("express-session");
 const connectDB = require("./config/db");
 const userRouter = require("./routes/userRoutes/userRouter");
+const adminRoute = require("./routes/adminRoutes/adminRoutes")
 const passport = require("./config/passport");
+
+
 
 const userMiddleware = require("./middlewares/userMiddleware")
 
@@ -47,6 +50,7 @@ app.set("views", [
 app.use(express.static(path.join(__dirname, "public")));
 
 app.use("/", userRouter);
+app.use("/admin",adminRoute)
 
 const PORT = process.env.PORT || 3001;
 

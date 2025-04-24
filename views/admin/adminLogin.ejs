@@ -3,11 +3,11 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Login - Chapterless</title>
+    <title>Admin Login - Chapterless</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700&display=swap"
       rel="stylesheet"
     />
     <link
@@ -20,7 +20,8 @@
     />
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-    <link rel="stylesheet" href='/styles/user/loginPage.css' />
+   <link rel="stylesheet" href="/styles/admin/adminLogin.css">
+      
   </head>
   <body
     class="paper-texture d-flex align-items-center justify-content-center min-vh-100 py-3"
@@ -31,8 +32,8 @@
         <div class="col-md-5 p-0 image-side d-none d-md-block">
           <div class="overlay">
             <div class="text-white">
-              <h2 class="h3 fw-bold mb-1">Welcome Back</h2>
-              <p class="mb-0 small">Continue your literary journey.</p>
+              <h2 class="h3 fw-bold mb-1">Admin Portal</h2>
+              <p class="mb-0 small">Manage your Chapterless bookstore</p>
             </div>
           </div>
         </div>
@@ -42,26 +43,26 @@
           <div class="text-center mb-4">
             <div class="d-flex align-items-center justify-content-center mb-2">
               <img
-                src="../../assets/harryPotter.jpeg"
+                src="../assets/harryPotter.jpeg"
                 alt="Chapterless Logo"
-                class="me-2"
-                height="30"
+                class="me-2 "width="40" height="40"
               />
-              <span class="logo-text fs-4">Chapterless</span>
+              <span class="logo-text fs-4">CHAPTERLESS</span>
+              <span class="admin-badge ms-2">ADMIN</span>
             </div>
-            <h2 class="fw-bold h4">Log in to your account</h2>
-            <p class="text-muted small mb-3">Pick up where you left off</p>
+            <h2 class="fw-bold h4">Admin Login</h2>
+            <p class="text-muted small mb-3">Access dashboard and controls</p>
           </div>
 
-          <form id="userLogin" method="post">
+          <form id="adminLogin" method="post">
             <div class="compact-mb">
-              <label for="email" class="form-label">Email Address</label>
+              <label for="email" class="form-label">Admin Email</label>
               <input
                 type="email"
                 name="email"
                 class="form-control form-control-sm"
                 id="email"
-                placeholder="Enter your email"
+                placeholder="Enter admin email"
               />
               <div id="emailError" class="text-danger small mt-1"></div>
             </div>
@@ -77,7 +78,7 @@
               <div id="passwordError" class="text-danger small mt-1"></div>
             </div>
 
-            <a href="/forgotPassword" class="forgot-password text-decoration-none"
+            <a href="/admin/forgot-password" class="forgot-password text-decoration-none"
               >Forgot password?</a
             >
 
@@ -85,23 +86,18 @@
               type="submit"
               class="btn btn-primary btn-sm w-100 mb-2 py-2"
             >
-              Log In
+              Login to Admin
             </button>
-
-            <div class="divider">
-              <span>OR</span>
+            
+            <div class="admin-notify text-center mt-3">
+              <i class="ri-shield-check-line me-1"></i> This portal is for authorized administrators only
             </div>
-
-            <a href="/auth/google" class="btn btn-google w-100 mb-3">
-              <i class="ri-google-fill"></i>
-              Continue with Google
-            </a>
           </form>
 
           <div class="text-center mt-3">
             <p class="small text-muted mb-0">
-              Don't have an account?
-              <a href="/signup" class="text-decoration-none fw-medium">Sign up</a>
+              Need customer access?
+              <a href="/login" class="text-decoration-none fw-medium">Customer Login</a>
             </p>
           </div>
         </div>
@@ -109,19 +105,15 @@
     </div>
     <script>
       document
-        .getElementById("userLogin")
+        .getElementById("adminLogin")
         .addEventListener("submit", async (event) => {
           event.preventDefault();
 
           const email = document.getElementById("email").value.trim();
           const password = document.getElementById("password").value.trim();
 
-          const emailError = (document.getElementById(
-            "emailError"
-          ).textContent = "");
-          const passwordError = (document.getElementById(
-            "passwordError"
-          ).textContent = "");
+          document.getElementById("emailError").textContent = "";
+          document.getElementById("passwordError").textContent = "";
 
           let isValid = true;
 
@@ -139,7 +131,7 @@
 
           if (isValid) {
             try {
-              const response = await fetch("/login", {
+              const response = await fetch("/admin/adminLogin", {
                 method: "POST",
                 headers: {
                   "Content-Type": "application/json",
@@ -154,38 +146,25 @@
               if (result.success) {
                 Swal.fire({
                   icon: "success",
-                  title: "Sign in Successful",
-                  text: result.message||'Welcome to chapterless',
-                  confirmButtonText: "Proceed to Home Page",
+                  title: "Admin Login Successful",
+                  text: result.message || 'Welcome to Chapterless Admin',
+                  confirmButtonText: "Go to Dashboard",
                 })
                  .then(() => {
-                  window.location.href =  "/";
+                  window.location.href = "/admin/dashboard";
                 });
               } else {
-                if (
-                  response.status === 403 &&
-                  result.redirectTO === "/verify-otp"
-                ) {
-                  Swal.fire({
-                    icon: "warning",
-                    title: "verification required",
-                    text: "Please verify your email first",
-                  }).then(() => {
-                    window.location.href("/verify-otp");
-                  });
-                } else {
-                  Swal.fire({
-                    icon: "error",
-                    title: "Sign in Error",
-                    text: result.message || "Something went wrong!",
-                  });
-                }
+                Swal.fire({
+                  icon: "error",
+                  title: "Admin Login Error",
+                  text: result.message || "Invalid credentials or insufficient permissions",
+                });
               }
             } catch (error) {
-              console.log("Signing in error", error);
+              console.log("Admin login error", error);
               Swal.fire({
                 icon: "error",
-                title: "error",
+                title: "Server Error",
                 text: "Server not responding. Try again later.",
               });
             }

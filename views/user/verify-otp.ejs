@@ -16,117 +16,7 @@
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
     />
-    <style>
-      body {
-        font-family: "Inter", sans-serif;
-        background-color: #f8f9fa;
-        min-height: 100vh;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin: 0;
-        padding: 0;
-      }
-      .container {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 100%;
-        height: 100%;
-      }
-      .otp-card {
-        background-color: #fff;
-        border-radius: 1rem;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
-        overflow: hidden;
-        width: 100%;
-        max-width: 450px;
-        margin: 2rem auto;
-      }
-      .otp-header {
-        background-color: #000;
-        color: #fff;
-        padding: 1.5rem;
-        text-align: center;
-      }
-      .otp-body {
-        padding: 2rem;
-      }
-      .otp-inputs {
-        display: flex;
-        justify-content: center;
-        gap: 0.75rem;
-        margin: 2rem 0;
-      }
-      .otp-input {
-        width: 3rem;
-        height: 3.5rem;
-        font-size: 1.5rem;
-        text-align: center;
-        border: 2px solid #dee2e6;
-        border-radius: 0.5rem;
-        background-color: #f8f9fa;
-        transition: all 0.3s ease;
-      }
-      .otp-input:focus {
-        border-color: #000;
-        background-color: #fff;
-        box-shadow: 0 0 0 0.25rem rgba(0, 0, 0, 0.1);
-        outline: none;
-      }
-      .btn-verify {
-        background-color: #000;
-        border-color: #000;
-        border-radius: 0.5rem;
-        padding: 0.75rem 1.5rem;
-        font-weight: 500;
-        transition: all 0.3s ease;
-      }
-      .btn-verify:hover {
-        background-color: #333;
-        border-color: #333;
-      }
-      .btn-resend {
-        color: #000;
-        text-decoration: none;
-        font-weight: 500;
-        transition: all 0.3s ease;
-      }
-      .btn-resend:hover {
-        color: #333;
-        text-decoration: underline;
-      }
-      .status-message {
-        margin-top: 1rem;
-        padding: 0.75rem;
-        border-radius: 0.5rem;
-        text-align: center;
-        display: none;
-      }
-      .status-success {
-        background-color: #d1e7dd;
-        color: #0f5132;
-      }
-      .status-error {
-        background-color: #f8d7da;
-        color: #842029;
-      }
-      @media (max-width: 576px) {
-        .otp-card {
-          border-radius: 0;
-          box-shadow: none;
-          max-width: 100%;
-        }
-        .otp-inputs {
-          gap: 0.5rem;
-        }
-        .otp-input {
-          width: 2.5rem;
-          height: 3rem;
-          font-size: 1.25rem;
-        }
-      }
-    </style>
+    <link rel="stylesheet" href="/styles/user/verifyOtp.css">
   </head>
   <body>
     <div class="container">
@@ -141,6 +31,12 @@
           <h5 class="text-center mb-4" id="userEmail">
             your_email@example.com
           </h5>
+
+          <!-- Timer display -->
+          <div class="timer-container">
+            <p>Code expires in: <span class="timer" id="timer">00:30</span></p>
+            <p class="timer-expired" id="timerExpired">OTP has expired. Please request a new one.</p>
+          </div>
 
           <form id="otpForm">
             <div class="otp-inputs">
@@ -209,6 +105,62 @@
       const otpForm = document.getElementById("otpForm");
       const statusMessage = document.getElementById("statusMessage");
       const resendBtn = document.getElementById("resendBtn");
+      const timerElement = document.getElementById("timer");
+      const timerExpiredElement = document.getElementById("timerExpired");
+      const submitBtn = otpForm.querySelector('button[type="submit"]');
+      
+      let timeLeft = 30; // 30 seconds timer
+      let timerId;
+
+      // Start timer function
+      function startTimer() {
+        // Reset timer UI
+        timerElement.style.display = 'inline';
+        timerExpiredElement.style.display = 'none';
+        submitBtn.disabled = false;
+        
+        // Clear any existing timer
+        if (timerId) {
+          clearInterval(timerId);
+        }
+        
+        // Set initial time
+        timeLeft = 30;
+        updateTimerDisplay();
+        
+        // Start countdown
+        timerId = setInterval(() => {
+          timeLeft -= 1;
+          updateTimerDisplay();
+          
+          if (timeLeft <= 0) {
+            clearInterval(timerId);
+            handleExpiredOTP();
+          }
+        }, 1000);
+      }
+
+      // Update timer display
+      function updateTimerDisplay() {
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        timerElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        
+        // Change color when time is running out
+        if (timeLeft <= 10) {
+          timerElement.style.color = '#dc3545'; // Red color
+        } else {
+          timerElement.style.color = '#212529'; // Default color
+        }
+      }
+
+      // Handle expired OTP
+      function handleExpiredOTP() {
+        timerElement.style.display = 'none';
+        timerExpiredElement.style.display = 'block';
+        submitBtn.disabled = true;
+        showStatus('OTP has expired. Please request a new one.', 'error');
+      }
 
       // Auto-advance to next input field
       inputs.forEach((input, index) => {
@@ -230,6 +182,12 @@
       otpForm.addEventListener("submit", async (e) => {
         e.preventDefault();
         
+        // Check if timer expired
+        if (timeLeft <= 0) {
+          showStatus('OTP has expired. Please request a new one.', 'error');
+          return;
+        }
+        
         // Collect OTP digits
         const otpDigits = Array.from(inputs).map(input => input.value);
         const otpCode = otpDigits.join('');
@@ -248,7 +206,6 @@
         
         try {
           // Show loading state
-          const submitBtn = otpForm.querySelector('button[type="submit"]');
           const originalBtnText = submitBtn.textContent;
           submitBtn.disabled = true;
           submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Verifying...';
@@ -269,6 +226,9 @@
           submitBtn.textContent = originalBtnText;
           
           if (data.success) {
+            // Stop the timer
+            clearInterval(timerId);
+            
             showStatus('OTP verified successfully! Redirecting...', 'success');
             // Redirect after successful verification (optional)
             setTimeout(() => {
@@ -294,7 +254,7 @@
           resendBtn.textContent = 'Sending...';
           resendBtn.style.pointerEvents = 'none';
           
-          const response = await fetch('/resend-otp', {
+          const response = await fetch('/resend-signup-otp', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -303,24 +263,19 @@
           });
           
           const data = await response.json();
-          console.log(data);
+          
           if (data.success) {
+            
+            startTimer();
+            
             showStatus('New OTP code sent successfully!', 'success');
             // Clear previous inputs
             inputs.forEach(input => {
               input.value = '';
             });
             inputs[0].focus();
-
-
-          setTimeout(()=>{
-            window.location.href = '/login';
-          },1000)
-
-           
           } else {
             showStatus(data.message || 'Failed to resend OTP. Please try again.', 'error');
-
           }
         } catch (error) {
           console.error('Error:', error);
@@ -343,6 +298,11 @@
           statusMessage.style.display = 'none';
         }, 5000);
       }
+      
+      // Initialize timer on page load
+      document.addEventListener('DOMContentLoaded', () => {
+        startTimer();
+      });
     </script>
   </body>
 </html>

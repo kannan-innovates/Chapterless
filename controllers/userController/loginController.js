@@ -1,8 +1,6 @@
 const User = require("../../models/userSchema");
 const bcrypt = require("bcrypt");
 
-
-
 const getLogin = async (req, res) => {
   try {
     res.render("login");
@@ -10,7 +8,6 @@ const getLogin = async (req, res) => {
     console.log(error);
     res.status(500).json({ message: "Server Error", success: false });
   }
-  
 };
 
 const postLogin = async (req, res) => {
@@ -39,18 +36,16 @@ const postLogin = async (req, res) => {
     }
 
     req.session.user_id = existingUser._id;
+
     return res.status(200).json({
-      success:true,
-      message:"Welcome to Chapterless"
-    })
+      success: true,
+      message: "Welcome to Chapterless",
+    });
   } catch (error) {
     console.log("Signin ERROR", error);
     res.status(500).json({ message: "Server Error" });
   }
 };
-
-
-
 
 module.exports = {
   getLogin,
