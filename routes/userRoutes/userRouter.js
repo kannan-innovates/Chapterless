@@ -5,7 +5,10 @@ const passport = require("passport");
 const userController = require("../../controllers/userController/userController");
 const signupController = require("../../controllers/userController/signupController");
 const signupValidator = require("../../validators/user/signupValidation");
-const loginController =  require("../../controllers/userController/loginController")
+const loginController =  require("../../controllers/userController/loginController");
+
+const passwordController = require("../../controllers/userController/forgotPasswordController")
+
 
 router.get("/", userController.loadHomePage);
 router.get("/pageNotFound", userController.pageNotFound);
@@ -27,4 +30,14 @@ router.get("/auth/google", passport.authenticate("google", {scope: ["profile", "
 router.get("/auth/google/callback", passport.authenticate("google", {failureRedirect: "/signup"}), (req, res) => {
   res.redirect("/");
 });
+
+
+router.get("/forgotPassword",passwordController.getForgotPassword);
+router.post("/forgotPassword",passwordController.postForgotPassword);
+
+router.get("/otpForgotPassword",passwordController.getOtpForgotPassword);
+router.post("/otpForgotPassword",passwordController.verifyOtp);
+
+router.get("/resetPassword",passwordController.getResetPassword)
+router.patch("/resetPassword",passwordController.patchResetPassword)
 module.exports = router;

@@ -12,37 +12,6 @@ const getOtp = async (req, res) => {
   }
 };
 
-const verifyOtp = async (req, res) => {
-  try {
-    const { otp } = req.body;
-    const email = req.session.email;
-    const user = await User.findOne({ email });
-
-    if (!user) {
-      return res
-        .status(404)
-        .json({ success: false, message: "User not found" ,success:false});
-    }
-
-    console.log("db otp", user.otp);
-
-    if (otp !== user.otp) {
-      return res.status(400).json({ success: false, message: "Invalid OTP" });
-    }
-
-    user.isVerified = true;
-    user.otp = null;
-    await user.save();
-
-    return res.status(200).json({
-      success: true,
-      message: "OTP verification successful",
-    });
-  } catch (error) {
-    console.log(error);
-  }
-};
-
 const otpGenerator = () =>
   Math.floor(100000 + Math.random() * 900000).toString();
 
@@ -85,23 +54,17 @@ const postSignup = async (req, res) => {
       phone: phoneNumber,
       password: hashedPassword,
       otp: otp,
+      otpExpires: expiresAt
     });
 
-    req.session.email = email;
+    
     await newUser.save();
+
+    req.session.email = email;
 
     return res.json({ message: "redirecting to otp page", success: true });
   } catch (error) {
     console.error(`Error in posting user`, error);
-
-    // if (error.code === 11000) {
-    //   return res.status(409).json({
-    //     success: false,
-    //     message: "Phone number or email already exists.",
-    //   });
-    // }
-
-    
     return res.status(500).json({
       success: false,
       message: "Internal Server Error",
@@ -109,61 +72,81 @@ const postSignup = async (req, res) => {
   }
 };
 
-// const verifyOtp = async (req, res) => {
-//   try {
-//     const { email, otp } = req.body;
 
-//     const otpRecord = await Otp.findOne({ email }).sort({ createdAt: -1 });
+const verifyOtp = async (req, res) => {
+  try {
+    const { otp } = req.body;
+    const email = req.session.email;
+    const user = await User.findOne({ email });
 
-//     if (!otpRecord) {
-//       return res.status(404).json({
-//         success: false,
-//         message: "OTP not found. Please sign up again.",
-//       });
-//     }
+    if (!user) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" ,success:false});
+    }
 
-//     if (otpRecord.otp !== otp) {
-//       return res.status(400).json({
-//         success: false,
-//         message: "Invalid OTP. Please check again.",
-//       });
-//     }
+    console.log("db otp", user.otp);
 
-//     if (otpRecord.expiresAt < new Date()) {
-//       return res.status(410).json({
-//         success: false,
-//         message: "OTP expired. Please request a new one.",
-//       });
-//     }
+    if (user.otpExpires && user.otpExpires < new Date()) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "OTP has expired. Please request a new one." 
+      });
+    }
 
-//     // Mark user as verified
-//     const updatedUser = await User.findOneAndUpdate(
-//       { email },
-//       { isVerified: true },
-//       { new: true }
-//     );
+    if (otp !== user.otp) {
+      return res.status(400).json({ success: false, message: "Invalid OTP" });
+    }
 
-//     if (!updatedUser) {
-//       return res.status(404).json({
-//         success: false,
-//         message: "User not found. Try signing up again.",
-//       });
-//     }
+    user.isVerified = true;
+    user.otp = null;
+    user.otpExpires = null;
+    await user.save();
 
-//     // Delete OTP after success
-//     await Otp.deleteMany({ email });
+    return res.status(200).json({
+      success: true,
+      message: "OTP verification successful",
+    });
+  } catch (error) {
+    console.log(error);
+  }
+};
 
-//     return res.status(200).json({
-//       success: true,
-//       message: "Email verified successfully!",
-//     });
-//   } catch (error) {
-//     console.error("Error in verifyOtp:", error);
-//     return res.status(500).json({
-//       success: false,
-//       message: "Internal Server Error",
-//     });
-//   }
-// };
 
-module.exports = { getSignup, postSignup, verifyOtp, getOtp };
+const resendOtp = async (req, res) => {
+  try {
+    const email = req.session.email;
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({ 
+        success: false, 
+        message: "User not found" 
+      });
+    }
+
+    const otp = otpGenerator();
+    console.log(otp);
+    const otpExpires = new Date(Date.now() + 5 * 60 * 1000);
+
+    let subjectContent = "Your new OTP for Chapterless";
+    await sendOtpEmail(email, user.fullName, otp, subjectContent);
+
+    user.otp = otp;
+    user.otpExpires = otpExpires;
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "New OTP sent to your email"
+    });
+  } catch (error) {
+    console.error("Error resending OTP:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal Server Error"
+    });
+  }
+};
+
+module.exports = { getSignup, postSignup, verifyOtp, getOtp, resendOtp };

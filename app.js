@@ -5,12 +5,16 @@ const env = require("dotenv").config();
 const session = require("express-session");
 const connectDB = require("./config/db");
 const userRouter = require("./routes/userRoutes/userRouter");
-const passport = require("./config/passport")
+const passport = require("./config/passport");
+
+const userMiddleware = require("./middlewares/userMiddleware")
+
 
 connectDB();
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
 
 app.use(
   session({
@@ -26,7 +30,9 @@ app.use(
 );
 
 app.use(passport.initialize());
-app.use(passport.session())
+app.use(passport.session());
+
+app.use(userMiddleware);
 
 app.use((req, res, next) => {
   res.set("Cache-Control", "no-store");

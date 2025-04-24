@@ -20,24 +20,30 @@
     />
     <link rel="stylesheet" href="/styles/landinPageStyle.css" />
     <style>
-      /* Additional styles for dropdown positioning */
-      .user-dropdown .dropdown-menu {
-        right: 0;
-        left: auto;
-        transform-origin: top right;
+      /* Additional styles for dropdown */
+      .dropdown-menu {
+        border-radius: 15px;
+        padding: 10px 0;
+        min-width: 220px;
+        box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.1);
       }
-      
-      /* For Bootstrap 5 compatibility */
-      .dropdown-menu-end {
-        right: 0;
-        left: auto;
+      .dropdown-item {
+        padding: 12px 20px;
+        display: flex;
+        align-items: center;
+        color: #333;
+        font-weight: 500;
       }
-      
-      /* Ensure proper spacing in mobile view */
-      @media (max-width: 992px) {
-        .header-buttons {
-          margin-top: 15px;
-        }
+      .dropdown-item i {
+        margin-right: 12px;
+        font-size: 20px;
+        color: #555;
+      }
+      .dropdown-divider {
+        margin: 5px 0;
+      }
+      .user-dropdown {
+        position: relative;
       }
     </style>
   </head>
@@ -47,8 +53,8 @@
       class="navbar navbar-expand-lg navbar-light bg-white shadow-sm sticky-top"
     >
       <div class="container py-2">
-        <a class="navbar-brand" href="#">
-          <img src="/api/placeholder/50/50" alt="Chapterless Logo" />
+        <a class="navbar-brand" href="/">
+          <img src="../../../assets/harryPotter.jpeg" alt="Chapterless Logo" />
           <span class="ms-2 fw-bold fs-4">Chapterless</span>
         </a>
         <button
@@ -65,22 +71,24 @@
         <div class="collapse navbar-collapse" id="navbarNav">
           <ul class="navbar-nav mx-auto">
             <li class="nav-item mx-2">
-              <a class="nav-link fw-medium" href="#">Home</a>
+              <a class="nav-link fw-medium" href="/">Home</a>
             </li>
             <li class="nav-item mx-2">
-              <a class="nav-link fw-medium" href="#">Shop</a>
+              <a class="nav-link fw-medium" href="/shop">Shop</a>
             </li>
             <li class="nav-item mx-2">
-              <a class="nav-link fw-medium" href="#">Collections</a>
+              <a class="nav-link fw-medium" href="/collections">Collections</a>
             </li>
             <li class="nav-item mx-2">
-              <a class="nav-link fw-medium" href="#">About</a>
+              <a class="nav-link fw-medium" href="/about">About</a>
             </li>
             <li class="nav-item mx-2">
-              <a class="nav-link fw-medium" href="#">Contact</a>
+              <a class="nav-link fw-medium" href="/contact">Contact</a>
             </li>
           </ul>
           <div class="d-flex align-items-center">
+            <% if (!user) { %>
+            <!-- For non-authenticated users: show search and login icon -->
             <div class="search-input d-none d-lg-block me-3">
               <input
                 type="text"
@@ -92,57 +100,64 @@
                 <i class="ri-search-line"></i>
               </div>
             </div>
-            <div class="d-flex align-items-center header-buttons">
-              <!-- Sign Up/Login Button -->
-              <a href="#" class="btn btn-outline-dark btn-sm rounded me-3">
-                Sign Up / Login
+            <div class="d-flex">
+              <a href="/login" class="p-2 text-dark">
+                <i class="ri-user-line fs-5"></i>
               </a>
-              
-              <!-- User dropdown menu -->
-              <div class="dropdown user-dropdown me-2">
+              <a href="/cart" class="p-2 text-dark cart-link">
+                <i class="ri-shopping-bag-line fs-5"></i>
+                <span class="cart-count">0</span>
+              </a>
+            </div>
+            <% } else { %>
+             
+            <!-- For authenticated users: show dropdown on user icon -->
+            <div class="d-flex">
+              <div class="dropdown user-dropdown">
                 <a
-                  href="#"
                   class="p-2 text-dark dropdown-toggle"
-                  id="userDropdown"
+                  href="#"
                   role="button"
                   data-bs-toggle="dropdown"
                   aria-expanded="false"
-                  data-bs-auto-close="outside"
+                  id="userDropdown"
                 >
                   <i class="ri-user-line fs-5"></i>
                 </a>
-                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                <ul
+                  class="dropdown-menu dropdown-menu-end"
+                  aria-labelledby="userDropdown"
+                >
                   <li>
-                    <a class="dropdown-item" href="#">
-                      <i class="ri-user-settings-line"></i> Manage My Account
-                    </a>
-                  </li>
-                  <li>
-                    <a class="dropdown-item" href="#">
-                      <i class="ri-file-list-3-line"></i> My Orders
+                    <a class="dropdown-item" href="/profile">
+                      <i class="ri-user-3-line"></i> Your Profile
                     </a>
                   </li>
                   <li><hr class="dropdown-divider" /></li>
                   <li>
-                    <a class="dropdown-item" href="#">
+                    <a class="dropdown-item" href="/logout">
                       <i class="ri-logout-box-line"></i> Logout
                     </a>
                   </li>
                 </ul>
               </div>
-              
-              <a href="#" class="p-2 text-dark cart-link">
+              <a href="/cart" class="p-2 text-dark cart-link">
                 <i class="ri-shopping-bag-line fs-5"></i>
-                <span class="cart-count">3</span>
+                <span class="cart-count"
+                  ><%= user.cart ? user.cart.length : 0 %></span
+                >
               </a>
             </div>
+            <% } %>
           </div>
         </div>
       </div>
     </nav>
     <!-- Navigation Ends -->
 
-    <!-- Include Bootstrap JS -->
+    <!-- Rest of your body content goes here -->
+
+    <!-- Include Bootstrap JS for dropdown functionality -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
   </body>
 </html>
