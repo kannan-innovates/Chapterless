@@ -1,4 +1,5 @@
 const User = require("../../models/userSchema");
+const OTP = require("../../models/otpSchema"); // Import the new OTP model
 const hashPasswordHelper = require("../../helpers/hash");
 const sendOtpEmail = require("../../helpers/sendMail");
 const { session } = require("passport");
@@ -34,22 +35,28 @@ const postForgotPassword = async (req, res) => {
     const otp = otpGenerator();
     console.log(otp);
 
+    // Delete any existing OTP docs for this email and purpose
+    await OTP.deleteMany({ email, purpose: 'password-reset' });
     
-    const otpExpires = new Date(Date.now() + 30 * 1000);
+    // Create new OTP document with 30 second expiry for password reset
+    const otpDoc = new OTP({
+      email,
+      otp,
+      purpose: 'password-reset',
+      createdAt: new Date() // Will expire in 5 minutes by default
+    });
+    
+    await otpDoc.save();
 
     let subjectContent = "OTP for Resetting your Password";
     await sendOtpEmail(email, otp, subjectContent);
 
     req.session.user_email = email;
 
-    user.otp = otp;
-    user.otpExpires = otpExpires;
-    await user.save();
-
     return res.status(200).json({
       message: "OTP sent successfully",
       success: true,
-      expiresIn: 30 // Send expiration time to frontend in seconds
+      expiresIn: 300 // Send expiration time to frontend in seconds (5 minutes)
     });
   } catch (error) {
     console.log("Error in sending otp for Forgot Password");
@@ -62,7 +69,7 @@ const postForgotPassword = async (req, res) => {
 
 const resendOtp = async (req, res) => {
   try {
-    const  email  = req.session.user_email
+    const email = req.session.user_email;
 
     const user = await User.findOne({ email });
 
@@ -79,20 +86,25 @@ const resendOtp = async (req, res) => {
     const otp = otpGenerator();
     console.log("New OTP generated:", otp);
     
-    // Set expiration to 30 seconds
-    const otpExpires = new Date(Date.now() + 30 * 1000);
+    // Delete any existing OTP docs for this email
+    await OTP.deleteMany({ email, purpose: 'password-reset' });
+    
+    // Create new OTP document
+    const otpDoc = new OTP({
+      email,
+      otp,
+      purpose: 'password-reset'
+    });
+    
+    await otpDoc.save();
 
     let subjectContent = "New OTP for Resetting your Password";
     await sendOtpEmail(email, otp, subjectContent);
 
-    user.otp = otp;
-    user.otpExpires = otpExpires;
-    await user.save();
-
     return res.status(200).json({
       message: "New OTP sent successfully",
       success: true,
-      expiresIn: 30 
+      expiresIn: 300 // 5 minutes in seconds
     });
   } catch (error) {
     console.log("Error in resending OTP");
@@ -102,8 +114,6 @@ const resendOtp = async (req, res) => {
     });
   }
 };
-
-
 
 const getOtpForgotPassword = async (req, res) => {
   try {
@@ -132,14 +142,17 @@ const verifyOtp = async (req, res) => {
       });
     }
 
-    if (user.otpExpires < Date.now()) {
+    // Find OTP document
+    const otpDoc = await OTP.findOne({ email, purpose: 'password-reset' });
+    
+    if (!otpDoc) {
       return res.status(400).json({
         success: false,
         message: "OTP has expired! Please request a new one",
       });
     }
 
-    if (String(otp) !== String(user.otp)) {
+    if (String(otp) !== String(otpDoc.otp)) {
       return res.status(400).json({
         success: false,
         message: "Invalid OTP",
@@ -147,9 +160,7 @@ const verifyOtp = async (req, res) => {
     }
 
     // Clear OTP after successful verification
-    user.otp = null;
-    user.otpExpires = null;
-    await user.save();
+    await OTP.deleteOne({ _id: otpDoc._id });
 
     return res.status(200).json({
       success: true,

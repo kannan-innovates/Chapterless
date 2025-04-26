@@ -11,7 +11,6 @@ const userSchema = new mongoose.Schema({
     required: false,
     unique: true,
     sparse:  true,
-    // default: null
   },
   email: {
     type: String,
@@ -23,22 +22,12 @@ const userSchema = new mongoose.Schema({
   password: {
     type: String,
     required: false,
-    
   },
   googleId: {
     type: String,
     unique: true,
-    // sparse: true,
-    // default: null, 
   },
-  otp: {
-    type: String,
-    default: null, 
-  },
-  // otpExpiresAt: {
-  //   type: Date,
-  //   default: null, 
-  // },
+  // OTP fields removed
   isBlocked: {
     type: Boolean,
     default: false,
@@ -81,7 +70,6 @@ const userSchema = new mongoose.Schema({
   }]
 }, {
   timestamps: true
-},
-);
+});
 
 module.exports = mongoose.model('User', userSchema);

@@ -1,4 +1,5 @@
 const User = require("../../models/userSchema");
+const OTP = require("../../models/otpSchema"); // Import the new OTP model
 const hashPasswordHelper = require("../../helpers/hash");
 const sendOtpEmail = require("../../helpers/sendMail");
 const { text } = require("express");
@@ -40,24 +41,32 @@ const postSignup = async (req, res) => {
 
     const otp = otpGenerator();
     console.log(otp);
-    const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
 
     let subjectContent = "Verify your email for Chapterless";
     await sendOtpEmail(email, fullName, otp, subjectContent);
 
     const hashedPassword = await hashPasswordHelper.hashPassword(password);
 
+    // Create user without OTP fields
     const newUser = new User({
       fullName,
       email,
       phone: phoneNumber,
       password: hashedPassword,
-      otp: otp,
-      otpExpires: expiresAt,
+      // No longer storing OTP in user document
     });
 
     await newUser.save();
 
+    // Store OTP in separate collection
+    const otpDoc = new OTP({
+      email,
+      otp,
+      purpose: 'signup'
+    });
+    
+    await otpDoc.save();
+    
     req.session.email = email;
 
     return res.json({ message: "redirecting to otp page", success: true });
@@ -74,6 +83,8 @@ const verifyOtp = async (req, res) => {
   try {
     const { otp } = req.body;
     const email = req.session.email;
+    
+    // Find user
     const user = await User.findOne({ email });
 
     if (!user) {
@@ -82,23 +93,26 @@ const verifyOtp = async (req, res) => {
         .json({ success: false, message: "User not found", success: false });
     }
 
-    console.log("db otp", user.otp);
-
-    if (user.otpExpires && user.otpExpires < new Date()) {
+    // Find OTP document
+    const otpDoc = await OTP.findOne({ email, purpose: 'signup' });
+    
+    if (!otpDoc) {
       return res.status(400).json({
         success: false,
-        message: "OTP has expired. Please request a new one.",
+        message: "OTP has expired or doesn't exist. Please request a new one.",
       });
     }
 
-    if (otp !== user.otp) {
+    if (otp !== otpDoc.otp) {
       return res.status(400).json({ success: false, message: "Invalid OTP" });
     }
 
+    // OTP is valid - verify the user
     user.isVerified = true;
-    user.otp = null;
-    user.otpExpires = null;
     await user.save();
+    
+    // Delete the OTP document
+    await OTP.deleteOne({ _id: otpDoc._id });
 
     return res.status(200).json({
       success: true,
@@ -106,6 +120,10 @@ const verifyOtp = async (req, res) => {
     });
   } catch (error) {
     console.log(error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+    });
   }
 };
 
@@ -123,14 +141,21 @@ const resendOtp = async (req, res) => {
 
     const otp = otpGenerator();
     console.log(otp);
-    const otpExpires = new Date(Date.now() + 5 * 60 * 1000);
+
+    // Delete any existing OTP for this email and purpose
+    await OTP.deleteMany({ email, purpose: 'signup' });
+    
+    // Create new OTP document
+    const otpDoc = new OTP({
+      email,
+      otp,
+      purpose: 'signup'
+    });
+    
+    await otpDoc.save();
 
     let subjectContent = "Your new OTP for Chapterless";
     await sendOtpEmail(email, user.fullName, otp, subjectContent);
-
-    user.otp = otp;
-    user.otpExpires = otpExpires;
-    await user.save();
 
     return res.status(200).json({
       success: true,
