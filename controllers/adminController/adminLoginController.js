@@ -42,13 +42,43 @@ const postAdminLogin = async (req, res) => {
     return res.status(200).json({
       success: true,
       message: "Welcome Admin",
+      redirectTo: '/admin/adminDashboard',
     });
-
   } catch (error) {
     console.error("Admin login error:", error);
-    res.status(500).render("adminLogin", { error: "Something Went Wrong" });
+    res.status(500).json({
+      success: false,
+      message: "Admin login error",
+    });
   }
 };
 
+const getAdminDashboard = async (req, res) => {
+  try {
+    return res.render('adminDashboard')
+   
+  } catch (error) {
+    console.error("Admin home error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to load Home Page",
+    });
+  }
+};
 
-module.exports = {getAdminLogin,postAdminLogin}
+const logoutAdminDashboard = async (req,res) => {
+  try{
+    req.session.destroy((error) =>{
+      if(error){
+        console.log('Error in destroying session')
+        return res.status(500).send('Logout Failed')
+      }
+      res.redirect('/adminLogin')
+    })
+  }catch(error){
+    console.log('Error in AdminLogout',error);
+    res.status(500).json({message:'Internal Server Error'})
+  }
+}
+
+module.exports = { getAdminLogin, postAdminLogin,getAdminDashboard,logoutAdminDashboard};

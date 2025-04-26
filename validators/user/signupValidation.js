@@ -1,5 +1,5 @@
 const signupValidator = (req, res, next) => {
-     const { fullName, email, phoneNumber, password, confirmPassword } = req.body;
+     const { fullName, email,  password, confirmPassword } = req.body;
      const errors = {};
    
      // Normalize inputs
@@ -18,10 +18,10 @@ const signupValidator = (req, res, next) => {
      }
    
      // Phone Number
-     const phoneRegex = /^\d{10}$/;
-     if (!phoneNumber || !phoneRegex.test(phoneNumber)) {
-       errors.phoneNumber = 'Phone number must be 10 digits';
-     }
+    //  const phoneRegex = /^\d{10}$/;
+    //  if (!phoneNumber || !phoneRegex.test(phoneNumber)) {
+    //    errors.phoneNumber = 'Phone number must be 10 digits';
+    //  }
    
      // Password
      if (!password || password.length < 6) {

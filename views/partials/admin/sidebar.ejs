@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin Dashboard - Chapterless</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.19/dist/sweetalert2.min.css"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.19/dist/sweetalert2.all.min.js"></script>
+
+    <link rel="stylesheet" href="/styles/admin/sidebar.css" />
+
+    <link rel="stylesheet" href="/styles/admin/adminUserList.css" />
+  </head>
+  <body>
+    <!-- Sidebar  -->
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <div class="logo-container">
+          <img
+            src="../assets/harryPotter.jpeg"
+            alt="Chapterless Logo"
+            class="logo-img"
+          />
+          <h1 class="sidebar-title fs-5 mb-0">CHAPTERLESS</h1>
+        </div>
+        <span class="admin-badge">ADMIN</span>
+      </div>
+      <div class="sidebar-content">
+        <ul class="nav flex-column">
+          <li class="nav-item">
+            <a href="/admin/adminDashboard" class="nav-link active">
+              <i class="ri-dashboard-line"></i>
+              <span class="nav-text">Dashboard</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="/admin/getProducts" class="nav-link">
+              <i class="ri-book-2-line"></i>
+              <span class="nav-text">Products</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="/admin/getOrders" class="nav-link">
+              <i class="ri-file-list-3-line"></i>
+              <span class="nav-text">Orders</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="/admin/getUsers" class="nav-link">
+              <i class="ri-user-line"></i>
+              <span class="nav-text">Users</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="#" class="nav-link">
+              <i class="ri-bar-chart-line"></i>
+              <span class="nav-text">Sales</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="#" class="nav-link">
+              <i class="ri-coupon-2-line"></i>
+              <span class="nav-text">Coupons</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="#" class="nav-link">
+              <i class="ri-price-tag-3-line"></i>
+              <span class="nav-text">Categories</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="#" class="nav-link">
+              <i class="ri-layout-line"></i>
+              <span class="nav-text">Banners</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="#" class="nav-link">
+              <i class="ri-gift-line"></i>
+              <span class="nav-text">Offers</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="#" class="nav-link">
+              <i class="ri-settings-line"></i>
+              <span class="nav-text">Settings</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+      <div class="sidebar-footer">
+        <a href="/admin/adminLogin" class="logout-link">
+          <i class="ri-logout-box-line me-2"></i> Logout
+        </a>
+      </div>
+    </div>
+  </body>
+</html>

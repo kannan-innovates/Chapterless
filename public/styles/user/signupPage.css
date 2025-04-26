@@ -16,7 +16,7 @@ body {
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
 }
 .image-side {
-  background-image: url("../assets/herosection.jpg");
+  background-image: url("../../../assets/signupPage.jpeg");
   background-size: cover;
   background-position: center;
   position: relative;

@@ -8,7 +8,7 @@ const getOtp = async (req, res) => {
     res.render("verify-otp");
   } catch (error) {
     console.log("error during render", error);
-    res.status(500).json({message:"Server error"});
+    res.status(500).json({ message: "Server error" });
   }
 };
 
@@ -42,7 +42,6 @@ const postSignup = async (req, res) => {
     console.log(otp);
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
 
-
     let subjectContent = "Verify your email for Chapterless";
     await sendOtpEmail(email, fullName, otp, subjectContent);
 
@@ -54,10 +53,9 @@ const postSignup = async (req, res) => {
       phone: phoneNumber,
       password: hashedPassword,
       otp: otp,
-      otpExpires: expiresAt
+      otpExpires: expiresAt,
     });
 
-    
     await newUser.save();
 
     req.session.email = email;
@@ -72,7 +70,6 @@ const postSignup = async (req, res) => {
   }
 };
 
-
 const verifyOtp = async (req, res) => {
   try {
     const { otp } = req.body;
@@ -82,15 +79,15 @@ const verifyOtp = async (req, res) => {
     if (!user) {
       return res
         .status(404)
-        .json({ success: false, message: "User not found" ,success:false});
+        .json({ success: false, message: "User not found", success: false });
     }
 
     console.log("db otp", user.otp);
 
     if (user.otpExpires && user.otpExpires < new Date()) {
-      return res.status(400).json({ 
-        success: false, 
-        message: "OTP has expired. Please request a new one." 
+      return res.status(400).json({
+        success: false,
+        message: "OTP has expired. Please request a new one.",
       });
     }
 
@@ -112,16 +109,15 @@ const verifyOtp = async (req, res) => {
   }
 };
 
-
 const resendOtp = async (req, res) => {
   try {
     const email = req.session.email;
     const user = await User.findOne({ email });
 
     if (!user) {
-      return res.status(404).json({ 
-        success: false, 
-        message: "User not found" 
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
       });
     }
 
@@ -138,13 +134,13 @@ const resendOtp = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: "New OTP sent to your email"
+      message: "New OTP sent to your email",
     });
   } catch (error) {
     console.error("Error resending OTP:", error);
     return res.status(500).json({
       success: false,
-      message: "Internal Server Error"
+      message: "Internal Server Error",
     });
   }
 };

@@ -1,0 +1,242 @@
+<%- include('../partials/admin/sidebar') %>
+<div class="main-content">
+  <div class="page-header d-flex justify-content-between align-items-center">
+    <div>
+      <h1 class="page-title">Manage Users</h1>
+      <p class="text-muted mb-0">View and manage user accounts</p>
+    </div>
+    <div class="d-flex align-items-center">
+      <div class="search-container me-2">
+        <i class="ri-search-line search-icon"></i>
+        <input type="text" id="userSearch" class="search-input" placeholder="Search users..." 
+               value="<%= typeof searchTerm !== 'undefined' ? searchTerm : '' %>">
+      </div>
+      <button class="toggle-sidebar d-lg-none">
+        <i class="ri-menu-line"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- Users Table Card -->
+  <div class="content-card">
+    <% if (users.length === 0) { %>
+      <div class="text-center p-4">
+        <p class="mb-0">No users found. Please try another search term.</p>
+      </div>
+    <% } else { %>
+      <div class="table-responsive">
+        <table class="users-table" id="usersTable">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Full Name</th>
+              <th>Email</th>
+              <th>Phone</th>
+              <th>User Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% users.forEach((user, index) => { %>
+              <tr data-id="<%= user._id %>">
+                <td><%= startIdx + index + 1 %></td>
+                <td><%= user.fullName %></td>
+                <td><%= user.email %></td>
+                <td>
+                  <% if (user.phone && user.phone.trim() !== '') { %>
+                    <%= user.phone %>
+                  <% } else { %>
+                    <span class="text-muted fst-italic">Not Provided</span>
+                  <% } %>
+                </td>
+                <td>
+                  <span class="status-badge <%= user.isBlocked ? 'blocked' : 'active' %>">
+                    <%= user.isBlocked ? 'Blocked' : 'Active' %>
+                  </span>
+                </td>
+                <td>
+                  <% if (user.isBlocked) { %>
+                    <button class="btn-unblock" data-user-id="<%= user._id %>">Unblock User</button>
+                  <% } else { %>
+                    <button class="btn-block" data-user-id="<%= user._id %>">Block User</button>
+                  <% } %>
+                </td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <div class="d-flex justify-content-between align-items-center p-3">
+        <div class="text-muted small">Showing <%= startIdx + 1 %>-<%= endIdx %> of <%= totalUsers %> users</div>
+        <nav aria-label="User pagination">
+          <ul class="pagination mb-0">
+            <li class="page-item <%= currentPage === 1 ? 'disabled' : '' %>">
+              <a class="page-link" href="?page=<%= currentPage - 1 %><%= searchTerm ? '&search=' + searchTerm : '' %>" aria-label="Previous">
+                <span aria-hidden="true">&laquo;</span>
+              </a>
+            </li>
+            <% for(let i = 1; i <= totalPages; i++) { %>
+              <li class="page-item <%= currentPage === i ? 'active' : '' %>">
+                <a class="page-link" href="?page=<%= i %><%= searchTerm ? '&search=' + searchTerm : '' %>"><%= i %></a>
+              </li>
+            <% } %>
+            <li class="page-item <%= currentPage === totalPages ? 'disabled' : '' %>">
+              <a class="page-link" href="?page=<%= currentPage + 1 %><%= searchTerm ? '&search=' + searchTerm : '' %>" aria-label="Next">
+                <span aria-hidden="true">&raquo;</span>
+              </a>
+            </li>
+          </ul>
+        </nav>
+      </div>
+    <% } %>
+  </div>
+</div>
+
+<script>
+  // Search functionality with debounce
+const userSearch = document.getElementById('userSearch');
+  
+  // Debounce function to prevent excessive requests
+  function debounce(func, wait) {
+    let timeout;
+    return function() {
+      const context = this;
+      const args = arguments;
+      clearTimeout(timeout);
+      timeout = setTimeout(() => {
+        func.apply(context, args);
+      }, wait);
+    };
+  }
+  
+  // Function to handle search
+  const performSearch = debounce(function() {
+    const searchTerm = userSearch.value.trim();
+    if (searchTerm.length === 0) {
+      window.location.href = window.location.pathname;
+    } else {
+      window.location.href = `${window.location.pathname}?search=${encodeURIComponent(searchTerm)}`;
+    }
+  }, 500);
+  
+  // Add event listeners
+  userSearch.addEventListener('input', function() {
+    if (this.value.trim().length === 0) {
+      performSearch();
+    }
+  });
+  
+  userSearch.addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      performSearch();
+    }
+  });
+  
+  // This will trigger the search if there's a value on page load (e.g., after back button)
+  if (userSearch.value.trim() !== '') {
+    userSearch.focus();
+  }
+  
+  // Block/Unblock buttons functionality
+  document.querySelectorAll('.btn-block, .btn-unblock').forEach(button => {
+    button.addEventListener('click', function() {
+      const userId = this.getAttribute('data-user-id');
+      const isBlocked = this.classList.contains('btn-unblock');
+      const buttonRef = this;
+      
+      // Show SweetAlert confirmation
+      Swal.fire({
+        title: isBlocked ? 'Unblock User' : 'Block User',
+        text: isBlocked ? 'Are you sure you want to unblock this user?' : 'Are you sure you want to block this user?',
+        icon: isBlocked ? 'question' : 'warning',
+        showCancelButton: true,
+        confirmButtonColor: isBlocked ? '#28a745' : '#d33',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: isBlocked ? 'Yes, unblock user' : 'Yes, block user',
+        cancelButtonText: 'Cancel'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          // Show loading state
+          const originalText = buttonRef.textContent;
+          buttonRef.textContent = 'Processing...';
+          buttonRef.disabled = true;
+          
+          // AJAX request to update user status
+          fetch(`/admin/getUsers/${userId}/${isBlocked ? 'unblock' : 'block'}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
+            },
+            body: JSON.stringify({ isBlocked })
+          })
+          .then(response => {
+            if (!response.ok) {
+              throw new Error('Network response was not ok');
+            }
+            return response.json();
+          })
+          .then(data => {
+            // Update button state based on response
+            if (isBlocked) {
+              buttonRef.textContent = 'Block User';
+              buttonRef.classList.remove('btn-unblock');
+              buttonRef.classList.add('btn-block');
+              buttonRef.closest('tr').querySelector('.status-badge').textContent = 'Active';
+              buttonRef.closest('tr').querySelector('.status-badge').classList.remove('blocked');
+              buttonRef.closest('tr').querySelector('.status-badge').classList.add('active');
+            } else {
+              buttonRef.textContent = 'Unblock User';
+              buttonRef.classList.remove('btn-block');
+              buttonRef.classList.add('btn-unblock');
+              buttonRef.closest('tr').querySelector('.status-badge').textContent = 'Blocked';
+              buttonRef.closest('tr').querySelector('.status-badge').classList.remove('active');
+              buttonRef.closest('tr').querySelector('.status-badge').classList.add('blocked');
+            }
+            
+            // Show success message with SweetAlert
+            Swal.fire({
+              title: 'Success!',
+              text: isBlocked ? 'User unblocked successfully' : 'User blocked successfully',
+              icon: 'success',
+              timer: 2000,
+              showConfirmButton: false
+            });
+          })
+          .catch(error => {
+            console.error('Error:', error);
+            buttonRef.textContent = originalText;
+            
+            // Show error message with SweetAlert
+            Swal.fire({
+              title: 'Error!',
+              text: 'Failed to update user status',
+              icon: 'error'
+            });
+          })
+          .finally(() => {
+            buttonRef.disabled = false;
+          });
+        }
+      });
+    });
+  });
+  
+  // Simple toast notification function (keeping this as a fallback)
+  function showToast(message, type = 'info') {
+    if (typeof Toastify === 'function') {
+      Toastify({
+        text: message,
+        duration: 3000,
+        gravity: "top",
+        position: "right",
+        backgroundColor: type === 'success' ? "#28a745" : type === 'error' ? "#dc3545" : "#4361EE"
+      }).showToast();
+    } else {
+      alert(message);
+    }
+  }
+// </script>

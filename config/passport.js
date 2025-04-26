@@ -3,7 +3,6 @@ const GoogleStrategy = require("passport-google-oauth20").Strategy;
 const User = require("../models/userSchema");
 require("dotenv").config();
 
-
 passport.use(
   new GoogleStrategy(
     {
@@ -13,7 +12,7 @@ passport.use(
     },
     async (accessToken, refreshToken, profile, done) => {
       try {
-        let user = await User.findOne({ googleId: profile.id }); 
+        let user = await User.findOne({ googleId: profile.id });
         if (user) {
           return done(null, user);
         } else {
@@ -21,6 +20,7 @@ passport.use(
             fullName: profile.displayName,
             email: profile.emails[0].value,
             googleId: profile.id,
+            isVerified: true,
           });
           await newUser.save();
           return done(null, newUser);
@@ -32,19 +32,17 @@ passport.use(
   )
 );
 
-
 passport.serializeUser((user, done) => {
   done(null, user.id);
 });
 
-passport.deserializeUser((id, done) => {
-  User.findById(id)
-    .then((user) => {
-      done(null, user);
-    })
-    .catch((err) => {
-      done(err, null);
-    });
+passport.deserializeUser(async (id, done) => {
+  try {
+    const user = await User.findById(id);
+    done(null, user);
+  } catch (err) {
+    done(err, null);
+  }
 });
 
 module.exports = passport;
