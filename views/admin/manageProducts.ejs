@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="csrf-token" content="your-csrf-token-here" />
+    <title>Admin Dashboard - Add Product - Chapterless</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.19/dist/sweetalert2.min.css"
+    />
+    <style>
+      body {
+        background-color: #f5f7fa;
+        font-family: 'Inter', sans-serif;
+      }
+      .main-content {
+        margin-left: 250px;
+        padding: 30px;
+      }
+      .page-title {
+        font-family: 'Montserrat', sans-serif;
+        font-size: 28px;
+        font-weight: 700;
+      }
+      .form-label {
+        font-weight: 500;
+      }
+      .file-upload-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+      }
+      .file-preview img {
+        width: 150px;
+        height: 200px;
+        object-fit: cover;
+        border-radius: 5px;
+      }
+      .sub-image-preview img {
+        width: 100px;
+        height: 100px;
+        object-fit: cover;
+        border-radius: 5px;
+      }
+      .btn-add {
+        background-color: #6f42c1;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 5px;
+        transition: background-color 0.3s;
+      }
+      .btn-add:hover {
+        background-color: #563d7c;
+      }
+      .toggle-switch {
+        position: relative;
+        display: inline-block;
+        width: 40px;
+        height: 20px;
+      }
+      .toggle-switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+      }
+      .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #ccc;
+        transition: 0.4s;
+        border-radius: 20px;
+      }
+      .slider:before {
+        position: absolute;
+        content: '';
+        height: 16px;
+        width: 16px;
+        left: 2px;
+        bottom: 2px;
+        background-color: white;
+        transition: 0.4s;
+        border-radius: 50%;
+      }
+      input:checked + .slider {
+        background-color: #28a745;
+      }
+      input:checked + .slider:before {
+        transform: translateX(20px);
+      }
+      .breadcrumbs {
+        margin-bottom: 20px;
+      }
+      .breadcrumbs a {
+        color: #6c757d;
+        text-decoration: none;
+      }
+      .breadcrumbs a:hover {
+        color: #6f42c1;
+      }
+      .breadcrumbs .active {
+        color: #212529;
+        font-weight: 500;
+      }
+
+      /* Responsive Adjustments */
+      @media (max-width: 991px) {
+        .main-content {
+          margin-left: 0;
+          padding: 15px;
+        }
+        .file-preview img {
+          width: 120px;
+          height: 160px;
+        }
+        .sub-image-preview img {
+          width: 80px;
+          height: 80px;
+        }
+        .col-md-4, .col-md-8 {
+          flex: 0 0 100%;
+          max-width: 100%;
+        }
+        .page-title {
+          font-size: 24px;
+        }
+      }
+      @media (max-width: 767px) {
+        .row > div {
+          margin-bottom: 20px;
+        }
+        .file-upload-wrapper {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+        .sub-image-preview {
+          margin-bottom: 15px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Include Sidebar Partial -->
+    <%- include('../partials/admin/sidebar') %>
+
+    <!-- Main Content -->
+    <div class="main-content">
+      <nav aria-label="breadcrumb" class="breadcrumbs">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item"><a href="/admin/adminDashboard">Dashboard</a></li>
+          <li class="breadcrumb-item"><a href="/admin/getproducts">Products</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Add Product</li>
+        </ol>
+      </nav>
+
+      <div class="page-header">
+        <h1 class="page-title">Add New Product</h1>
+        <p class="text-muted mb-0">Add a new book to the store</p>
+      </div>
+
+      <div class="card p-4">
+        <form id="addProductForm" enctype="multipart/form-data">
+          <div class="row">
+            <!-- Left Column: Images -->
+            <div class="col-md-4">
+              <div class="mb-3">
+                <label class="form-label">Main Image</label>
+                <div class="file-upload-wrapper">
+                  <div class="file-preview">
+                    <img id="mainImagePreview" src="/api/placeholder/150/200" alt="Main Image Preview" />
+                  </div>
+                  <input
+                    type="file"
+                    class="custom-file-input"
+                    id="mainImage"
+                    name="mainImage"
+                    accept="image/*"
+                    required
+                  />
+                </div>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Sub Images (Up to 3)</label>
+                <div class="d-flex flex-wrap gap-3">
+                  <div class="sub-image-preview">
+                    <img id="subImage1Preview" src="/api/placeholder/100/100" alt="Sub Image 1 Preview" />
+                    <input
+                      type="file"
+                      class="custom-file-input"
+                      id="subImage1"
+                      name="subImages"
+                      accept="image/*"
+                    />
+                  </div>
+                  <div class="sub-image-preview">
+                    <img id="subImage2Preview" src="/api/placeholder/100/100" alt="Sub Image 2 Preview" />
+                    <input
+                      type="file"
+                      class="custom-file-input"
+                      id="subImage2"
+                      name="subImages"
+                      accept="image/*"
+                    />
+                  </div>
+                  <div class="sub-image-preview">
+                    <img id="subImage3Preview" src="/api/placeholder/100/100" alt="Sub Image 3 Preview" />
+                    <input
+                      type="file"
+                      class="custom-file-input"
+                      id="subImage3"
+                      name="subImages"
+                      accept="image/*"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right Column: Product Details -->
+            <div class="col-md-8">
+              <div class="mb-3">
+                <label for="title" class="form-label">Book Title</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="title"
+                  name="title"
+                  placeholder="Enter book title"
+                  required
+                />
+              </div>
+              <div class="mb-3">
+                <label for="author" class="form-label">Author</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="author"
+                  name="author"
+                  placeholder="Enter author name"
+                  required
+                />
+              </div>
+              <div class="mb-3">
+                <label for="description" class="form-label">Description</label>
+                <textarea
+                  class="form-control"
+                  id="description"
+                  name="description"
+                  rows="3"
+                  placeholder="Enter book description"
+                  required
+                ></textarea>
+              </div>
+              <div class="mb-3">
+                <label for="category" class="form-label">Category</label>
+                <select class="form-control" id="category" name="category" required>
+                  <option value="">Select a category</option>
+                  <!-- Categories will be dynamically populated -->
+                </select>
+              </div>
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label for="regularPrice" class="form-label">Regular Price (₹)</label>
+                  <input
+                    type="number"
+                    class="form-control"
+                    id="regularPrice"
+                    name="regularPrice"
+                    placeholder="Enter regular price"
+                    required
+                  />
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label for="salePrice" class="form-label">Sale Price (₹)</label>
+                  <input
+                    type="number"
+                    class="form-control"
+                    id="salePrice"
+                    name="salePrice"
+                    placeholder="Enter sale price"
+                    required
+                  />
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label for="stock" class="form-label">Stock Quantity</label>
+                  <input
+                    type="number"
+                    class="form-control"
+                    id="stock"
+                    name="stock"
+                    placeholder="Enter stock quantity"
+                    required
+                  />
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label for="pages" class="form-label">Pages</label>
+                  <input
+                    type="number"
+                    class="form-control"
+                    id="pages"
+                    name="pages"
+                    placeholder="Enter number of pages"
+                    required
+                  />
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label for="language" class="form-label">Language</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="language"
+                    name="language"
+                    placeholder="Enter language"
+                    required
+                  />
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label for="publisher" class="form-label">Publisher</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="publisher"
+                    name="publisher"
+                    placeholder="Enter publisher"
+                    required
+                  />
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label for="publishedDate" class="form-label">Published Date</label>
+                  <input
+                    type="date"
+                    class="form-control"
+                    id="publishedDate"
+                    name="publishedDate"
+                  />
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label for="isbn" class="form-label">ISBN</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="isbn"
+                    name="isbn"
+                    placeholder="Enter ISBN"
+                  />
+                </div>
+              </div>
+              <div class="mb-3">
+                <label class="form-label d-flex align-items-center">
+                  <span class="me-2">Status</span>
+                  <label class="toggle-switch mb-0">
+                    <input
+                      type="checkbox"
+                      id="isListed"
+                      name="isListed"
+                      checked
+                    />
+                    <span class="slider"></span>
+                  </label>
+                  <span class="ms-2 text-muted" id="statusText">Listed</span>
+                </label>
+              </div>
+              <button type="submit" class="btn btn-add w-100" style="background-color: #6f42c1; color: white;">Add Product</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.19/dist/sweetalert2.all.min.js"></script>
+    <script>
+      // Image preview for main image
+      document.getElementById("mainImage").addEventListener("change", function (event) {
+        const preview = document.getElementById("mainImagePreview");
+        const file = event.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = function (e) {
+            preview.src = e.target.result;
+          };
+          reader.readAsDataURL(file);
+        } else {
+          preview.src = "/api/placeholder/150/200";
+        }
+      });
+
+      // Image previews for sub-images
+      document.getElementById("subImage1").addEventListener("change", function (event) {
+        const preview = document.getElementById("subImage1Preview");
+        const file = event.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = function (e) {
+            preview.src = e.target.result;
+          };
+          reader.readAsDataURL(file);
+        } else {
+          preview.src = "/api/placeholder/100/100";
+        }
+      });
+
+      document.getElementById("subImage2").addEventListener("change", function (event) {
+        const preview = document.getElementById("subImage2Preview");
+        const file = event.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = function (e) {
+            preview.src = e.target.result;
+          };
+          reader.readAsDataURL(file);
+        } else {
+          preview.src = "/api/placeholder/100/100";
+        }
+      });
+
+      document.getElementById("subImage3").addEventListener("change", function (event) {
+        const preview = document.getElementById("subImage3Preview");
+        const file = event.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = function (e) {
+            preview.src = e.target.result;
+          };
+          reader.readAsDataURL(file);
+        } else {
+          preview.src = "/api/placeholder/100/100";
+        }
+      });
+
+      // Status text update
+      document.getElementById("isListed").addEventListener("change", function () {
+        document.getElementById("statusText").textContent = this.checked ? "Listed" : "Unlisted";
+      });
+
+      // Form submission
+      document.getElementById("addProductForm").addEventListener("submit", async function (e) {
+        e.preventDefault();
+        const formData = new FormData(this);
+
+        try {
+          const response = await fetch("/admin/products", {
+            method: "POST",
+            body: formData,
+          });
+          const data = await response.json();
+
+          if (response.ok) {
+            Swal.fire({
+              title: "Success!",
+              text: data.message || "Product added successfully",
+              icon: "success",
+              timer: 2000,
+              showConfirmButton: false,
+            }).then(() => {
+              window.location.href = "/admin/products";
+            });
+          } else {
+            Swal.fire({
+              title: "Error!",
+              text: data.error || "Failed to add product",
+              icon: "error",
+            });
+          }
+        } catch (error) {
+          Swal.fire({
+            title: "Error!",
+            text: "Server Error",
+            icon: "error",
+          });
+        }
+      });
+
+      // Fetch categories for dropdown
+      async function fetchCategories() {
+        try {
+          const response = await fetch("/admin/categories/list");
+          const categories = await response.json();
+          const categorySelect = document.getElementById("category");
+          categories.forEach(category => {
+            const option = document.createElement("option");
+            option.value = category._id;
+            option.textContent = category.name;
+            categorySelect.appendChild(option);
+          });
+        } catch (error) {
+          console.error("Error fetching categories:", error);
+        }
+      }
+
+      // Load categories on page load
+      document.addEventListener("DOMContentLoaded", fetchCategories);
+    </script>
+  </body>
+</html>

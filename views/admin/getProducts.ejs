@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Products - Chapterless Admin</title>
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
+      rel="stylesheet"
+    />
+
+    <link rel="stylesheet" href="../../styles/admin/getproducts.css" />
+  </head>
+  <body>
+    <div class="container">
+      <%- include('../partials/admin/sidebar') %>
+
+      <div class="main-content">
+        <div class="header">
+          <div>
+            <h1
+              style="
+                font-size: 42px;
+                font-weight: 700;
+                color: #1f2937;
+                margin-bottom: 8px;
+                line-height: 1.2;
+              "
+            >
+              Product Management
+            </h1>
+            <p
+              style="
+                font-size: 20px;
+                color: #6b7280;
+                font-weight: 400;
+                margin-top: 0;
+              "
+            >
+              Add, edit and manage your book inventory
+            </p>
+          </div>
+          <a href="/admin/add-product" class="btn-add">
+            <i class="fas fa-plus"></i>
+            Add New Product
+          </a>
+        </div>
+
+        <div class="search-container">
+          <input type="text" class="search-input" placeholder="Search..." />
+          <i class="fas fa-search search-icon"></i>
+        </div>
+
+        <div class="filters">
+          <div class="filter-group">
+            <label class="filter-label">Category</label>
+            <select class="filter-select">
+              <option value="">All Categories</option>
+              <option value="fiction">Fiction</option>
+              <option value="fantasy">Fantasy</option>
+              <option value="romance">Romance</option>
+              <option value="action">Action</option>
+              <option value="psychological-fiction">
+                Psychological Fiction
+              </option>
+              <option value="self-help">Self-help</option>
+            </select>
+          </div>
+
+          <div class="filter-group">
+            <label class="filter-label">Sort By</label>
+            <select class="filter-select">
+              <option value="newest">Newest First</option>
+              <option value="oldest">Oldest First</option>
+              <option value="price-low">Price Low to High</option>
+              <option value="price-high">Price High to Low</option>
+              <option value="stock-high">Stock High to Low</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Image</th>
+                <th>Product Name</th>
+                <th>Author</th>
+                <th>Category</th>
+                <th>Price (₹)</th>
+                <th>Regular Price (₹)</th>
+                <th>Stock</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>1</td>
+                <td>
+                  <img
+                    src="https://via.placeholder.com/50x70?text=Intermezzo"
+                    alt="Intermezzo"
+                    class="product-image"
+                  />
+                </td>
+                <td>Intermezzo</td>
+                <td>Author1</td>
+                <td>Fiction</td>
+                <td>4,500.00</td>
+                <td>5,000.00</td>
+                <td>100</td>
+                <td>
+                  <label class="toggle-switch">
+                    <input type="checkbox" checked />
+                    <span class="toggle-slider"></span>
+                  </label>
+                </td>
+                <td>
+                  <div class="actions">
+                    <button class="btn-action btn-edit">
+                      <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn-action btn-delete">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td>2</td>
+                <td>
+                  <img
+                    src="https://via.placeholder.com/50x70?text=Harry+Potter"
+                    alt="Harry Potter and the Chamber of Secrets"
+                    class="product-image"
+                  />
+                </td>
+                <td>Harry Potter and the Chamber of Secrets</td>
+                <td>Author2</td>
+                <td>Fantasy</td>
+                <td>4,500.00</td>
+                <td>5,000.00</td>
+                <td>75</td>
+                <td>
+                  <label class="toggle-switch">
+                    <input type="checkbox" />
+                    <span class="toggle-slider"></span>
+                  </label>
+                </td>
+                <td>
+                  <div class="actions">
+                    <button class="btn-action btn-edit">
+                      <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn-action btn-delete">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td>3</td>
+                <td>
+                  <img
+                    src="https://via.placeholder.com/50x70?text=Norwegian+Wood"
+                    alt="Norwegian Wood"
+                    class="product-image"
+                  />
+                </td>
+                <td>Norwegian Wood</td>
+                <td>Author3</td>
+                <td>Romance</td>
+                <td>4,500.00</td>
+                <td>5,000.00</td>
+                <td>50</td>
+                <td>
+                  <label class="toggle-switch">
+                    <input type="checkbox" />
+                    <span class="toggle-slider"></span>
+                  </label>
+                </td>
+                <td>
+                  <div class="actions">
+                    <button class="btn-action btn-edit">
+                      <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn-action btn-delete">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td>4</td>
+                <td>
+                  <img
+                    src="https://via.placeholder.com/50x70?text=Red+Rising"
+                    alt="Red Rising"
+                    class="product-image"
+                  />
+                </td>
+                <td>Red Rising</td>
+                <td>Author4</td>
+                <td>Action</td>
+                <td>4,500.00</td>
+                <td>5,000.00</td>
+                <td>120</td>
+                <td>
+                  <label class="toggle-switch">
+                    <input type="checkbox" checked />
+                    <span class="toggle-slider"></span>
+                  </label>
+                </td>
+                <td>
+                  <div class="actions">
+                    <button class="btn-action btn-edit">
+                      <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn-action btn-delete">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td>5</td>
+                <td>
+                  <img
+                    src="https://via.placeholder.com/50x70?text=The+Catcher+in+the+Rye"
+                    alt="The Catcher in the Rye"
+                    class="product-image"
+                  />
+                </td>
+                <td>The Catcher in the Rye</td>
+                <td>Author5</td>
+                <td>Psychological Fiction</td>
+                <td>4,500.00</td>
+                <td>5,000.00</td>
+                <td>85</td>
+                <td>
+                  <label class="toggle-switch">
+                    <input type="checkbox" checked />
+                    <span class="toggle-slider"></span>
+                  </label>
+                </td>
+                <td>
+                  <div class="actions">
+                    <button class="btn-action btn-edit">
+                      <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn-action btn-delete">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td>6</td>
+                <td>
+                  <img
+                    src="https://via.placeholder.com/50x70?text=Atomic+Habits"
+                    alt="Atomic Habits"
+                    class="product-image"
+                  />
+                </td>
+                <td>Atomic Habits</td>
+                <td>Author6</td>
+                <td>Self-help</td>
+                <td>500.00</td>
+                <td>600.00</td>
+                <td>34</td>
+                <td>
+                  <label class="toggle-switch">
+                    <input type="checkbox" checked />
+                    <span class="toggle-slider"></span>
+                  </label>
+                </td>
+                <td>
+                  <div class="actions">
+                    <button class="btn-action btn-edit">
+                      <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn-action btn-delete">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="pagination">
+          <button class="page-btn">«</button>
+          <button class="page-btn active">1</button>
+          <button class="page-btn">2</button>
+          <button class="page-btn">3</button>
+          <button class="page-btn">»</button>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
