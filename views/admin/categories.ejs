@@ -1,424 +1,585 @@
 <!-- views/admin/categories.ejs -->
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="csrf-token" content="your-csrf-token-here">
-  <title>Admin Dashboard - Categories - Chapterless</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" />
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet" />
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.19/dist/sweetalert2.min.css" />
-  <link rel="stylesheet" href="/styles/admin/category.css">
-  
-</head>
-<body>
-  <!-- Include Sidebar Partial -->
-  <%- include('../partials/admin/sidebar') %>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="csrf-token" content="your-csrf-token-here" />
+    <title>Admin Dashboard - Categories - Chapterless</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.19/dist/sweetalert2.min.css"
+    />
+    <link rel="stylesheet" href="/styles/admin/category.css" />
+  </head>
+  <body>
+    <!-- Include Sidebar Partial -->
+    <%- include('../partials/admin/sidebar') %>
 
-  <!-- Main Content -->
-  <div class="main-content">
-    <div class="page-header d-flex justify-content-between align-items-center">
-      <div>
-        <h1 class="page-title">Category Management</h1>
-        <p class="text-muted mb-0">Add, edit and manage your book categories</p>
-      </div>
-      <div class="d-flex align-items-center">
-        <div class="search-container me-3">
-          <i class="ri-search-line search-icon"></i>
-          <input type="text" id="categorySearch" class="search-input" placeholder="Search categories...">
+    <!-- Main Content -->
+    <div class="main-content">
+      <div
+        class="page-header d-flex justify-content-between align-items-center"
+      >
+        <div>
+          <h1 class="page-title">Category Management</h1>
+          <p class="text-muted mb-0">
+            Add, edit and manage your book categories
+          </p>
         </div>
-        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addCategoryModal">
-          <i class="ri-add-line me-1"></i> Add Category
-        </button>
-        <button class="toggle-sidebar d-lg-none ms-3">
-          <i class="ri-menu-line"></i>
-        </button>
+        <div class="d-flex align-items-center">
+          <div class="search-container me-3 position-relative">
+            <i class="ri-search-line search-icon"></i>
+            <input
+              type="text"
+              id="categorySearch"
+              class="search-input"
+              placeholder="Search categories..."
+              value="<%= search %>"
+            />
+            <button
+              id="clearSearch"
+              class="btn btn-sm btn-outline-secondary position-absolute end-0 top-50 translate-middle-y"
+              style="display: <%= search ? 'block' : 'none' %>;"
+            >
+              <i class="ri-close-line"></i>
+            </button>
+          </div>
+          <button
+            class="btn btn-primary"
+            data-bs-toggle="modal"
+            data-bs-target="#addCategoryModal"
+          >
+            <i class="ri-add-line me-1"></i> Add Category
+          </button>
+          <button class="toggle-sidebar d-lg-none ms-3">
+            <i class="ri-menu-line"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Categories Table -->
+      <div class="category-table-card">
+        <div class="table-responsive">
+          <table class="category-table" id="categoriesTable">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Image</th>
+                <th>Category Name</th>
+                <th>Description</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% if (categories && categories.length > 0) { %> <%
+              categories.forEach((category, index) => { %>
+              <tr>
+                <td><%= (currentPage - 1) * 10 + index + 1 %></td>
+                <td>
+                  <img
+                    src="<%= category.image %>"
+                    alt="<%= category.name %>"
+                    class="category-image"
+                  />
+                </td>
+                <td><%= category.name %></td>
+                <td><%= category.description %></td>
+                <td>
+                  <label class="toggle-switch">
+                    <input type="checkbox" <%= category.isListed ? 'checked' :
+                    '' %> data-category-id="<%= category._id %>"
+                    class="toggle-status">
+                    <span class="slider"></span>
+                  </label>
+                </td>
+                <td>
+                  <button
+                    class="btn-edit"
+                    data-bs-toggle="modal"
+                    data-bs-target="#editCategoryModal"
+                    data-category-id="<%= category._id %>"
+                  >
+                    <i class="ri-edit-line"></i>
+                  </button>
+                </td>
+              </tr>
+              <% }) %> <% } else { %>
+              <tr>
+                <td colspan="6" class="text-center">No categories found</td>
+              </tr>
+              <% } %>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination -->
+        <% if (totalPages > 1) { %>
+        <nav aria-label="Category pagination" class="mt-4">
+          <ul class="pagination justify-content-center">
+            <li class="page-item <%= currentPage === 1 ? 'disabled' : '' %>">
+              <a
+                class="page-link"
+                href="?page=<%= currentPage - 1 %>&search=<%= search %>"
+                tabindex="-1"
+                aria-disabled="<%= currentPage === 1 ? 'true' : 'false' %>"
+              >
+                <i class="ri-arrow-left-s-line"></i>
+              </a>
+            </li>
+            <% for (let i = 1; i <= totalPages; i++) { %>
+            <li class="page-item <%= currentPage === i ? 'active' : '' %>">
+              <a class="page-link" href="?page=<%= i %>&search=<%= search %>"
+                ><%= i %></a
+              >
+            </li>
+            <% } %>
+            <li
+              class="page-item <%= currentPage === totalPages ? 'disabled' : '' %>"
+            >
+              <a
+                class="page-link"
+                href="?page=<%= currentPage + 1 %>&search=<%= search %>"
+              >
+                <i class="ri-arrow-right-s-line"></i>
+              </a>
+            </li>
+          </ul>
+        </nav>
+        <% } %>
       </div>
     </div>
 
-    <!-- Categories Table -->
-    <div class="category-table-card">
-      <div class="table-responsive">
-        <table class="category-table" id="categoriesTable">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Image</th>
-              <th>Category Name</th>
-              <th>Description</th>
-              <th>Status</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>1</td>
-              <td><img src="/api/placeholder/60/60" alt="Genre" class="category-image"></td>
-              <td>Genre</td>
-              <td>Theme of the book</td>
-              <td>
-                <label class="toggle-switch">
-                  <input type="checkbox" checked>
-                  <span class="slider"></span>
-                </label>
-              </td>
-              <td>
-                <button class="btn-edit" data-bs-toggle="modal" data-bs-target="#editCategoryModal" data-category-id="1">
-                  <i class="ri-edit-line"></i>
-                </button>
-              </td>
-            </tr>
-            <tr>
-              <td>2</td>
-              <td><img src="/api/placeholder/60/60" alt="Author" class="category-image"></td>
-              <td>Author</td>
-              <td>Name of the book's author</td>
-              <td>
-                <label class="toggle-switch">
-                  <input type="checkbox" checked>
-                  <span class="slider"></span>
-                </label>
-              </td>
-              <td>
-                <button class="btn-edit" data-bs-toggle="modal" data-bs-target="#editCategoryModal" data-category-id="2">
-                  <i class="ri-edit-line"></i>
-                </button>
-              </td>
-            </tr>
-            <tr>
-              <td>3</td>
-              <td><img src="/api/placeholder/60/60" alt="Format" class="category-image"></td>
-              <td>Format</td>
-              <td>Paperback, Hardcover</td>
-              <td>
-                <label class="toggle-switch">
-                  <input type="checkbox" checked>
-                  <span class="slider"></span>
-                </label>
-              </td>
-              <td>
-                <button class="btn-edit" data-bs-toggle="modal" data-bs-target="#editCategoryModal" data-category-id="3">
-                  <i class="ri-edit-line"></i>
-                </button>
-              </td>
-            </tr>
-            <tr>
-              <td>4</td>
-              <td><img src="/api/placeholder/60/60" alt="Fiction" class="category-image"></td>
-              <td>Fiction</td>
-              <td>Fictional books and novels</td>
-              <td>
-                <label class="toggle-switch">
-                  <input type="checkbox" checked>
-                  <span class="slider"></span>
-                </label>
-              </td>
-              <td>
-                <button class="btn-edit" data-bs-toggle="modal" data-bs-target="#editCategoryModal" data-category-id="4">
-                  <i class="ri-edit-line"></i>
-                </button>
-              </td>
-            </tr>
-            <tr>
-              <td>5</td>
-              <td><img src="/api/placeholder/60/60" alt="Non-Fiction" class="category-image"></td>
-              <td>Non-Fiction</td>
-              <td>Educational and informative books</td>
-              <td>
-                <label class="toggle-switch">
-                  <input type="checkbox" checked>
-                  <span class="slider"></span>
-                </label>
-              </td>
-              <td>
-                <button class="btn-edit" data-bs-toggle="modal" data-bs-target="#editCategoryModal" data-category-id="5">
-                  <i class="ri-edit-line"></i>
-                </button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      
-      <!-- Pagination -->
-      <nav aria-label="Category pagination" class="mt-4">
-        <ul class="pagination justify-content-center">
-          <li class="page-item disabled">
-            <a class="page-link" href="#" tabindex="-1" aria-disabled="true">
-              <i class="ri-arrow-left-s-line"></i>
-            </a>
-          </li>
-          <li class="page-item active"><a class="page-link" href="#">1</a></li>
-          <li class="page-item"><a class="page-link" href="#">2</a></li>
-          <li class="page-item"><a class="page-link" href="#">3</a></li>
-          <li class="page-item">
-            <a class="page-link" href="#">
-              <i class="ri-arrow-right-s-line"></i>
-            </a>
-          </li>
-        </ul>
-      </nav>
-    </div>
-  </div>
-
-  <!-- Add Category Modal -->
-  <div class="modal fade" id="addCategoryModal" tabindex="-1" aria-labelledby="addCategoryModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="addCategoryModalLabel">Add New Category</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          <form id="addCategoryForm">
-            <div class="mb-3">
-              <label for="newCategoryName" class="form-label">Category Name</label>
-              <input type="text" class="form-control" id="newCategoryName" placeholder="Enter category name" required>
-            </div>
-            <div class="mb-3">
-              <label for="newCategoryDescription" class="form-label">Category Description</label>
-              <textarea class="form-control" id="newCategoryDescription" rows="3" placeholder="Enter category description" required></textarea>
-            </div>
-            <div class="mb-3">
-              <label class="form-label">Category Image</label>
-              <div class="file-upload-wrapper">
-                <div class="file-preview">
-                  <img id="newImagePreview" src="/api/placeholder/100/100" alt="Preview">
-                </div>
-                <input type="file" class="custom-file-input" id="newCategoryImage" accept="image/*" required>
+    <!-- Add Category Modal -->
+    <div
+      class="modal fade"
+      id="addCategoryModal"
+      tabindex="-1"
+      aria-labelledby="addCategoryModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="addCategoryModalLabel">
+              Add New Category
+            </h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <form id="addCategoryForm" enctype="multipart/form-data">
+              <div class="mb-3">
+                <label for="newCategoryName" class="form-label"
+                  >Category Name</label
+                >
+                <input
+                  type="text"
+                  class="form-control"
+                  id="newCategoryName"
+                  name="name"
+                  placeholder="Enter category name"
+                  required
+                />
               </div>
-            </div>
-            <div class="mb-3">
-              <label class="form-label d-flex align-items-center">
-                <span class="me-2">Status</span>
-                <label class="toggle-switch mb-0">
-                  <input type="checkbox" id="newCategoryStatus" checked>
-                  <span class="slider"></span>
-                </label>
-                <span class="ms-2 text-muted" id="statusText">Listed</span>
-              </label>
-            </div>
-          </form>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-          <button type="submit" form="addCategoryForm" class="btn btn-primary">Add Category</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Edit Category Modal -->
-  <div class="modal fade" id="editCategoryModal" tabindex="-1" aria-labelledby="editCategoryModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="editCategoryModalLabel">Edit Category</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          <form id="editCategoryForm">
-            <input type="hidden" id="editCategoryId">
-            <div class="mb-3">
-              <label for="editCategoryName" class="form-label">Category Name</label>
-              <input type="text" class="form-control" id="editCategoryName" placeholder="Enter category name" required>
-            </div>
-            <div class="mb-3">
-              <label for="editCategoryDescription" class="form-label">Category Description</label>
-              <textarea class="form-control" id="editCategoryDescription" rows="3" placeholder="Enter category description" required></textarea>
-            </div>
-            <div class="mb-3">
-              <label class="form-label">Category Image</label>
-              <div class="file-upload-wrapper">
-                <div class="file-preview">
-                  <img id="editImagePreview" src="/api/placeholder/100/100" alt="Preview">
-                </div>
-                <input type="file" class="custom-file-input" id="editCategoryImage" accept="image/*">
+              <div class="mb-3">
+                <label for="newCategoryDescription" class="form-label"
+                  >Category Description</label
+                >
+                <textarea
+                  class="form-control"
+                  id="newCategoryDescription"
+                  name="description"
+                  rows="3"
+                  placeholder="Enter category description"
+                  required
+                ></textarea>
               </div>
-            </div>
-            <div class="mb-3">
-              <label class="form-label d-flex align-items-center">
-                <span class="me-2">Status</span>
-                <label class="toggle-switch mb-0">
-                  <input type="checkbox" id="editCategoryStatus" checked>
-                  <span class="slider"></span>
+              <div class="mb-3">
+                <label class="form-label">Category Image</label>
+                <div class="file-upload-wrapper">
+                  <div class="file-preview">
+                    <img
+                      id="newImagePreview"
+                      src="/api/placeholder/100/100"
+                      alt="Preview"
+                    />
+                  </div>
+                  <input
+                    type="file"
+                    class="custom-file-input"
+                    id="newCategoryImage"
+                    name="image"
+                    accept="image/*"
+                    required
+                  />
+                </div>
+              </div>
+              <div class="mb-3">
+                <label class="form-label d-flex align-items-center">
+                  <span class="me-2">Status</span>
+                  <label class="toggle-switch mb-0">
+                    <input
+                      type="checkbox"
+                      id="newCategoryStatus"
+                      name="isListed"
+                      checked
+                    />
+                    <span class="slider"></span>
+                  </label>
+                  <span class="ms-2 text-muted" id="statusText">Listed</span>
                 </label>
-                <span class="ms-2 text-muted" id="editStatusText">Listed</span>
-              </label>
-            </div>
-          </form>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-          <button type="submit" form="editCategoryForm" class="btn btn-primary">Update Category</button>
+              </div>
+              <button type="submit" class="btn btn-primary w-100">
+                Add Category
+              </button>
+            </form>
+          </div>
         </div>
       </div>
     </div>
-  </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.19/dist/sweetalert2.all.min.js"></script>
-  <script>
-    // Toggle sidebar on mobile
-    document.querySelector('.toggle-sidebar').addEventListener('click', function() {
-      document.querySelector('.sidebar').classList.toggle('active');
-    });
+    <!-- Edit Category Modal -->
+    <div
+      class="modal fade"
+      id="editCategoryModal"
+      tabindex="-1"
+      aria-labelledby="editCategoryModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="editCategoryModalLabel">
+              Edit Category
+            </h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <form id="editCategoryForm" enctype="multipart/form-data">
+              <input type="hidden" id="editCategoryId" name="id" />
+              <div class="mb-3">
+                <label for="editCategoryName" class="form-label"
+                  >Category Name</label
+                >
+                <input
+                  type="text"
+                  class="form-control"
+                  id="editCategoryName"
+                  name="name"
+                  placeholder="Enter category name"
+                  required
+                />
+              </div>
+              <div class="mb-3">
+                <label for="editCategoryDescription" class="form-label"
+                  >Category Description</label
+                >
+                <textarea
+                  class="form-control"
+                  id="editCategoryDescription"
+                  name="description"
+                  rows="3"
+                  placeholder="Enter category description"
+                  required
+                ></textarea>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Category Image</label>
+                <div class="file-upload-wrapper">
+                  <div class="file-preview">
+                    <img
+                      id="editImagePreview"
+                      src="/api/placeholder/100/100"
+                      alt="Preview"
+                    />
+                  </div>
+                  <input
+                    type="file"
+                    class="custom-file-input"
+                    id="editCategoryImage"
+                    name="image"
+                    accept="image/*"
+                  />
+                </div>
+              </div>
+              <div class="mb-3">
+                <label class="form-label d-flex align-items-center">
+                  <span class="me-2">Status</span>
+                  <label class="toggle-switch mb-0">
+                    <input
+                      type="checkbox"
+                      id="editCategoryStatus"
+                      name="isListed"
+                    />
+                    <span class="slider"></span>
+                  </label>
+                  <span class="ms-2 text-muted" id="editStatusText"
+                    >Listed</span
+                  >
+                </label>
+              </div>
+              <button type="submit" class="btn btn-primary w-100">
+                Update Category
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
 
-    // Image preview functionality for new category
-    document.getElementById('newCategoryImage').addEventListener('change', function(event) {
-      const preview = document.getElementById('newImagePreview');
-      const file = event.target.files[0];
-      
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          preview.src = e.target.result;
-        }
-        reader.readAsDataURL(file);
-      } else {
-        preview.src = '/api/placeholder/100/100';
-      }
-    });
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.19/dist/sweetalert2.all.min.js"></script>
+    <script>
+      // Toggle sidebar,on mobile
+      document
+        .querySelector(".toggle-sidebar")
+        .addEventListener("click", function () {
+          document.querySelector(".sidebar").classList.toggle("active");
+        });
 
-    // Image preview functionality for edit category
-    document.getElementById('editCategoryImage').addEventListener('change', function(event) {
-      const preview = document.getElementById('editImagePreview');
-      const file = event.target.files[0];
-      
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          preview.src = e.target.result;
-        }
-        reader.readAsDataURL(file);
-      }
-    });
+      // Image preview for new category
+      document
+        .getElementById("newCategoryImage")
+        .addEventListener("change", function (event) {
+          const preview = document.getElementById("newImagePreview");
+          const file = event.target.files[0];
+          if (file) {
+            const reader = new FileReader();
+            reader.onload = function (e) {
+              preview.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+          } else {
+            preview.src = "/api/placeholder/100/100";
+          }
+        });
 
-    // Status text update for new category
-    document.getElementById('newCategoryStatus').addEventListener('change', function() {
-      document.getElementById('statusText').textContent = this.checked ? 'Listed' : 'Unlisted';
-    });
+      // Image preview for edit category
+      document
+        .getElementById("editCategoryImage")
+        .addEventListener("change", function (event) {
+          const preview = document.getElementById("editImagePreview");
+          const file = event.target.files[0];
+          if (file) {
+            const reader = new FileReader();
+            reader.onload = function (e) {
+              preview.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+          }
+        });
 
-    // Status text update for edit category
-    document.getElementById('editCategoryStatus').addEventListener('change', function() {
-      document.getElementById('editStatusText').textContent = this.checked ? 'Listed' : 'Unlisted';
-    });
+      // Status text update for new category
+      document
+        .getElementById("newCategoryStatus")
+        .addEventListener("change", function () {
+          document.getElementById("statusText").textContent = this.checked
+            ? "Listed"
+            : "Unlisted";
+        });
 
-    // Search functionality with debounce
-    const categorySearch = document.getElementById('categorySearch');
-    
-    function debounce(func, wait) {
-      let timeout;
-      return function() {
-        const context = this;
-        const args = arguments;
-        clearTimeout(timeout);
-        timeout = setTimeout(() => {
-          func.apply(context, args);
-        }, wait);
-      };
-    }
-    
-    const performSearch = debounce(function() {
-      const searchTerm = categorySearch.value.trim().toLowerCase();
-      const table = document.getElementById('categoriesTable');
-      const rows = table.querySelectorAll('tbody tr');
-      
-      rows.forEach(row => {
-        const categoryName = row.cells[2].textContent.toLowerCase();
-        const categoryDesc = row.cells[3].textContent.toLowerCase();
-        
-        if (categoryName.includes(searchTerm) || categoryDesc.includes(searchTerm)) {
-          row.style.display = '';
-        } else {
-          row.style.display = 'none';
-        }
+      // Status text update for edit category
+      document
+        .getElementById("editCategoryStatus")
+        .addEventListener("change", function () {
+          document.getElementById("editStatusText").textContent = this.checked
+            ? "Listed"
+            : "Unlisted";
+        });
+
+      // Search functionality
+      const categorySearch = document.getElementById("categorySearch");
+      const clearSearch = document.getElementById("clearSearch");
+
+      categorySearch.addEventListener("input", function () {
+        clearSearch.style.display = this.value ? "block" : "none";
+        window.location.href = `/admin/categories?search=${encodeURIComponent(
+          this.value
+        )}`;
       });
-    }, 300);
-    
-    categorySearch.addEventListener('input', performSearch);
-    
-    // Edit category modal population
-    const editCategoryModal = document.getElementById('editCategoryModal');
-    editCategoryModal.addEventListener('show.bs.modal', function(event) {
-      const button = event.relatedTarget;
-      const categoryId = button.getAttribute('data-category-id');
-      const row = button.closest('tr');
-      
-      const categoryName = row.cells[2].textContent;
-      const categoryDescription = row.cells[3].textContent;
-      const categoryImage = row.cells[1].querySelector('img').src;
-      const isListed = row.cells[4].querySelector('input').checked;
-      
-      document.getElementById('editCategoryId').value = categoryId;
-      document.getElementById('editCategoryName').value = categoryName;
-      document.getElementById('editCategoryDescription').value = categoryDescription;
-      document.getElementById('editImagePreview').src = categoryImage;
-      document.getElementById('editCategoryStatus').checked = isListed;
-      document.getElementById('editStatusText').textContent = isListed ? 'Listed' : 'Unlisted';
-    });
-    
-    // Form submissions
-    document.getElementById('addCategoryForm').addEventListener('submit', function(e) {
-      e.preventDefault();
-      
-      const categoryName = document.getElementById('newCategoryName').value;
-      
-      Swal.fire({
-        title: 'Success!',
-        text: `Category "${categoryName}" added successfully`,
-        icon: 'success',
-        timer: 2000,
-        showConfirmButton: false
-      }).then(() => {
-        // Reset form and close modal
-        this.reset();
-        document.getElementById('newImagePreview').src = '/api/placeholder/100/100';
-        document.getElementById('statusText').textContent = 'Listed';
-        bootstrap.Modal.getInstance(document.getElementById('addCategoryModal')).hide();
+
+      clearSearch.addEventListener("click", function () {
+        categorySearch.value = "";
+        clearSearch.style.display = "none";
+        window.location.href = "/admin/categories";
       });
-    });
-    
-    document.getElementById('editCategoryForm').addEventListener('submit', function(e) {
-      e.preventDefault();
-      
-      const categoryId = document.getElementById('editCategoryId').value;
-      const categoryName = document.getElementById('editCategoryName').value;
-      
-      Swal.fire({
-        title: 'Success!',
-        text: `Category "${categoryName}" updated successfully`,
-        icon: 'success',
-        timer: 2000,
-        showConfirmButton: false
-      }).then(() => {
-        // Close modal
-        bootstrap.Modal.getInstance(document.getElementById('editCategoryModal')).hide();
-      });
-    });
-    
-    // Toggle list/unlist functionality
-    const toggleSwitches = document.querySelectorAll('.category-table .toggle-switch input');
-    toggleSwitches.forEach(toggle => {
-      toggle.addEventListener('change', function() {
-        const isListed = this.checked;
-        const row = this.closest('tr');
+
+      // Edit category modal population
+      const editCategoryModal = document.getElementById("editCategoryModal");
+      editCategoryModal.addEventListener("show.bs.modal", function (event) {
+        const button = event.relatedTarget;
+        const categoryId = button.getAttribute("data-category-id");
+        const row = button.closest("tr");
+
         const categoryName = row.cells[2].textContent;
-        
-        Swal.fire({
-          toast: true,
-          position: 'top-end',
-          showConfirmButton: false,
-          timer: 3000,
-          icon: 'success',
-          title: `Category "${categoryName}" ${isListed ? 'listed' : 'unlisted'} successfully`
+        const categoryDescription = row.cells[3].textContent;
+        const categoryImage = row.cells[1].querySelector("img").src;
+        const isListed = row.cells[4].querySelector("input").checked;
+
+        document.getElementById("editCategoryId").value = categoryId;
+        document.getElementById("editCategoryName").value = categoryName;
+        document.getElementById("editCategoryDescription").value =
+          categoryDescription;
+        document.getElementById("editImagePreview").src = categoryImage;
+        document.getElementById("editCategoryStatus").checked = isListed;
+        document.getElementById("editStatusText").textContent = isListed
+          ? "Listed"
+          : "Unlisted";
+      });
+
+      // Add Category Form Submission
+      document
+        .getElementById("addCategoryForm")
+        .addEventListener("submit", async function (e) {
+          e.preventDefault();
+          const formData = new FormData(this);
+
+          try {
+            const response = await fetch("/admin/categories", {
+              method: "POST",
+              body: formData,
+            });
+            const data = await response.json();
+
+            if (response.ok) {
+              Swal.fire({
+                title: "Success!",
+                text: data.message,
+                icon: "success",
+                timer: 2000,
+                showConfirmButton: false,
+              }).then(() => {
+                window.location.reload();
+              });
+            } else {
+              Swal.fire({
+                title: "Error!",
+                text: data.error || "Failed to add category",
+                icon: "error",
+              });
+            }
+          } catch (error) {
+            Swal.fire({
+              title: "Error!",
+              text: "Server Error",
+              icon: "error",
+            });
+          }
+        });
+
+      // Edit Category Form Submission
+      document
+        .getElementById("editCategoryForm")
+        .addEventListener("submit", async function (e) {
+          e.preventDefault();
+          const categoryId = document.getElementById("editCategoryId").value;
+          const formData = new FormData(this);
+
+          try {
+            const response = await fetch(`/admin/categories/${categoryId}`, {
+              method: "PUT",
+              body: formData,
+            });
+            const data = await response.json();
+
+            if (response.ok) {
+              Swal.fire({
+                title: "Success!",
+                text: data.message,
+                icon: "success",
+                timer: 2000,
+                showConfirmButton: false,
+              }).then(() => {
+                window.location.reload();
+              });
+            } else {
+              Swal.fire({
+                title: "Error!",
+                text: data.error || "Failed to update category",
+                icon: "error",
+              });
+            }
+          } catch (error) {
+            Swal.fire({
+              title: "Error!",
+              text: "Server Error",
+              icon: "error",
+            });
+          }
+        });
+
+      // Toggle List/Unlist
+      const toggleSwitches = document.querySelectorAll(".toggle-status");
+      toggleSwitches.forEach((toggle) => {
+        toggle.addEventListener("change", async function () {
+          const categoryId = this.getAttribute("data-category-id");
+          const isListed = this.checked;
+
+          try {
+            const response = await fetch(
+              `/admin/categories/${categoryId}/toggle`,
+              {
+                method: "PUT",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ isListed }),
+              }
+            );
+            const data = await response.json();
+
+            if (response.ok) {
+              Swal.fire({
+                toast: true,
+                position: "top-end",
+                showConfirmButton: false,
+                timer: 3000,
+                icon: "success",
+                title: data.message,
+              });
+            } else {
+              this.checked = !isListed; // Revert toggle
+              Swal.fire({
+                title: "Error!",
+                text: data.error || "Failed to toggle status",
+                icon: "error",
+              });
+            }
+          } catch (error) {
+            this.checked = !isListed; // Revert toggle
+            Swal.fire({
+              title: "Error!",
+              text: "Server Error",
+              icon: "error",
+            });
+          }
         });
       });
-    });
-  </script>
-</body>
+    </script>
+  </body>
 </html>

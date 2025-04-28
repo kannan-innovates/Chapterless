@@ -1,3 +1,5 @@
+const categoryController = require("../../controllers/userController/categoryController")
+
 const pageNotFound = async (req, res) => {
   try {
     res.render("page-404");
@@ -8,9 +10,10 @@ const pageNotFound = async (req, res) => {
 
 const loadHomePage = async (req, res) => {
   try {
-    return res.render("home");
+    const categories = await categoryController.getCategories()
+    return res.render("home",{categories});
   } catch (error) {
-    console.log(`Home Page not found`);
+    console.log(`Error in rendering Home Page`);
     res.status(500).send(`Server Error`);
   }
 };

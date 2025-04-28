@@ -3,22 +3,27 @@ const adminRoute = express.Router();
 
 const adminController = require("../../controllers/adminController/adminLoginController");
 const adminUserController = require("../../controllers/adminController/getUserController");
+const categoryController = require('../../controllers/adminController/categoryController');
 
-const categoryController = require('../../controllers/adminController/categoryController')
+const upload = require("../../config/multer");
 
+// Admin Login
 adminRoute.get("/adminLogin", adminController.getAdminLogin);
 adminRoute.post("/adminLogin", adminController.postAdminLogin);
 
+// Admin Dashboard
 adminRoute.get('/adminDashboard',adminController.getAdminDashboard);
 adminRoute.get('/adminLogout',adminController.logoutAdminDashboard);
 
+// User Management
 adminRoute.get('/getUsers',adminUserController.getUsers);
-
 adminRoute.put("/getUsers/:id/block",adminUserController.blockUser);
 adminRoute.put("/getUsers/:id/unblock",adminUserController.unblockUser);
 
-adminRoute.get('/categories',categoryController.getCategory)
-
-
+// Category Management
+adminRoute.get('/categories', categoryController.getCategory);
+adminRoute.post('/categories', upload.single('image'), categoryController.addCategory);
+adminRoute.put('/categories/:id', upload.single('image'), categoryController.editCategory);
+adminRoute.put('/categories/:id/toggle', categoryController.toggleCategoryStatus);
 
 module.exports =  adminRoute

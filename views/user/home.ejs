@@ -1,386 +1,309 @@
-
+<!-- views/user/home.ejs -->
 <%- include("../partials/user/header") %>
-    <!-- Hero Section -->
-  <!-- Hero Section -->
-  <section class="hero-section">
-    <div class="container">
-      <div class="hero-content text-white">
-        <h1 class="display-4 fw-bold mb-4">Discover Stories That Find You</h1>
-        <p class="fs-5 mb-4">WHERE STORIES FIND LOST SOULS</p>
-        <div class="d-flex flex-column flex-sm-row gap-3">
-          <a href="#" class="btn btn-light px-4 py-2 fw-medium">Shop Now</a>
-          <a href="#" class="btn btn-outline-light px-4 py-2 fw-medium"
-            >Explore Collections</a
-          >
-        </div>
+
+<!-- Hero Section -->
+<section class="hero-section">
+  <div class="container">
+    <div class="hero-content text-white">
+      <h1 class="display-4 fw-bold mb-4">Discover Stories That Find You</h1>
+      <p class="fs-5 mb-4">WHERE STORIES FIND LOST SOULS</p>
+      <div class="d-flex flex-column flex-sm-row gap-3">
+        <a href="#" class="btn btn-light px-4 py-2 fw-medium">Shop Now</a>
+        <a href="#" class="btn btn-outline-light px-4 py-2 fw-medium">Explore Collections</a>
       </div>
     </div>
-  </section>
+  </div>
+</section>
 
-  <!-- Featured Categories -->
-  <section class="py-5 bg-white">
-    <div class="container">
-      <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="fs-1 fw-bold">Browse Categories</h2>
-        <a href="#" class="text-dark text-decoration-none hover-dark"
-          >View All</a
-        >
-      </div>
-      <div class="row g-4">
-        <div class="col-md-4">
-          <div class="category-card shadow-sm">
-            <img src="/api/placeholder/600/400" alt="Fiction" />
-            <div class="category-overlay">
-              <h3 class="text-white fs-4 fw-bold mb-2">Fiction</h3>
-              <a href="#" class="text-white text-decoration-underline"
-                >Explore</a
-              >
-            </div>
-          </div>
-        </div>
-        <div class="col-md-4">
-          <div class="category-card shadow-sm">
-            <img src="/api/placeholder/600/400" alt="Non-Fiction" />
-            <div class="category-overlay">
-              <h3 class="text-white fs-4 fw-bold mb-2">Non-Fiction</h3>
-              <a href="#" class="text-white text-decoration-underline"
-                >Explore</a
-              >
-            </div>
-          </div>
-        </div>
-        <div class="col-md-4">
-          <div class="category-card shadow-sm">
-            <img src="/api/placeholder/600/400" alt="Poetry" />
-            <div class="category-overlay">
-              <h3 class="text-white fs-4 fw-bold mb-2">Poetry</h3>
-              <a href="#" class="text-white text-decoration-underline"
-                >Explore</a
-              >
-            </div>
-          </div>
-        </div>
-      </div>
+<!-- Featured Categories -->
+<section class="py-5 bg-white">
+  <div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h2 class="fs-1 fw-bold">Browse Categories</h2>
+      <a href="#" class="text-dark text-decoration-none hover-dark">View All</a>
     </div>
-  </section>
+    <div class="row g-4">
+      <% if (categories && categories.length > 0) { %>
+        <% categories.slice(0, 3).forEach(category => { %>
+          <div class="col-md-4">
+            <div class="category-card shadow-sm">
+              <img src="<%= category.image %>" alt="<%= category.name %>" />
+              <div class="category-overlay">
+                <h3 class="text-white fs-4 fw-bold mb-2"><%= category.name %></h3>
+                <a href="#" class="text-white text-decoration-underline">Explore</a>
+              </div>
+            </div>
+          </div>
+        <% }) %>
+      <% } else { %>
+        <div class="col-12 text-center">
+          <p>No categories available.</p>
+        </div>
+      <% } %>
+    </div>
+  </div>
+</section>
 
-  <!-- Bestsellers -->
-  <section class="py-5 bg-light">
-    <div class="container">
-      <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="fs-1 fw-bold">Bestsellers</h2>
-        <a href="#" class="text-dark text-decoration-none hover-dark"
-          >View All</a
-        >
+<!-- Bestsellers (unchanged) -->
+<section class="py-5 bg-light">
+  <div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h2 class="fs-1 fw-bold">Bestsellers</h2>
+      <a href="#" class="text-dark text-decoration-none hover-dark">View All</a>
+    </div>
+    <div class="row g-4">
+      <!-- Product 1 -->
+      <div class="col-sm-6 col-md-4 col-lg-3">
+        <div class="product-card bg-white h-100">
+          <div class="product-image-container">
+            <span class="product-tag">New</span>
+            <img src="/api/placeholder/500/600" alt="The Silent Echo" class="product-image" />
+          </div>
+          <div class="p-3">
+            <h3 class="fs-5 fw-semibold mb-1">The Silent Echo</h3>
+            <p class="text-muted small mb-2">Eleanor Blackwood</p>
+            <div class="d-flex justify-content-between align-items-center">
+              <span class="fw-bold">$24.99</span>
+              <button class="add-to-cart border-0">
+                <i class="ri-add-line"></i>
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
-      <div class="row g-4">
-        <!-- Product 1 -->
-        <div class="col-sm-6 col-md-4 col-lg-3">
-          <div class="product-card bg-white h-100">
-            <div class="product-image-container">
-              <span class="product-tag">New</span>
-              <img
-                src="/api/placeholder/500/600"
-                alt="The Silent Echo"
-                class="product-image"
-              />
-            </div>
-            <div class="p-3">
-              <h3 class="fs-5 fw-semibold mb-1">The Silent Echo</h3>
-              <p class="text-muted small mb-2">Eleanor Blackwood</p>
-              <div class="d-flex justify-content-between align-items-center">
-                <span class="fw-bold">$24.99</span>
-                <button class="add-to-cart border-0">
-                  <i class="ri-add-line"></i>
-                </button>
-              </div>
+      <!-- Product 2 -->
+      <div class="col-sm-6 col-md-4 col-lg-3">
+        <div class="product-card bg-white h-100">
+          <div class="product-image-container">
+            <span class="product-tag">Bestseller</span>
+            <img src="/api/placeholder/500/600" alt="Whispers in the Void" class="product-image" />
+          </div>
+          <div class="p-3">
+            <h3 class="fs-5 fw-semibold mb-1">Whispers in the Void</h3>
+            <p class="text-muted small mb-2">Jonathan Mercer</p>
+            <div class="d-flex justify-content-between align-items-center">
+              <span class="fw-bold">$21.99</span>
+              <button class="add-to-cart border-0">
+                <i class="ri-add-line"></i>
+              </button>
             </div>
           </div>
         </div>
-        <!-- Product 2 -->
-        <div class="col-sm-6 col-md-4 col-lg-3">
-          <div class="product-card bg-white h-100">
-            <div class="product-image-container">
-              <span class="product-tag">Bestseller</span>
-              <img
-                src="/api/placeholder/500/600"
-                alt="Whispers in the Void"
-                class="product-image"
-              />
-            </div>
-            <div class="p-3">
-              <h3 class="fs-5 fw-semibold mb-1">Whispers in the Void</h3>
-              <p class="text-muted small mb-2">Jonathan Mercer</p>
-              <div class="d-flex justify-content-between align-items-center">
-                <span class="fw-bold">$21.99</span>
-                <button class="add-to-cart border-0">
-                  <i class="ri-add-line"></i>
-                </button>
-              </div>
+      </div>
+      <!-- Product 3 -->
+      <div class="col-sm-6 col-md-4 col-lg-3">
+        <div class="product-card bg-white h-100">
+          <div class="product-image-container">
+            <img src="/api/placeholder/500/600" alt="The Art of Stillness" class="product-image" />
+          </div>
+          <div class="p-3">
+            <h3 class="fs-5 fw-semibold mb-1">The Art of Stillness</h3>
+            <p class="text-muted small mb-2">Sophia Chen</p>
+            <div class="d-flex justify-content-between align-items-center">
+              <span class="fw-bold">$19.99</span>
+              <button class="add-to-cart border-0">
+                <i class="ri-add-line"></i>
+              </button>
             </div>
           </div>
         </div>
-        <!-- Product 3 -->
-        <div class="col-sm-6 col-md-4 col-lg-3">
-          <div class="product-card bg-white h-100">
-            <div class="product-image-container">
-              <img
-                src="/api/placeholder/500/600"
-                alt="The Art of Stillness"
-                class="product-image"
-              />
-            </div>
-            <div class="p-3">
-              <h3 class="fs-5 fw-semibold mb-1">The Art of Stillness</h3>
-              <p class="text-muted small mb-2">Sophia Chen</p>
-              <div class="d-flex justify-content-between align-items-center">
-                <span class="fw-bold">$19.99</span>
-                <button class="add-to-cart border-0">
-                  <i class="ri-add-line"></i>
-                </button>
-              </div>
-            </div>
+      </div>
+      <!-- Product 4 -->
+      <div class="col-sm-6 col-md-4 col-lg-3">
+        <div class="product-card bg-white h-100">
+          <div class="product-image-container">
+            <span class="product-tag">Limited</span>
+            <img src="/api/placeholder/500/600" alt="Fragments of Light" class="product-image" />
           </div>
-        </div>
-        <!-- Product 4 -->
-        <div class="col-sm-6 col-md-4 col-lg-3">
-          <div class="product-card bg-white h-100">
-            <div class="product-image-container">
-              <span class="product-tag">Limited</span>
-              <img
-                src="/api/placeholder/500/600"
-                alt="Fragments of Light"
-                class="product-image"
-              />
-            </div>
-            <div class="p-3">
-              <h3 class="fs-5 fw-semibold mb-1">Fragments of Light</h3>
-              <p class="text-muted small mb-2">Marcus Aurelius</p>
-              <div class="d-flex justify-content-between align-items-center">
-                <span class="fw-bold">$26.99</span>
-                <button class="add-to-cart border-0">
-                  <i class="ri-add-line"></i>
-                </button>
-              </div>
+          <div class="p-3">
+            <h3 class="fs-5 fw-semibold mb-1">Fragments of Light</h3>
+            <p class="text-muted small mb-2">Marcus Aurelius</p>
+            <div class="d-flex justify-content-between align-items-center">
+              <span class="fw-bold">$26.99</span>
+              <button class="add-to-cart border-0">
+                <i class="ri-add-line"></i>
+              </button>
             </div>
           </div>
         </div>
       </div>
     </div>
-  </section>
+  </div>
+</section>
 
-  <!-- New Arrivals -->
-  <section class="py-5 bg-white">
-    <div class="container">
-      <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="fs-1 fw-bold">New Arrivals</h2>
-        <a href="#" class="text-dark text-decoration-none hover-dark"
-          >View All</a
-        >
+<!-- New Arrivals (unchanged) -->
+<section class="py-5 bg-white">
+  <div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h2 class="fs-1 fw-bold">New Arrivals</h2>
+      <a href="#" class="text-dark text-decoration-none hover-dark">View All</a>
+    </div>
+    <div class="row g-4">
+      <!-- Product 1 -->
+      <div class="col-sm-6 col-md-4 col-lg-3">
+        <div class="product-card bg-white h-100">
+          <div class="product-image-container">
+            <span class="product-tag">New</span>
+            <img src="/api/placeholder/500/600" alt="The Forgotten Path" class="product-image" />
+          </div>
+          <div class="p-3">
+            <h3 class="fs-5 fw-semibold mb-1">The Forgotten Path</h3>
+            <p class="text-muted small mb-2">Olivia Bennett</p>
+            <div class="d-flex justify-content-between align-items-center">
+              <span class.epam-bold">$22.99</span>
+              <button class="add-to-cart border-0">
+                <i class="ri-add-line"></i>
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
-      <div class="row g-4">
-        <!-- Product 1 -->
-        <div class="col-sm-6 col-md-4 col-lg-3">
-          <div class="product-card bg-white h-100">
-            <div class="product-image-container">
-              <span class="product-tag">New</span>
-              <img
-                src="/api/placeholder/500/600"
-                alt="The Forgotten Path"
-                class="product-image"
-              />
-            </div>
-            <div class="p-3">
-              <h3 class="fs-5 fw-semibold mb-1">The Forgotten Path</h3>
-              <p class="text-muted small mb-2">Olivia Bennett</p>
-              <div class="d-flex justify-content-between align-items-center">
-                <span class="fw-bold">$22.99</span>
-                <button class="add-to-cart border-0">
-                  <i class="ri-add-line"></i>
-                </button>
-              </div>
+      <!-- Product 2 -->
+      <div class="col-sm-6 col-md-4 col-lg-3">
+        <div class="product-card bg-white h-100">
+          <div class="product-image-container">
+            <img src="/api/placeholder/500/600" alt="Echoes of Eternity" class="product-image" />
+          </div>
+          <div class="p-3">
+            <h3 class="fs-5 fw-semibold mb-1">Echoes of Eternity</h3>
+            <p class="text-muted small mb-2">Alexander Reid</p>
+            <div class="d-flex justify-content-between align-items-center">
+              <span class="fw-bold">$23.99</span>
+              <button class="add-to-cart border-0">
+                <i class="ri-add-line"></i>
+              </button>
             </div>
           </div>
         </div>
-        <!-- Product 2 -->
-        <div class="col-sm-6 col-md-4 col-lg-3">
-          <div class="product-card bg-white h-100">
-            <div class="product-image-container">
-              <img
-                src="/api/placeholder/500/600"
-                alt="Echoes of Eternity"
-                class="product-image"
-              />
-            </div>
-            <div class="p-3">
-              <h3 class="fs-5 fw-semibold mb-1">Echoes of Eternity</h3>
-              <p class="text-muted small mb-2">Alexander Reid</p>
-              <div class="d-flex justify-content-between align-items-center">
-                <span class="fw-bold">$23.99</span>
-                <button class="add-to-cart border-0">
-                  <i class="ri-add-line"></i>
-                </button>
-              </div>
+      </div>
+      <!-- Product 3 -->
+      <div class="col-sm-6 col-md-4 col-lg-3">
+        <div class="product-card bg-white h-100">
+          <div class="product-image-container">
+            <span class="product-tag">New</span>
+            <img src="/api/placeholder/500/600" alt="Silent Memories" class="product-image" />
+          </div>
+          <div class="p-3">
+            <h3 class="fs-5 fw-semibold mb-1">Silent Memories</h3>
+            <p class="text-muted small mb-2">Isabella Frost</p>
+            <div class="d-flex justify-content-between align-items-center">
+              <span class="fw-bold">$20.99</span>
+              <button class="add-to-cart border-0">
+                <i class="ri-add-line"></i>
+              </button>
             </div>
           </div>
         </div>
-        <!-- Product 3 -->
-        <div class="col-sm-6 col-md-4 col-lg-3">
-          <div class="product-card bg-white h-100">
-            <div class="product-image-container">
-              <span class="product-tag">New</span>
-              <img
-                src="/api/placeholder/500/600"
-                alt="Silent Memories"
-                class="product-image"
-              />
-            </div>
-            <div class="p-3">
-              <h3 class="fs-5 fw-semibold mb-1">Silent Memories</h3>
-              <p class="text-muted small mb-2">Isabella Frost</p>
-              <div class="d-flex justify-content-between align-items-center">
-                <span class="fw-bold">$20.99</span>
-                <button class="add-to-cart border-0">
-                  <i class="ri-add-line"></i>
-                </button>
-              </div>
-            </div>
+      </div>
+      <!-- Product 4 -->
+      <div class="col-sm-6 col-md-4 col-lg-3">
+        <div class="product-card bg-white h-100">
+          <div class="product-image-container">
+            <img src="/api/placeholder/500/600" alt="The Philosophy of Time" class="product-image" />
           </div>
-        </div>
-        <!-- Product 4 -->
-        <div class="col-sm-6 col-md-4 col-lg-3">
-          <div class="product-card bg-white h-100">
-            <div class="product-image-container">
-              <img
-                src="/api/placeholder/500/600"
-                alt="The Philosophy of Time"
-                class="product-image"
-              />
-            </div>
-            <div class="p-3">
-              <h3 class="fs-5 fw-semibold mb-1">The Philosophy of Time</h3>
-              <p class="text-muted small mb-2">Nicholas Harlow</p>
-              <div class="d-flex justify-content-between align-items-center">
-                <span class="fw-bold">$25.99</span>
-                <button class="add-to-cart border-0">
-                  <i class="ri-add-line"></i>
-                </button>
-              </div>
+          <div class="p-3">
+            <h3 class="fs-5 fw-semibold mb-1">The Philosophy of Time</h3>
+            <p class="text-muted small mb-2">Nicholas Harlow</p>
+            <div class="d-flex justify-content-between align-items-center">
+              <span class="fw-bold">$25.99</span>
+              <button class="add-to-cart border-0">
+                <i class="ri-add-line"></i>
+              </button>
             </div>
           </div>
         </div>
       </div>
     </div>
-  </section>
+  </div>
+</section>
 
-  <!-- Testimonials -->
-  <section class="py-5 bg-light">
-    <div class="container">
-      <h2 class="fs-1 fw-bold text-center mb-5">Reader Stories</h2>
-      <div class="row g-4">
-        <div class="col-md-4">
-          <div class="testimonial-card bg-white h-100">
-            <div class="mb-3">
-              <i class="ri-double-quotes-l fs-2 text-dark"></i>
-            </div>
-            <p class="text-muted mb-4">
-              "Chapterless has completely transformed my reading experience.
-              Their curated selections always seem to find me at just the
-              right moment in my life."
-            </p>
-            <div class="d-flex align-items-center">
-              <div class="user-avatar">
-                <i class="ri-user-line"></i>
-              </div>
-              <div class="ms-3">
-                <h4 class="fs-6 fw-semibold mb-0">Emily Richardson</h4>
-                <p class="small text-muted mb-0">Literature Professor</p>
-              </div>
-            </div>
+<!-- Testimonials (unchanged) -->
+<section class="py-5 bg-light">
+  <div class="container">
+    <h2 class="fs-1 fw-bold text-center mb-5">Reader Stories</h2>
+    <div class="row g-4">
+      <div class="col-md-4">
+        <div class="testimonial-card bg-white h-100">
+          <div class="mb-3">
+            <i class="ri-double-quotes-l fs-2 text-dark"></i>
           </div>
-        </div>
-        <div class="col-md-4">
-          <div class="testimonial-card bg-white h-100">
-            <div class="mb-3">
-              <i class="ri-double-quotes-l fs-2 text-dark"></i>
-            </div>
-            <p class="text-muted mb-4">
-              "I've discovered authors I never would have found elsewhere.
-              Each book feels personally selected for my soul. The quality and
-              curation are unmatched."
-            </p>
-            <div class="d-flex align-items-center">
-              <div class="user-avatar">
-                <i class="ri-user-line"></i>
-              </div>
-              <div class="ms-3">
-                <h4 class="fs-6 fw-semibold mb-0">Michael Thornton</h4>
-                <p class="small text-muted mb-0">Avid Reader</p>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="col-md-4">
-          <div class="testimonial-card bg-white h-100">
-            <div class="mb-3">
-              <i class="ri-double-quotes-l fs-2 text-dark"></i>
-            </div>
-            <p class="text-muted mb-4">
-              "The minimalist aesthetic and thoughtful selection process make
-              Chapterless stand out. It's not just a bookstore; it's a
-              sanctuary for lost souls seeking stories."
-            </p>
-            <div class="d-flex align-items-center">
-              <div class="user-avatar">
-                <i class="ri-user-line"></i>
-              </div>
-              <div class="ms-3">
-                <h4 class="fs-6 fw-semibold mb-0">Sophia Nguyen</h4>
-                <p class="small text-muted mb-0">Book Blogger</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Newsletter -->
-  <section class="newsletter-section">
-    <div class="container">
-      <div class="row justify-content-center">
-        <div class="col-lg-6 text-center">
-          <h2 class="fs-1 fw-bold mb-3">Join Our Literary Journey</h2>
-          <p class="text-white-50 mb-4">
-            Subscribe to receive curated reading recommendations, author
-            interviews, and exclusive offers.
+          <p class="text-muted mb-4">
+            "Chapterless has completely transformed my reading experience. Their curated selections always seem to find me at just the right moment in my life."
           </p>
-          <form
-            class="d-flex flex-column flex-sm-row gap-3 mb-3 mx-auto"
-            style="max-width: 500px"
-          >
-            <input
-              type="email"
-              class="form-control"
-              placeholder="Your email address"
-              style="border-radius: 0.5rem"
-            />
-            <button
-              type="submit"
-              class="btn btn-light fw-medium"
-              style="border-radius: 0.5rem; white-space: nowrap"
-            >
-              Subscribe
-            </button>
-          </form>
-          <p class="small text-white-50">
-            By subscribing, you agree to our Privacy Policy and consent to
-            receive updates from Chapterless.
+          <div class="d-flex align-items-center">
+            <div class="user-avatar">
+              <i class="ri-user-line"></i>
+            </div>
+            <div class="ms-3">
+              <h4 class="fs-6 fw-semibold mb-0">Emily Richardson</h4>
+              <p class="small text-muted mb-0">Literature Professor</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="testimonial-card bg-white h-100">
+          <div class="mb-3">
+            <i class="ri-double-quotes-l fs-2 text-dark"></i>
+          </div>
+          <p class="text-muted mb-4">
+            "I've discovered authors I never would have found elsewhere. Each book feels personally selected for my soul. The quality and curation are unmatched."
           </p>
+          <div class="d-flex align-items-center">
+            <div class="user-avatar">
+              <i class="ri-user-line"></i>
+            </div>
+            <div class="ms-3">
+              <h4 class="fs-6 fw-semibold mb-0">Michael Thornton</h4>
+              <p class="small text-muted mb-0">Avid Reader</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="testimonial-card bg-white h-100">
+          <div class="mb-3">
+            <i class="ri-double-quotes-l fs-2 text-dark"></i>
+          </div>
+          <p class="text-muted mb-4">
+            "The minimalist aesthetic and thoughtful selection process make Chapterless stand out. It's not just a bookstore; it's a sanctuary for lost souls seeking stories."
+          </p>
+          <div class="d-flex align-items-center">
+            <div class="user-avatar">
+              <i class="ri-user-line"></i>
+            </div>
+            <div class="ms-3">
+              <h4 class="fs-6 fw-semibold mb-0">Sophia Nguyen</h4>
+              <p class="small text-muted mb-0">Book Blogger</p>
+            </div>
+          </div>
         </div>
       </div>
     </div>
-  </section>
+  </div>
+</section>
 
+<!-- Newsletter (unchanged) -->
+<section class="newsletter-section">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-lg-6 text-center">
+        <h2 class="fs-1 fw-bold mb-3">Join Our Literary Journey</h2>
+        <p class="text-white-50 mb-4">
+          Subscribe to receive curated reading recommendations, author interviews, and exclusive offers.
+        </p>
+        <form class="d-flex flex-column flex-sm-row gap-3 mb-3 mx-auto" style="max-width: 500px">
+          <input type="email" class="form-control" placeholder="Your email address" style="border-radius: 0.5rem" />
+          <button type="submit" class="btn btn-light fw-medium" style="border-radius: 0.5rem; white-space: nowrap">
+            Subscribe
+          </button>
+        </form>
+        <p class="small text-white-50">
+          By subscribing, you agree to our Privacy Policy and consent to receive updates from Chapterless.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
 
-    <%- include("../partials/user/footer") %>
+<%- include("../partials/user/footer") %>
