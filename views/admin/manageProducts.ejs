@@ -23,6 +23,11 @@
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.19/dist/sweetalert2.min.css"
     />
+    <!-- Add Cropperjs CSS -->
+    <link 
+      rel="stylesheet" 
+      href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css"
+    />
     <style>
       body {
         background-color: #f5f7fa;
@@ -50,12 +55,14 @@
         height: 200px;
         object-fit: cover;
         border-radius: 5px;
+        cursor: pointer;
       }
       .sub-image-preview img {
         width: 100px;
         height: 100px;
         object-fit: cover;
         border-radius: 5px;
+        cursor: pointer;
       }
       .btn-add {
         background-color: #6f42c1;
@@ -120,6 +127,61 @@
       .breadcrumbs .active {
         color: #212529;
         font-weight: 500;
+      }
+      
+      /* Custom File Input Styling */
+      .custom-file-container {
+        position: relative;
+        margin-top: 10px;
+      }
+      .custom-file-input {
+        position: absolute;
+        height: 0;
+        width: 0;
+        opacity: 0;
+      }
+      .custom-file-label {
+        display: inline-block;
+        padding: 8px 16px;
+        background-color: #6f42c1;
+        color: white;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+        transition: all 0.3s;
+      }
+      .custom-file-label:hover {
+        background-color: #563d7c;
+      }
+      .custom-file-label i {
+        margin-right: 5px;
+      }
+      
+      /* Cropper Modal Styles */
+      .modal-cropper .modal-dialog {
+        max-width: 700px;
+      }
+      .cropper-container {
+        margin: 20px auto;
+        max-height: 400px;
+        width: 100%;
+      }
+      .cropper-container img {
+        display: block;
+        max-width: 100%;
+      }
+      .cropper-buttons {
+        margin-top: 15px;
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+      }
+      .cropper-preview {
+        overflow: hidden;
+        height: 150px;
+        width: 150px;
+        border: 1px solid #ddd;
+        margin: 0 auto;
       }
 
       /* Responsive Adjustments */
@@ -188,48 +250,68 @@
                   <div class="file-preview">
                     <img id="mainImagePreview" src="/api/placeholder/150/200" alt="Main Image Preview" />
                   </div>
-                  <input
-                    type="file"
-                    class="custom-file-input"
-                    id="mainImage"
-                    name="mainImage"
-                    accept="image/*"
-                    required
-                  />
+                  <div class="custom-file-container">
+                    <input
+                      type="file"
+                      class="custom-file-input"
+                      id="mainImage"
+                      name="mainImage"
+                      accept="image/*"
+                      required
+                    />
+                    <label for="mainImage" class="custom-file-label">
+                      <i class="ri-upload-2-line"></i> Choose Image
+                    </label>
+                  </div>
                 </div>
               </div>
               <div class="mb-3">
                 <label class="form-label">Sub Images (Up to 3)</label>
                 <div class="d-flex flex-wrap gap-3">
-                  <div class="sub-image-preview">
+                  <div class="sub-image-preview mb-2">
                     <img id="subImage1Preview" src="/api/placeholder/100/100" alt="Sub Image 1 Preview" />
-                    <input
-                      type="file"
-                      class="custom-file-input"
-                      id="subImage1"
-                      name="subImages"
-                      accept="image/*"
-                    />
+                    <div class="custom-file-container">
+                      <input
+                        type="file"
+                        class="custom-file-input"
+                        id="subImage1"
+                        name="subImages"
+                        accept="image/*"
+                      />
+                      <label for="subImage1" class="custom-file-label">
+                        <i class="ri-upload-2-line"></i> Select
+                      </label>
+                    </div>
                   </div>
-                  <div class="sub-image-preview">
+                  <div class="sub-image-preview mb-2">
                     <img id="subImage2Preview" src="/api/placeholder/100/100" alt="Sub Image 2 Preview" />
-                    <input
-                      type="file"
-                      class="custom-file-input"
-                      id="subImage2"
-                      name="subImages"
-                      accept="image/*"
-                    />
+                    <div class="custom-file-container">
+                      <input
+                        type="file"
+                        class="custom-file-input"
+                        id="subImage2"
+                        name="subImages"
+                        accept="image/*"
+                      />
+                      <label for="subImage2" class="custom-file-label">
+                        <i class="ri-upload-2-line"></i> Select
+                      </label>
+                    </div>
                   </div>
-                  <div class="sub-image-preview">
+                  <div class="sub-image-preview mb-2">
                     <img id="subImage3Preview" src="/api/placeholder/100/100" alt="Sub Image 3 Preview" />
-                    <input
-                      type="file"
-                      class="custom-file-input"
-                      id="subImage3"
-                      name="subImages"
-                      accept="image/*"
-                    />
+                    <div class="custom-file-container">
+                      <input
+                        type="file"
+                        class="custom-file-input"
+                        id="subImage3"
+                        name="subImages"
+                        accept="image/*"
+                      />
+                      <label for="subImage3" class="custom-file-label">
+                        <i class="ri-upload-2-line"></i> Select
+                      </label>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -392,74 +474,137 @@
       </div>
     </div>
 
+    <!-- Image Cropper Modal -->
+    <div class="modal fade modal-cropper" id="cropperModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Crop Image</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div class="cropper-container">
+              <img id="cropperImage" src="" alt="Image to crop">
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-primary" id="cropButton">Crop & Save</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.19/dist/sweetalert2.all.min.js"></script>
+    <!-- Add Cropperjs JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
     <script>
-      // Image preview for main image
-      document.getElementById("mainImage").addEventListener("change", function (event) {
-        const preview = document.getElementById("mainImagePreview");
-        const file = event.target.files[0];
-        if (file) {
-          const reader = new FileReader();
-          reader.onload = function (e) {
-            preview.src = e.target.result;
-          };
-          reader.readAsDataURL(file);
-        } else {
-          preview.src = "/api/placeholder/150/200";
+      // Cropper instance
+      let cropper;
+      let currentFileInput;
+      let currentImagePreview;
+      let aspectRatio;
+      let cropData = {};
+
+      // Function to initialize cropper
+      function initCropper(image, aspectRatioValue) {
+        if (cropper) {
+          cropper.destroy();
         }
+        
+        cropper = new Cropper(image, {
+          aspectRatio: aspectRatioValue,
+          viewMode: 1,
+          autoCropArea: 1,
+          responsive: true,
+          crop(event) {
+            cropData = event.detail;
+          }
+        });
+      }
+
+      // Helper function to handle file input change and open cropper
+      function handleFileInputChange(event, previewId, cropAspectRatio) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        currentFileInput = event.target;
+        currentImagePreview = document.getElementById(previewId);
+        aspectRatio = cropAspectRatio;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          document.getElementById('cropperImage').src = e.target.result;
+          const cropperModal = new bootstrap.Modal(document.getElementById('cropperModal'));
+          cropperModal.show();
+          
+          // Initialize cropper when modal is shown
+          document.getElementById('cropperModal').addEventListener('shown.bs.modal', function() {
+            initCropper(document.getElementById('cropperImage'), aspectRatio);
+          }, { once: true });
+        };
+        reader.readAsDataURL(file);
+      }
+
+      // Set up crop button handler
+      document.getElementById('cropButton').addEventListener('click', function() {
+        if (!cropper) return;
+        
+        // Get cropped canvas
+        const canvas = cropper.getCroppedCanvas({
+          width: aspectRatio === 3/4 ? 300 : 200,
+          height: aspectRatio === 3/4 ? 400 : 200,
+          imageSmoothingEnabled: true,
+          imageSmoothingQuality: 'high',
+        });
+        
+        // Convert canvas to blob
+        canvas.toBlob(function(blob) {
+          // Create a new file from the blob
+          const croppedFile = new File([blob], currentFileInput.files[0].name, {
+            type: currentFileInput.files[0].type,
+            lastModified: new Date().getTime()
+          });
+          
+          // Create a DataTransfer to set the file input's files
+          const dataTransfer = new DataTransfer();
+          dataTransfer.items.add(croppedFile);
+          currentFileInput.files = dataTransfer.files;
+          
+          // Update preview
+          currentImagePreview.src = canvas.toDataURL();
+          
+          // Close modal
+          const cropperModal = bootstrap.Modal.getInstance(document.getElementById('cropperModal'));
+          cropperModal.hide();
+        }, currentFileInput.files[0].type);
       });
 
-      // Image previews for sub-images
-      document.getElementById("subImage1").addEventListener("change", function (event) {
-        const preview = document.getElementById("subImage1Preview");
-        const file = event.target.files[0];
-        if (file) {
-          const reader = new FileReader();
-          reader.onload = function (e) {
-            preview.src = e.target.result;
-          };
-          reader.readAsDataURL(file);
-        } else {
-          preview.src = "/api/placeholder/100/100";
-        }
+      // Set up file input event listeners
+      document.getElementById("mainImage").addEventListener("change", function(event) {
+        handleFileInputChange(event, "mainImagePreview", 3/4); // Book cover aspect ratio
       });
 
-      document.getElementById("subImage2").addEventListener("change", function (event) {
-        const preview = document.getElementById("subImage2Preview");
-        const file = event.target.files[0];
-        if (file) {
-          const reader = new FileReader();
-          reader.onload = function (e) {
-            preview.src = e.target.result;
-          };
-          reader.readAsDataURL(file);
-        } else {
-          preview.src = "/api/placeholder/100/100";
-        }
+      document.getElementById("subImage1").addEventListener("change", function(event) {
+        handleFileInputChange(event, "subImage1Preview", 1); // Square aspect ratio
       });
 
-      document.getElementById("subImage3").addEventListener("change", function (event) {
-        const preview = document.getElementById("subImage3Preview");
-        const file = event.target.files[0];
-        if (file) {
-          const reader = new FileReader();
-          reader.onload = function (e) {
-            preview.src = e.target.result;
-          };
-          reader.readAsDataURL(file);
-        } else {
-          preview.src = "/api/placeholder/100/100";
-        }
+      document.getElementById("subImage2").addEventListener("change", function(event) {
+        handleFileInputChange(event, "subImage2Preview", 1); // Square aspect ratio
+      });
+
+      document.getElementById("subImage3").addEventListener("change", function(event) {
+        handleFileInputChange(event, "subImage3Preview", 1); // Square aspect ratio
       });
 
       // Status text update
-      document.getElementById("isListed").addEventListener("change", function () {
+      document.getElementById("isListed").addEventListener("change", function() {
         document.getElementById("statusText").textContent = this.checked ? "Listed" : "Unlisted";
       });
 
       // Form submission
-      document.getElementById("addProductForm").addEventListener("submit", async function (e) {
+      document.getElementById("addProductForm").addEventListener("submit", async function(e) {
         e.preventDefault();
         const formData = new FormData(this);
 
@@ -494,6 +639,24 @@
             icon: "error",
           });
         }
+      });
+
+      // Update file input labels with selected filename
+      const fileInputs = document.querySelectorAll('.custom-file-input');
+      fileInputs.forEach(input => {
+        input.addEventListener('change', function() {
+          const label = this.nextElementSibling;
+          const fileName = this.files[0]?.name;
+          if (fileName) {
+            if (fileName.length > 12) {
+              label.textContent = fileName.substring(0, 10) + '...';
+            } else {
+              label.textContent = fileName;
+            }
+          } else {
+            label.innerHTML = '<i class="ri-upload-2-line"></i> Choose Image';
+          }
+        });
       });
 
       // Fetch categories for dropdown
