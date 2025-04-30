@@ -51,6 +51,6 @@ router.get("/resetPassword", passwordController.getResetPassword);
 router.patch("/resetPassword", passwordController.patchResetPassword);
 
 router.get('/shopPage',shopPageController.shopPage);
-router.get('/productDetailsPage',productDetailsController.productDetails)
+router.get('/products/:id',productDetailsController.productDetails)
 
 module.exports = router;
