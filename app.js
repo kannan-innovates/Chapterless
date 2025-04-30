@@ -7,7 +7,7 @@ const connectDB = require("./config/db");
 const userRouter = require("./routes/userRoutes/userRouter");
 const adminRoute = require("./routes/adminRoutes/adminRoutes")
 const passport = require("./config/passport");
-
+const methodOverride = require('method-override');
 
 
 const userMiddleware = require("./middlewares/userMiddleware")
@@ -48,6 +48,7 @@ app.set("views", [
   path.join(__dirname, "views/admin"),
 ]);
 app.use(express.static(path.join(__dirname, "public")));
+app.use(methodOverride('_method'));
 
 app.use("/", userRouter);
 app.use("/admin",adminRoute)

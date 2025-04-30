@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="csrf-token" content="your-csrf-token-here" />
+    <title>Admin Dashboard - Edit Product - Chapterless</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.19/dist/sweetalert2.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css"
+    />
+    <style>
+      body {
+        background-color: #f5f7fa;
+        font-family: "Inter", sans-serif;
+      }
+      .main-content {
+        margin-left: 250px;
+        padding: 30px;
+      }
+      .page-title {
+        font-family: "Montserrat", sans-serif;
+        font-size: 28px;
+        font-weight: 700;
+      }
+      .form-label {
+        font-weight: 500;
+      }
+      .file-upload-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+      }
+      .file-preview img {
+        width: 150px;
+        height: 200px;
+        object-fit: cover;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+      .sub-image-preview img {
+        width: 100px;
+        height: 100px;
+        object-fit: cover;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+      .btn-add {
+        background-color: #6f42c1;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 5px;
+        transition: background-color 0.3s;
+        position: relative;
+      }
+      .btn-add:hover {
+        background-color: #563d7c;
+      }
+      .btn-add:disabled {
+        background-color: #a29bce;
+        cursor: not-allowed;
+      }
+      .toggle-switch {
+        position: relative;
+        display: inline-block;
+        width: 40px;
+        height: 20px;
+      }
+      .toggle-switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+      }
+      .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #ccc;
+        transition: 0.4s;
+        border-radius: 20px;
+      }
+      .slider:before {
+        position: absolute;
+        content: "";
+        height: 16px;
+        width: 16px;
+        left: 2px;
+        bottom: 2px;
+        background-color: white;
+        transition: 0.4s;
+        border-radius: 50%;
+      }
+      input:checked + .slider {
+        background-color: #28a745;
+      }
+      input:checked + .slider:before {
+        transform: translateX(20px);
+      }
+      .breadcrumbs {
+        margin-bottom: 20px;
+      }
+      .breadcrumbs a {
+        color: #6c757d;
+        text-decoration: none;
+      }
+      .breadcrumbs a:hover {
+        color: #6f42c1;
+      }
+      .breadcrumbs .active {
+        color: #212529;
+        font-weight: 500;
+      }
+      .custom-file-container {
+        position: relative;
+        margin-top: 10px;
+      }
+      .custom-file-input {
+        position: absolute;
+        height: 0;
+        width: 0;
+        opacity: 0;
+      }
+      .custom-file-label {
+        display: inline-block;
+        padding: 8px 16px;
+        background-color: #6f42c1;
+        color: white;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+        transition: all 0.3s;
+      }
+      .custom-file-label:hover {
+        background-color: #563d7c;
+      }
+      .custom-file-label i {
+        margin-right: 5px;
+      }
+      .modal-cropper .modal-dialog {
+        max-width: 700px;
+      }
+      .cropper-container {
+        margin: 20px auto;
+        max-height: 400px;
+        width: 100%;
+      }
+      .cropper-container img {
+        display: block;
+        max-width: 100%;
+      }
+      .cropper-buttons {
+        margin-top: 15px;
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+      }
+      .cropper-preview {
+        overflow: hidden;
+        height: 150px;
+        width: 150px;
+        border: 1px solid #ddd;
+        margin: 0 auto;
+      }
+      @media (max-width: 991px) {
+        .main-content {
+          margin-left: 0;
+          padding: 15px;
+        }
+        .file-preview img {
+          width: 120px;
+          height: 160px;
+        }
+        .sub-image-preview img {
+          width: 80px;
+          height: 80px;
+        }
+        .col-md-4,
+        .col-md-8 {
+          flex: 0 0 100%;
+          max-width: 100%;
+        }
+        .page-title {
+          font-size: 24px;
+        }
+      }
+      @media (max-width: 767px) {
+        .row > div {
+          margin-bottom: 20px;
+        }
+        .file-upload-wrapper {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+        .sub-image-preview {
+          margin-bottom: 15px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <%- include('../partials/admin/sidebar') %>
+    <div class="main-content">
+      <nav aria-label="breadcrumb" class="breadcrumbs">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item">
+            <a href="/admin/adminDashboard">Dashboard</a>
+          </li>
+          <li class="breadcrumb-item">
+            <a href="/admin/getProducts">Products</a>
+          </li>
+          <li class="breadcrumb-item active" aria-current="page">
+            Edit Product
+          </li>
+        </ol>
+      </nav>
+      <div class="page-header">
+        <h1 class="page-title">Edit Product</h1>
+        <p class="text-muted mb-0">Update the details of this book</p>
+      </div>
+      <div class="card p-4">
+        <form id="editProductForm" action="/admin/products/<%= product._id %>?_method=PUT" method="POST" enctype="multipart/form-data">
+          <div class="row">
+            <div class="col-md-4">
+              <div class="mb-3">
+                <label class="form-label">Main Image</label>
+                <div class="file-upload-wrapper">
+                  <div class="file-preview">
+                    <img
+                      id="mainImagePreview"
+                      src="<%= product.mainImage %>"
+                      alt="Main Image Preview"
+                    />
+                  </div>
+                  <div class="custom-file-container">
+                    <input
+                      type="file"
+                      class="custom-file-input"
+                      id="mainImage"
+                      name="mainImage"
+                      accept="image/*"
+                    />
+                    <label for="mainImage" class="custom-file-label">
+                      <i class="ri-upload-2-line"></i> Change Image
+                    </label>
+                  </div>
+                </div>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Sub Images (Up to 3)</label>
+                <div class="d-flex flex-wrap gap-3">
+                  <% product.subImages.forEach((subImage, index) => { %>
+                  <div class="sub-image-preview mb-2">
+                    <img
+                      id="subImage<%= index + 1 %>Preview"
+                      src="<%= subImage %>"
+                      alt="Sub Image <%= index + 1 %> Preview"
+                    />
+                    <div class="custom-file-container">
+                      <input
+                        type="file"
+                        class="custom-file-input"
+                        id="subImage<%= index + 1 %>"
+                        name="subImages"
+                        accept="image/*"
+                      />
+                      <label for="subImage<%= index + 1 %>" class="custom-file-label">
+                        <i class="ri-upload-2-line"></i> Change
+                      </label>
+                    </div>
+                  </div>
+                  <% }) %>
+                  <% for (let i = product.subImages.length; i < 3; i++) { %>
+                  <div class="sub-image-preview mb-2">
+                    <img
+                      id="subImage<%= i + 1 %>Preview"
+                      src="/api/placeholder/100/100"
+                      alt="Sub Image <%= i + 1 %> Preview"
+                    />
+                    <div class="custom-file-container">
+                      <input
+                        type="file"
+                        class="custom-file-input"
+                        id="subImage<%= i + 1 %>"
+                        name="subImages"
+                        accept="image/*"
+                      />
+                      <label for="subImage<%= i + 1 %>" class="custom-file-label">
+                        <i class="ri-upload-2-line"></i> Select
+                      </label>
+                    </div>
+                  </div>
+                  <% } %>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-8">
+              <div class="mb-3">
+                <label for="title" class="form-label">Book Title</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="title"
+                  name="title"
+                  value="<%= product.title %>"
+                  required
+                />
+              </div>
+              <div class="mb-3">
+                <label for="author" class="form-label">Author</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="author"
+                  name="author"
+                  value="<%= product.author %>"
+                  required
+                />
+              </div>
+              <div class="mb-3">
+                <label for="description" class="form-label">Description</label>
+                <textarea
+                  class="form-control"
+                  id="description"
+                  name="description"
+                  rows="3"
+                  required
+                ><%= product.description %></textarea>
+              </div>
+              <div class="mb-3">
+                <label for="category" class="form-label">Category</label>
+                <select
+                  class="form-control"
+                  id="category"
+                  name="category"
+                  required
+                >
+                  <option value="">Select a category</option>
+                  <% categories.forEach(category => { %>
+                  <option value="<%= category._id %>" <%= product.category._id.toString() === category._id.toString() ? 'selected' : '' %>>
+                    <%= category.name %>
+                  </option>
+                  <% }) %>
+                </select>
+              </div>
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label for="regularPrice" class="form-label">Regular Price (₹)</label>
+                  <input
+                    type="number"
+                    class="form-control"
+                    id="regularPrice"
+                    name="regularPrice"
+                    value="<%= product.regularPrice %>"
+                    required
+                  />
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label for="salePrice" class="form-label">Sale Price (₹)</label>
+                  <input
+                    type="number"
+                    class="form-control"
+                    id="salePrice"
+                    name="salePrice"
+                    value="<%= product.salePrice %>"
+                    required
+                  />
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label for="stock" class="form-label">Stock Quantity</label>
+                  <input
+                    type="number"
+                    class="form-control"
+                    id="stock"
+                    name="stock"
+                    value="<%= product.stock %>"
+                    required
+                  />
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label for="pages" class="form-label">Pages</label>
+                  <input
+                    type="number"
+                    class="form-control"
+                    id="pages"
+                    name="pages"
+                    value="<%= product.pages %>"
+                    required
+                  />
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label for="language" class="form-label">Language</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="language"
+                    name="language"
+                    value="<%= product.language %>"
+                    required
+                  />
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label for="publisher" class="form-label">Publisher</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="publisher"
+                    name="publisher"
+                    value="<%= product.publisher %>"
+                    required
+                  />
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label for="publishedDate" class="form-label">Published Date</label>
+                  <input
+                    type="date"
+                    class="form-control"
+                    id="publishedDate"
+                    name="publishedDate"
+                    value="<%= product.publishedDate ? product.publishedDate.toISOString().split('T')[0] : '' %>"
+                  />
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label for="isbn" class="form-label">ISBN</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="isbn"
+                    name="isbn"
+                    value="<%= product.isbn || '' %>"
+                  />
+                </div>
+              </div>
+              <div class="mb-3">
+                <label class="form-label d-flex align-items-center">
+                  <span class="me-2">Status</span>
+                  <label class="toggle-switch mb-0">
+                    <input
+                      type="checkbox"
+                      id="isListed"
+                      name="isListed"
+                      <%= product.isListed ? 'checked' : '' %>
+                    />
+                    <span class="slider"></span>
+                  </label>
+                  <span class="ms-2 text-muted" id="statusText"><%= product.isListed ? 'Listed' : 'Unlisted' %></span>
+                </label>
+              </div>
+              <button
+                type="submit"
+                class="btn btn-add w-100"
+                style="background-color: #6f42c1; color: white"
+                id="updateProductButton"
+              >
+                <span class="btn-text">Update Product</span>
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+    <div
+      class="modal fade modal-cropper"
+      id="cropperModal"
+      tabindex="-1"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Crop Image</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <div class="cropper-container">
+              <img id="cropperImage" src="" alt="Image to crop" />
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              Cancel
+            </button>
+            <button type="button" class="btn btn-primary" id="cropButton">
+              Crop & Save
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.19/dist/sweetalert2.all.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+    <script>
+      let cropper;
+      let currentFileInput;
+      let currentImagePreview;
+      let aspectRatio;
+      let cropData = {};
+
+      function initCropper(image, aspectRatioValue) {
+        if (cropper) {
+          cropper.destroy();
+        }
+        cropper = new Cropper(image, {
+          aspectRatio: aspectRatioValue,
+          viewMode: 1,
+          autoCropArea: 1,
+          responsive: true,
+          crop(event) {
+            cropData = event.detail;
+          },
+        });
+      }
+
+      function handleFileInputChange(event, previewId, cropAspectRatio) {
+        const file = event.target.files[0];
+        if (!file) return;
+        currentFileInput = event.target;
+        currentImagePreview = document.getElementById(previewId);
+        aspectRatio = cropAspectRatio;
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          document.getElementById("cropperImage").src = e.target.result;
+          const cropperModal = new bootstrap.Modal(
+            document.getElementById("cropperModal")
+          );
+          cropperModal.show();
+          document.getElementById("cropperModal").addEventListener(
+            "shown.bs.modal",
+            function () {
+              initCropper(document.getElementById("cropperImage"), aspectRatio);
+            },
+            { once: true }
+          );
+        };
+        reader.readAsDataURL(file);
+      }
+
+      document
+        .getElementById("cropButton")
+        .addEventListener("click", function () {
+          if (!cropper) return;
+          const canvas = cropper.getCroppedCanvas({
+            width: aspectRatio === 3 / 4 ? 300 : 200,
+            height: aspectRatio === 3 / 4 ? 400 : 200,
+            imageSmoothingEnabled: true,
+            imageSmoothingQuality: "high",
+          });
+          canvas.toBlob(function (blob) {
+            const croppedFile = new File(
+              [blob],
+              currentFileInput.files[0].name,
+              {
+                type: currentFileInput.files[0].type,
+                lastModified: new Date().getTime(),
+              }
+            );
+            const dataTransfer = new DataTransfer();
+            dataTransfer.items.add(croppedFile);
+            currentFileInput.files = dataTransfer.files;
+            currentImagePreview.src = canvas.toDataURL();
+            const cropperModal = bootstrap.Modal.getInstance(
+              document.getElementById("cropperModal")
+            );
+            cropperModal.hide();
+          }, currentFileInput.files[0].type);
+        });
+
+      document
+        .getElementById("mainImage")
+        .addEventListener("change", function (event) {
+          handleFileInputChange(event, "mainImagePreview", 3 / 4);
+        });
+      document
+        .getElementById("subImage1")
+        .addEventListener("change", function (event) {
+          handleFileInputChange(event, "subImage1Preview", 1);
+        });
+      document
+        .getElementById("subImage2")
+        .addEventListener("change", function (event) {
+          handleFileInputChange(event, "subImage2Preview", 1);
+        });
+      document
+        .getElementById("subImage3")
+        .addEventListener("change", function (event) {
+          handleFileInputChange(event, "subImage3Preview", 1);
+        });
+
+      document
+        .getElementById("isListed")
+        .addEventListener("change", function () {
+          document.getElementById("statusText").textContent = this.checked
+            ? "Listed"
+            : "Unlisted";
+        });
+
+      const updateProductButton = document.getElementById("updateProductButton");
+      const btnText = updateProductButton.querySelector(".btn-text");
+      document
+        .getElementById("editProductForm")
+        .addEventListener("submit", async function (e) {
+          e.preventDefault();
+          const formData = new FormData(this);
+          const subImages = formData.getAll('subImages');
+          console.log('Sub Images being sent:', subImages.map(file => file.name));
+          btnText.textContent = "Updating Product...";
+          updateProductButton.disabled = true;
+          try {
+            const response = await fetch(`/admin/products/<%= product._id %>`, {
+              method: "POST",
+              body: formData,
+            });
+            const data = await response.json();
+            if (response.ok) {
+              Swal.fire({
+                title: "Success!",
+                text: data.message || "Product updated successfully",
+                icon: "success",
+                timer: 2000,
+                showConfirmButton: false,
+              }).then(() => {
+                window.location.href = "/admin/getProducts";
+              });
+            } else {
+              Swal.fire({
+                title: "Error!",
+                text: data.error || "Failed to update product",
+                icon: "error",
+              });
+            }
+          } catch (error) {
+            Swal.fire({
+              title: "Error!",
+              text: "Server Error: " + error.message,
+              icon: "error",
+            });
+          } finally {
+            btnText.textContent = "Update Product";
+            updateProductButton.disabled = false;
+          }
+        });
+
+      const fileInputs = document.querySelectorAll(".custom-file-input");
+      fileInputs.forEach((input) => {
+        input.addEventListener("change", function () {
+          const label = this.nextElementSibling;
+          const fileName = this.files[0]?.name;
+          if (fileName) {
+            if (fileName.length > 12) {
+              label.textContent = fileName.substring(0, 10) + "...";
+            } else {
+              label.textContent = fileName;
+            }
+          } else {
+            label.innerHTML = '<i class="ri-upload-2-line"></i> Change Image';
+          }
+        });
+      });
+    </script>
+  </body>
+</html>

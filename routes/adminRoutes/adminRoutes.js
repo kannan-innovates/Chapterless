@@ -50,5 +50,11 @@ adminRoute.get('/categories/list', async (req, res) => {
     res.status(500).json({ error: 'Server Error' });
   }
 });
+adminRoute.get('/products/:id/edit',  productController.getEditProduct);
+adminRoute.post('/products/:id', upload.fields([{ name: 'mainImage' }, { name: 'subImages', maxCount: 3 }]), productController.updateProduct);
+
+  adminRoute.put('/products/:id/soft-delete',  productController.softDeleteProduct);
+
+  adminRoute.get('/getProducts', productController.getProducts);
 
 module.exports = adminRoute;

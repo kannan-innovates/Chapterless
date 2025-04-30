@@ -134,10 +134,10 @@
                 </td>
                 <td>
                   <div class="actions">
-                    <button class="btn-action btn-edit">
+                    <button class="btn-action btn-edit" data-id="<%= product._id %>">
                       <i class="fas fa-edit"></i>
                     </button>
-                    <button class="btn-action btn-delete">
+                    <button class="btn-action btn-delete" data-id="<%= product._id %>">
                       <i class="fas fa-trash"></i>
                     </button>
                   </div>
@@ -214,69 +214,136 @@
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.19/dist/sweetalert2.all.min.js"></script>
     <script>
-      // Search functionality
-      const searchInput = document.querySelector('.search-input');
-      searchInput.addEventListener('input', function () {
-        const category = document.getElementById('categoryFilter').value;
-        const sort = document.getElementById('sortBy').value;
-        window.location.href = `/admin/getProducts?search=${encodeURIComponent(this.value)}&category=${category}&sort=${sort}&page=1`;
-      });
+      document.addEventListener('DOMContentLoaded', () => {
+        // Search functionality
+        const searchInput = document.querySelector('.search-input');
+        searchInput.addEventListener('input', function () {
+          const category = document.getElementById('categoryFilter').value;
+          const sort = document.getElementById('sortBy').value;
+          window.location.href = `/admin/getProducts?search=${encodeURIComponent(this.value)}&category=${category}&sort=${sort}&page=1`;
+        });
 
-      // Filter and Sort functionality
-      document.getElementById('categoryFilter').addEventListener('change', function () {
-        const search = document.querySelector('.search-input').value;
-        const sort = document.getElementById('sortBy').value;
-        window.location.href = `/admin/getProducts?search=${encodeURIComponent(search)}&category=${this.value}&sort=${sort}&page=1`;
-      });
+        // Filter and Sort functionality
+        document.getElementById('categoryFilter').addEventListener('change', function () {
+          const search = document.querySelector('.search-input').value;
+          const sort = document.getElementById('sortBy').value;
+          window.location.href = `/admin/getProducts?search=${encodeURIComponent(search)}&category=${this.value}&sort=${sort}&page=1`;
+        });
 
-      document.getElementById('sortBy').addEventListener('change', function () {
-        const search = document.querySelector('.search-input').value;
-        const category = document.getElementById('categoryFilter').value;
-        window.location.href = `/admin/getProducts?search=${encodeURIComponent(search)}&category=${category}&sort=${this.value}&page=1`;
-      });
+        document.getElementById('sortBy').addEventListener('change', function () {
+          const search = document.querySelector('.search-input').value;
+          const category = document.getElementById('categoryFilter').value;
+          window.location.href = `/admin/getProducts?search=${encodeURIComponent(search)}&category=${category}&sort=${this.value}&page=1`;
+        });
 
-      // Toggle Product Status
-      const toggleSwitches = document.querySelectorAll('.toggle-status');
-      toggleSwitches.forEach((toggle) => {
-        toggle.addEventListener('change', async function () {
-          const productId = this.getAttribute('data-product-id');
-          const isListed = this.checked;
+        // Toggle Product Status
+        const toggleSwitches = document.querySelectorAll('.toggle-status');
+        toggleSwitches.forEach((toggle) => {
+          toggle.addEventListener('change', async function () {
+            const productId = this.getAttribute('data-product-id');
+            const isListed = this.checked;
 
-          try {
-            const response = await fetch(`/admin/products/${productId}/toggle`, {
-              method: 'PUT',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({ isListed }),
-            });
-            const data = await response.json();
-
-            if (response.ok) {
-              Swal.fire({
-                toast: true,
-                position: 'top-end',
-                showConfirmButton: false,
-                timer: 3000,
-                icon: 'success',
-                title: data.message,
+            try {
+              const response = await fetch(`/admin/products/${productId}/toggle`, {
+                method: 'PUT',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ isListed }),
               });
-            } else {
+              const data = await response.json();
+
+              if (response.ok) {
+                Swal.fire({
+                  toast: true,
+                  position: 'top-end',
+                  showConfirmButton: false,
+                  timer: 3000,
+                  icon: 'success',
+                  title: data.message,
+                });
+              } else {
+                this.checked = !isListed; // Revert toggle
+                Swal.fire({
+                  title: 'Error!',
+                  text: data.error || 'Failed to toggle status',
+                  icon: 'error',
+                });
+              }
+            } catch (error) {
               this.checked = !isListed; // Revert toggle
               Swal.fire({
                 title: 'Error!',
-                text: data.error || 'Failed to toggle status',
+                text: 'Server Error',
                 icon: 'error',
               });
             }
-          } catch (error) {
-            this.checked = !isListed; // Revert toggle
-            Swal.fire({
-              title: 'Error!',
-              text: 'Server Error',
-              icon: 'error',
+          });
+        });
+
+        // Edit Product
+        document.querySelectorAll('.btn-edit').forEach(button => {
+          button.addEventListener('click', function () {
+            console.log('Edit button clicked for productId:', this.getAttribute('data-id'));
+            const productId = this.getAttribute('data-id');
+            window.location.href = `/admin/products/${productId}/edit`;
+          });
+        });
+
+        // Soft Delete Product
+        document.querySelectorAll('.btn-delete').forEach(button => {
+          button.addEventListener('click', async function () {
+            console.log('Delete button clicked for productId:', this.getAttribute('data-id'));
+            const productId = this.getAttribute('data-id');
+            const confirmed = await Swal.fire({
+              title: 'Are you sure?',
+              text: 'This will soft delete the product (it can be restored later).',
+              icon: 'warning',
+              showCancelButton: true,
+              confirmButtonColor: '#6f42c1',
+              cancelButtonColor: '#d33',
+              confirmButtonText: 'Yes, delete it!',
+              cancelButtonText: 'Cancel',
             });
-          }
+
+            if (confirmed.isConfirmed) {
+              try {
+                const response = await fetch(`/admin/products/${productId}/soft-delete`, {
+                  method: 'PUT',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                });
+                const data = await response.json();
+
+                if (response.ok) {
+                  Swal.fire({
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 3000,
+                    icon: 'success',
+                    title: data.message,
+                  }).then(() => {
+                    window.location.reload();
+                  });
+                } else {
+                  Swal.fire({
+                    title: 'Error!',
+                    text: data.error || 'Failed to delete product',
+                    icon: 'error',
+                  });
+                }
+              } catch (error) {
+                console.error('Fetch error:', error);
+                Swal.fire({
+                  title: 'Error!',
+                  text: 'Server Error: ' + error.message,
+                  icon: 'error',
+                });
+              }
+            }
+          });
         });
       });
     </script>

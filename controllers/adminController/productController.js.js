@@ -3,7 +3,6 @@ const Category = require('../../models/categorySchema');
 const cloudinary = require('../../config/cloudinary');
 const fs = require('fs');
 
-
 // Get Products Page
 const getProducts = async (req, res) => {
   try {
@@ -15,7 +14,7 @@ const getProducts = async (req, res) => {
     const skip = (page - 1) * limit;
 
     // Build query
-    const query = { isListed: true }; // Only listed products
+    const query = { isListed: true, isDeleted: false }; // Only listed and non-deleted products
     if (search) {
       query.$or = [
         { title: { $regex: search, $options: 'i' } },
@@ -143,6 +142,7 @@ const addProduct = async (req, res) => {
       mainImage: mainImageUrl,
       subImages,
       isListed: isListed === 'on',
+      isDeleted: false,
     });
 
     await product.save();
@@ -179,4 +179,140 @@ const toggleProductStatus = async (req, res) => {
   }
 };
 
-module.exports = { getProducts, addProduct, toggleProductStatus };
+// Get Edit Product Page
+const getEditProduct = async (req, res) => {
+  try {
+    const productId = req.params.id;
+    const product = await Product.findById(productId).populate('category');
+    const categories = await Category.find({ isListed: true });
+
+    if (!product || product.isDeleted) {
+      return res.status(404).json({ error: 'Product not found' });
+    }
+
+    res.render('editProduct', { product, categories });
+  } catch (error) {
+    console.error('Error fetching product for edit:', error);
+    res.status(500).json({ error: 'Server Error' });
+  }
+};
+
+// Update Product
+const updateProduct = async (req, res) => {
+  console.log('Update request received for productId:', req.params.id);
+  try {
+    const productId = req.params.id;
+    const {
+      title,
+      author,
+      description,
+      category,
+      regularPrice,
+      salePrice,
+      stock,
+      pages,
+      language,
+      publisher,
+      publishedDate,
+      isbn,
+      isListed,
+    } = req.body;
+
+    console.log('Request body:', req.body);
+    console.log('Uploaded files:', req.files);
+
+    const product = await Product.findById(productId);
+    console.log('Product found:', product);
+    if (!product || product.isDeleted) {
+      console.log('Product not found or deleted');
+      return res.status(404).json({ error: 'Product not found' });
+    }
+
+    const categoryExists = await Category.findById(category);
+    console.log('Category exists:', categoryExists);
+    if (!categoryExists) {
+      console.log('Invalid category');
+      return res.status(400).json({ error: 'Invalid category' });
+    }
+
+    let mainImageUrl = product.mainImage;
+    if (req.files && req.files.mainImage && req.files.mainImage.length > 0) {
+      const file = req.files.mainImage[0];
+      console.log('Uploading main image from:', file.path);
+      const result = await cloudinary.uploader.upload(file.path, { folder: 'products' });
+      mainImageUrl = result.secure_url;
+      fs.unlinkSync(file.path);
+      if (product.mainImage) {
+        const publicId = product.mainImage.split('/').pop().split('.')[0];
+        await cloudinary.uploader.destroy(`products/${publicId}`);
+      }
+    }
+
+    const subImages = product.subImages || [];
+    const processedPaths = new Set();
+    if (req.files && req.files.subImages && req.files.subImages.length > 0) {
+      for (const file of req.files.subImages) {
+        console.log('Processing sub image:', file.path);
+        if (processedPaths.has(file.path)) continue;
+        if (!fs.existsSync(file.path)) {
+          console.warn('Sub image not found:', file.path);
+          continue;
+        }
+        const result = await cloudinary.uploader.upload(file.path, { folder: 'products/sub' });
+        subImages.push(result.secure_url);
+        processedPaths.add(file.path);
+        fs.unlinkSync(file.path);
+      }
+    }
+
+    product.title = title;
+    product.author = author;
+    product.description = description;
+    product.category = category;
+    product.regularPrice = parseFloat(regularPrice);
+    product.salePrice = parseFloat(salePrice);
+    product.stock = parseInt(stock);
+    product.pages = parseInt(pages);
+    product.language = language;
+    product.publisher = publisher;
+    product.publishedDate = publishedDate ? new Date(publishedDate) : undefined;
+    product.isbn = isbn;
+    product.mainImage = mainImageUrl;
+    product.subImages = subImages;
+    product.isListed = isListed === 'on';
+
+    await product.save();
+    console.log('Product updated:', product._id);
+    res.status(200).json({ message: 'Product updated successfully' });
+  } catch (error) {
+    console.error('Error updating product:', error);
+    if (error.message.includes('ENOENT')) {
+      res.status(500).json({ error: 'File upload failed: File not found on server' });
+    } else {
+      res.status(500).json({ error: 'Server Error' });
+    }
+  }
+};
+// Soft Delete Product
+const softDeleteProduct = async (req, res) => {
+  console.log('Soft delete request received for productId:', req.params.id);
+  try {
+    const productId = req.params.id;
+    const product = await Product.findById(productId);
+    console.log('Product found:', product);
+    if (!product) {
+      console.log('Product not found');
+      return res.status(404).json({ error: 'Product not found' });
+    }
+
+    product.isDeleted = true;
+    await product.save();
+    console.log('Product soft deleted:', product._id);
+    res.status(200).json({ message: 'Product soft deleted successfully' });
+  } catch (error) {
+    console.error('Error soft deleting product:', error);
+    res.status(500).json({ error: 'Server Error' });
+  }
+};
+
+module.exports = { getProducts, addProduct, toggleProductStatus, getEditProduct, updateProduct, softDeleteProduct };
