@@ -1,4 +1,3 @@
-<!-- views/user/shop.ejs -->
 <%- include("../partials/user/header") %>
 
 <!-- Shop Header -->
@@ -33,62 +32,48 @@
           <!-- Category Filter -->
           <div class="mb-4">
             <h4 class="fs-6 fw-semibold mb-3">Categories</h4>
-            <div class="form-check mb-2">
-              <input class="form-check-input" type="checkbox" value="" id="fiction">
-              <label class="form-check-label" for="fiction">
-                Fiction
+            <div class="form-check mb-2" data-category="all">
+              <input class="form-check-input" type="checkbox" value="all" id="allCategories" checked>
+              <label class="form-check-label" for="allCategories">
+                All Categories
               </label>
             </div>
-            <div class="form-check mb-2">
-              <input class="form-check-input" type="checkbox" value="" id="non-fiction">
-              <label class="form-check-label" for="non-fiction">
-                Non-Fiction
-              </label>
-            </div>
-            <div class="form-check mb-2">
-              <input class="form-check-input" type="checkbox" value="" id="poetry">
-              <label class="form-check-label" for="poetry">
-                Poetry
-              </label>
-            </div>
-            <div class="form-check mb-2">
-              <input class="form-check-input" type="checkbox" value="" id="mystery">
-              <label class="form-check-label" for="mystery">
-                Mystery & Thriller
-              </label>
-            </div>
-            <div class="form-check">
-              <input class="form-check-input" type="checkbox" value="" id="philosophy">
-              <label class="form-check-label" for="philosophy">
-                Philosophy
-              </label>
-            </div>
+            <% if (categories && categories.length > 0) { %>
+              <% categories.forEach(category => { %>
+                <div class="form-check mb-2" data-category="<%= category._id %>">
+                  <input class="form-check-input category-checkbox" type="checkbox" value="<%= category._id %>" id="cat_<%= category._id %>">
+                  <label class="form-check-label" for="cat_<%= category._id %>">
+                    <%= category.name %>
+                  </label>
+                </div>
+              <% }) %>
+            <% } %>
           </div>
           
           <!-- Price Range Filter -->
           <div class="mb-4">
             <h4 class="fs-6 fw-semibold mb-3">Price Range</h4>
             <div class="range-slider">
-              <input type="range" class="form-range custom-range" min="0" max="5000" id="priceRange">
+              <input type="range" class="form-range custom-range" min="0" max="5000" id="priceRange" value="5000">
               <div class="d-flex justify-content-between mt-2">
-                <span class="small text-muted">₹0</span>
-                <span class="small text-muted">₹5000</span>
+                <span class="small text-muted" id="minPrice">₹0</span>
+                <span class="small text-muted" id="maxPrice">₹5000</span>
               </div>
             </div>
             <div class="price-inputs d-flex gap-2 mt-3">
               <div class="input-group input-group-sm">
                 <span class="input-group-text">₹</span>
-                <input type="number" class="form-control" placeholder="Min" aria-label="Minimum price">
+                <input type="number" class="form-control" id="minPriceInput" placeholder="Min" aria-label="Minimum price" min="0" max="5000" value="0">
               </div>
               <div class="input-group input-group-sm">
                 <span class="input-group-text">₹</span>
-                <input type="number" class="form-control" placeholder="Max" aria-label="Maximum price">
+                <input type="number" class="form-control" id="maxPriceInput" placeholder="Max" aria-label="Maximum price" min="0" max="5000" value="5000">
               </div>
             </div>
           </div>
           
           <!-- Apply Filters Button -->
-          <button class="btn btn-dark w-100">Apply Filters</button>
+          <button class="btn btn-dark w-100" onclick="applyFilters()">Apply Filters</button>
         </div>
       </div>
       
@@ -98,12 +83,12 @@
         <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
           <div class="d-flex align-items-center mb-3 mb-md-0">
             <span class="me-2 text-muted">Sort by:</span>
-            <select class="form-select form-select-sm" style="width: auto;">
-              <option selected>Recommended</option>
-              <option>Price: low to high</option>
-              <option>Price: high to low</option>
-              <option>New arrivals</option>
-              <option>Best selling</option>
+            <select class="form-select form-select-sm" id="sortSelect" onchange="sortProducts()" style="width: auto;">
+              <option value="recommended" selected>Recommended</option>
+              <option value="price-asc">Price: low to high</option>
+              <option value="price-desc">Price: high to low</option>
+              <option value="date-desc">New arrivals</option>
+              <option value="stock-desc">Best selling</option>
             </select>
           </div>
           <div class="d-flex align-items-center">
@@ -120,300 +105,68 @@
         </div>
         
         <!-- Products -->
-        <div class="row g-4">
-          <!-- Product 1 -->
-          <div class="col-sm-6 col-md-4">
-            <div class="product-card bg-white h-100">
-              <div class="product-image-container">
-                <!-- <span class="product-tag">New</span> -->
-                <img src="/api/placeholder/500/600" alt="The Silent Echo" class="product-image" />
-                <div class="product-actions">
-                  <button class="action-btn" title="Quick view">
-                    <i class="ri-eye-line"></i>
-                  </button>
-                  <button class="action-btn" title="Add to wishlist">
-                    <i class="ri-heart-line"></i>
-                  </button>
-                  <button class="action-btn" title="Add to cart">
-                    <i class="ri-shopping-cart-line"></i>
-                  </button>
+        <div class="row g-4" id="productGrid">
+          <% if (products && products.length > 0) { %>
+            <% products.forEach(product => { %>
+              <div class="col-sm-6 col-md-4 product-item" 
+                   data-category="<%= product.category._id %>" 
+                   data-price="<%= product.salePrice %>" 
+                   data-date="<%= new Date(product.createdAt).getTime() %>" 
+                   data-stock="<%= product.stock %>">
+                <div class="product-card bg-white h-100">
+                  <div class="product-image-container">
+                    <% 
+                      // Determine if the product is "new" (e.g., added within the last 30 days)
+                      const now = new Date();
+                      const createdAt = new Date(product.createdAt);
+                      const diffDays = (now - createdAt) / (1000 * 60 * 60 * 24);
+                      const isNew = diffDays <= 30;
+                    %>
+                    <% if (isNew) { %>
+                      <span class="product-tag">New</span>
+                    <% } %>
+                    <a href="/products/<%= product._id %>" class="text-decoration-none">
+                      <img src="<%= product.mainImage || '/api/placeholder/500/600' %>" alt="<%= product.title %>" class="product-image" />
+                    </a>
+                    <div class="product-actions">
+                      <button class="action-btn" title="Quick view">
+                        <i class="ri-eye-line"></i>
+                      </button>
+                      <button class="action-btn" title="Add to wishlist">
+                        <i class="ri-heart-line"></i>
+                      </button>
+                      <button class="action-btn" title="Add to cart">
+                        <i class="ri-shopping-cart-line"></i>
+                      </button>
+                    </div>
+                  </div>
+                  <div class="p-3">
+                    <h3 class="fs-5 fw-semibold mb-1">
+                      <a href="/products/<%= product._id %>" class="text-dark text-decoration-none"><%= product.title %></a>
+                    </h3>
+                    <p class="text-muted small mb-2"><%= product.author %></p>
+                    <div class="d-flex justify-content-between align-items-center">
+                      <span class="fw-bold">₹<%= product.salePrice %></span>
+                      <button class="add-to-cart border-0">
+                        <i class="ri-shopping-cart-line"></i>
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
-              <div class="p-3">
-                <h3 class="fs-5 fw-semibold mb-1">The Silent Echo</h3>
-                <p class="text-muted small mb-2">Eleanor Blackwood</p>
-                <div class="d-flex justify-content-between align-items-center">
-                  <span class="fw-bold">₹1,499</span>
-                  <button class="add-to-cart border-0">
-                    <i class="ri-shopping-cart-line"></i>
-                  </button>
-                </div>
-              </div>
+            <% }) %>
+          <% } else { %>
+            <div class="col-12 text-center">
+              <p class="text-muted">No products available at the moment.</p>
             </div>
-          </div>
-          
-          <!-- Product 2 -->
-          <div class="col-sm-6 col-md-4">
-            <div class="product-card bg-white h-100">
-              <div class="product-image-container">
-                <!-- <span class="product-tag">Bestseller</span> -->
-                <img src="/api/placeholder/500/600" alt="Whispers in the Void" class="product-image" />
-                <div class="product-actions">
-                  <button class="action-btn" title="Quick view">
-                    <i class="ri-eye-line"></i>
-                  </button>
-                  <button class="action-btn" title="Add to wishlist">
-                    <i class="ri-heart-line"></i>
-                  </button>
-                  <button class="action-btn" title="Add to cart">
-                    <i class="ri-shopping-cart-line"></i>
-                  </button>
-                </div>
-              </div>
-              <div class="p-3">
-                <h3 class="fs-5 fw-semibold mb-1">Whispers in the Void</h3>
-                <p class="text-muted small mb-2">Jonathan Mercer</p>
-                <div class="d-flex justify-content-between align-items-center">
-                  <span class="fw-bold">₹1,299</span>
-                  <button class="add-to-cart border-0">
-                    <i class="ri-shopping-cart-line"></i>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          <!-- Product 3 -->
-          <div class="col-sm-6 col-md-4">
-            <div class="product-card bg-white h-100">
-              <div class="product-image-container">
-                <img src="/api/placeholder/500/600" alt="The Art of Stillness" class="product-image" />
-                <div class="product-actions">
-                  <button class="action-btn" title="Quick view">
-                    <i class="ri-eye-line"></i>
-                  </button>
-                  <button class="action-btn" title="Add to wishlist">
-                    <i class="ri-heart-line"></i>
-                  </button>
-                  <button class="action-btn" title="Add to cart">
-                    <i class="ri-shopping-cart-line"></i>
-                  </button>
-                </div>
-              </div>
-              <div class="p-3">
-                <h3 class="fs-5 fw-semibold mb-1">The Art of Stillness</h3>
-                <p class="text-muted small mb-2">Sophia Chen</p>
-                <div class="d-flex justify-content-between align-items-center">
-                  <span class="fw-bold">₹1,199</span>
-                  <button class="add-to-cart border-0">
-                    <i class="ri-shopping-cart-line"></i>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          <!-- Product 4 -->
-          <div class="col-sm-6 col-md-4">
-            <div class="product-card bg-white h-100">
-              <div class="product-image-container">
-                <!-- <span class="product-tag">Limited</span> -->
-                <img src="/api/placeholder/500/600" alt="Fragments of Light" class="product-image" />
-                <div class="product-actions">
-                  <button class="action-btn" title="Quick view">
-                    <i class="ri-eye-line"></i>
-                  </button>
-                  <button class="action-btn" title="Add to wishlist">
-                    <i class="ri-heart-line"></i>
-                  </button>
-                  <button class="action-btn" title="Add to cart">
-                    <i class="ri-shopping-cart-line"></i>
-                  </button>
-                </div>
-              </div>
-              <div class="p-3">
-                <h3 class="fs-5 fw-semibold mb-1">Fragments of Light</h3>
-                <p class="text-muted small mb-2">Marcus Aurelius</p>
-                <div class="d-flex justify-content-between align-items-center">
-                  <span class="fw-bold">₹1,599</span>
-                  <button class="add-to-cart border-0">
-                    <i class="ri-shopping-cart-line"></i>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          <!-- Product 5 -->
-          <div class="col-sm-6 col-md-4">
-            <div class="product-card bg-white h-100">
-              <div class="product-image-container">
-                <img src="/api/placeholder/500/600" alt="The Forgotten Path" class="product-image" />
-                <div class="product-actions">
-                  <button class="action-btn" title="Quick view">
-                    <i class="ri-eye-line"></i>
-                  </button>
-                  <button class="action-btn" title="Add to wishlist">
-                    <i class="ri-heart-line"></i>
-                  </button>
-                  <button class="action-btn" title="Add to cart">
-                    <i class="ri-shopping-cart-line"></i>
-                  </button>
-                </div>
-              </div>
-              <div class="p-3">
-                <h3 class="fs-5 fw-semibold mb-1">The Forgotten Path</h3>
-                <p class="text-muted small mb-2">Olivia Bennett</p>
-                <div class="d-flex justify-content-between align-items-center">
-                  <span class="fw-bold">₹1,349</span>
-                  <button class="add-to-cart border-0">
-                    <i class="ri-shopping-cart-line"></i>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          <!-- Product 6 -->
-          <div class="col-sm-6 col-md-4">
-            <div class="product-card bg-white h-100">
-              <div class="product-image-container">
-                <img src="/api/placeholder/500/600" alt="Echoes of Eternity" class="product-image" />
-                <div class="product-actions">
-                  <button class="action-btn" title="Quick view">
-                    <i class="ri-eye-line"></i>
-                  </button>
-                  <button class="action-btn" title="Add to wishlist">
-                    <i class="ri-heart-line"></i>
-                  </button>
-                  <button class="action-btn" title="Add to cart">
-                    <i class="ri-shopping-cart-line"></i>
-                  </button>
-                </div>
-              </div>
-              <div class="p-3">
-                <h3 class="fs-5 fw-semibold mb-1">Echoes of Eternity</h3>
-                <p class="text-muted small mb-2">Alexander Reid</p>
-                <div class="d-flex justify-content-between align-items-center">
-                  <span class="fw-bold">₹1,399</span>
-                  <button class="add-to-cart border-0">
-                    <i class="ri-shopping-cart-line"></i>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          <!-- Product 7 -->
-          <div class="col-sm-6 col-md-4">
-            <div class="product-card bg-white h-100">
-              <div class="product-image-container">
-                <!-- <span class="product-tag">New</span> -->
-                <img src="/api/placeholder/500/600" alt="Silent Memories" class="product-image" />
-                <div class="product-actions">
-                  <button class="action-btn" title="Quick view">
-                    <i class="ri-eye-line"></i>
-                  </button>
-                  <button class="action-btn" title="Add to wishlist">
-                    <i class="ri-heart-line"></i>
-                  </button>
-                  <button class="action-btn" title="Add to cart">
-                    <i class="ri-shopping-cart-line"></i>
-                  </button>
-                </div>
-              </div>
-              <div class="p-3">
-                <h3 class="fs-5 fw-semibold mb-1">Silent Memories</h3>
-                <p class="text-muted small mb-2">Isabella Frost</p>
-                <div class="d-flex justify-content-between align-items-center">
-                  <span class="fw-bold">₹1,249</span>
-                  <button class="add-to-cart border-0">
-                    <i class="ri-shopping-cart-line"></i>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          <!-- Product 8 -->
-          <div class="col-sm-6 col-md-4">
-            <div class="product-card bg-white h-100">
-              <div class="product-image-container">
-                <img src="/api/placeholder/500/600" alt="The Philosophy of Time" class="product-image" />
-                <div class="product-actions">
-                  <button class="action-btn" title="Quick view">
-                    <i class="ri-eye-line"></i>
-                  </button>
-                  <button class="action-btn" title="Add to wishlist">
-                    <i class="ri-heart-line"></i>
-                  </button>
-                  <button class="action-btn" title="Add to cart">
-                    <i class="ri-shopping-cart-line"></i>
-                  </button>
-                </div>
-              </div>
-              <div class="p-3">
-                <h3 class="fs-5 fw-semibold mb-1">The Philosophy of Time</h3>
-                <p class="text-muted small mb-2">Nicholas Harlow</p>
-                <div class="d-flex justify-content-between align-items-center">
-                  <span class="fw-bold">₹1,549</span>
-                  <button class="add-to-cart border-0">
-                    <i class="ri-shopping-cart-line"></i>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          <!-- Product 9 -->
-          <div class="col-sm-6 col-md-4">
-            <div class="product-card bg-white h-100">
-              <div class="product-image-container">
-                <!-- <span class="product-tag">Limited</span> -->
-                <img src="/api/placeholder/500/600" alt="Midnight Tales" class="product-image" />
-                <div class="product-actions">
-                  <button class="action-btn" title="Quick view">
-                    <i class="ri-eye-line"></i>
-                  </button>
-                  <button class="action-btn" title="Add to wishlist">
-                    <i class="ri-heart-line"></i>
-                  </button>
-                  <button class="action-btn" title="Add to cart">
-                    <i class="ri-shopping-cart-line"></i>
-                  </button>
-                </div>
-              </div>
-              <div class="p-3">
-                <h3 class="fs-5 fw-semibold mb-1">Midnight Tales</h3>
-                <p class="text-muted small mb-2">Victoria Moon</p>
-                <div class="d-flex justify-content-between align-items-center">
-                  <span class="fw-bold">₹1,149</span>
-                  <button class="add-to-cart border-0">
-                    <i class="ri-shopping-cart-line"></i>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
+          <% } %>
         </div>
         
         <!-- Pagination -->
         <div class="d-flex justify-content-center mt-5">
           <nav aria-label="Page navigation">
-            <ul class="pagination">
-              <li class="page-item disabled">
-                <a class="page-link" href="#" aria-label="Previous">
-                  <span aria-hidden="true">&laquo;</span>
-                </a>
-              </li>
-              <li class="page-item active"><a class="page-link" href="#">1</a></li>
-              <li class="page-item"><a class="page-link" href="#">2</a></li>
-              <li class="page-item"><a class="page-link" href="#">3</a></li>
-              <li class="page-item">
-                <a class="page-link" href="#" aria-label="Next">
-                  <span aria-hidden="true">&raquo;</span>
-                </a>
-              </li>
+            <ul class="pagination" id="pagination">
+              <!-- Pagination will be populated dynamically -->
             </ul>
           </nav>
         </div>
@@ -425,7 +178,7 @@
 <%- include("../partials/user/footer") %>
 
 <style>
-  /* Additional styles for shop page */
+  /* [Existing styles remain unchanged] */
   .product-actions {
     position: absolute;
     bottom: 0;
@@ -503,7 +256,6 @@
     background-color: #333;
   }
   
-  /* Custom range slider styling */
   .custom-range {
     -webkit-appearance: none;
     width: 100%;
@@ -532,7 +284,7 @@
     border: none;
   }
   
-  .custom-range::-webkit-slider-runnable-track {
+ scad .custom-range::-webkit-slider-runnable-track {
     width: 100%;
     height: 6px;
     cursor: pointer;
@@ -552,13 +304,11 @@
     background: #d3d3d3;
   }
   
-  /* Form checkboxes styling to match black theme */
   .form-check-input:checked {
     background-color: #000;
     border-color: #000;
   }
   
-  /* Responsive adjustments */
   @media (max-width: 767.98px) {
     .product-actions {
       opacity: 1;
@@ -566,7 +316,6 @@
     }
   }
   
-  /* Product image container styling */
   .product-image-container {
     position: relative;
     overflow: hidden;
@@ -597,3 +346,71 @@
     z-index: 1;
   }
 </style>
+
+<script>
+  // Initialize price range
+  document.getElementById('priceRange').addEventListener('input', function() {
+    const max = parseInt(this.max);
+    const value = parseInt(this.value);
+    document.getElementById('maxPrice').textContent = `₹${value}`;
+    document.getElementById('maxPriceInput').value = value;
+    document.getElementById('minPriceInput').max = value;
+  });
+
+  document.getElementById('minPriceInput').addEventListener('input', function() {
+    const min = parseInt(this.value);
+    const max = parseInt(document.getElementById('maxPriceInput').value);
+    if (min > max) document.getElementById('maxPriceInput').value = min;
+    document.getElementById('priceRange').value = max;
+    document.getElementById('minPrice').textContent = `₹${min}`;
+  });
+
+  document.getElementById('maxPriceInput').addEventListener('input', function() {
+    const max = parseInt(this.value);
+    const min = parseInt(document.getElementById('minPriceInput').value);
+    if (max < min) document.getElementById('minPriceInput').value = max;
+    document.getElementById('priceRange').value = max;
+    document.getElementById('maxPrice').textContent = `₹${max}`;
+  });
+
+  // Filter and Sort Functions
+  function applyFilters() {
+    const selectedCategories = Array.from(document.querySelectorAll('.category-checkbox:checked'))
+      .map(cb => cb.value)
+      .filter(value => value !== 'all');
+    const minPrice = parseInt(document.getElementById('minPriceInput').value) || 0;
+    const maxPrice = parseInt(document.getElementById('maxPriceInput').value) || 5000;
+    const items = document.getElementsByClassName('product-item');
+
+    for (let item of items) {
+      const itemCategory = item.getAttribute('data-category');
+      const itemPrice = parseInt(item.getAttribute('data-price'));
+      const matchesCategory = selectedCategories.length === 0 || selectedCategories.includes(itemCategory);
+      const matchesPrice = itemPrice >= minPrice && itemPrice <= maxPrice;
+      item.style.display = matchesCategory && matchesPrice ? 'block' : 'none';
+    }
+  }
+
+  function sortProducts() {
+    const sortValue = document.getElementById('sortSelect').value;
+    const items = Array.from(document.getElementsByClassName('product-item'));
+    items.sort((a, b) => {
+      switch (sortValue) {
+        case 'price-asc': return parseInt(a.getAttribute('data-price')) - parseInt(b.getAttribute('data-price'));
+        case 'price-desc': return parseInt(b.getAttribute('data-price')) - parseInt(a.getAttribute('data-price'));
+        case 'date-desc': return parseInt(b.getAttribute('data-date')) - parseInt(a.getAttribute('data-date'));
+        case 'stock-desc': return parseInt(b.getAttribute('data-stock')) - parseInt(a.getAttribute('data-stock'));
+        case 'recommended':
+        default: return 0; // No sorting for recommended
+      }
+    });
+    const productGrid = document.getElementById('productGrid');
+    items.forEach(item => productGrid.appendChild(item));
+  }
+
+  // Initial load
+  document.addEventListener('DOMContentLoaded', () => {
+    sortProducts(); // Apply initial sort
+    applyFilters(); // Apply initial filters
+  });
+</script>
