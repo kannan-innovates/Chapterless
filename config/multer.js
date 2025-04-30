@@ -1,14 +1,23 @@
-// config/multer.js
 const multer = require('multer');
 const path = require('path');
+const fs = require('fs');
 
-// Configure Multer storage
+// Ensure uploads directory exists
+const uploadDir = 'uploads';
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, 'uploads/');
+    cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
-    cb(null, Date.now() + path.extname(file.originalname));
+    // Add a random string to ensure unique filenames
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+    const uniqueFilename = `${uniqueSuffix}${path.extname(file.originalname)}`;
+    console.log(`Saving file as: ${uniqueFilename}`);
+    cb(null, uniqueFilename);
   },
 });
 

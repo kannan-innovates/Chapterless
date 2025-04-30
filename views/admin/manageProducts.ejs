@@ -23,22 +23,21 @@
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.19/dist/sweetalert2.min.css"
     />
-    <!-- Add Cropperjs CSS -->
-    <link 
-      rel="stylesheet" 
+    <link
+      rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css"
     />
     <style>
       body {
         background-color: #f5f7fa;
-        font-family: 'Inter', sans-serif;
+        font-family: "Inter", sans-serif;
       }
       .main-content {
         margin-left: 250px;
         padding: 30px;
       }
       .page-title {
-        font-family: 'Montserrat', sans-serif;
+        font-family: "Montserrat", sans-serif;
         font-size: 28px;
         font-weight: 700;
       }
@@ -71,9 +70,14 @@
         padding: 10px 20px;
         border-radius: 5px;
         transition: background-color 0.3s;
+        position: relative;
       }
       .btn-add:hover {
         background-color: #563d7c;
+      }
+      .btn-add:disabled {
+        background-color: #a29bce;
+        cursor: not-allowed;
       }
       .toggle-switch {
         position: relative;
@@ -99,7 +103,7 @@
       }
       .slider:before {
         position: absolute;
-        content: '';
+        content: "";
         height: 16px;
         width: 16px;
         left: 2px;
@@ -128,8 +132,6 @@
         color: #212529;
         font-weight: 500;
       }
-      
-      /* Custom File Input Styling */
       .custom-file-container {
         position: relative;
         margin-top: 10px;
@@ -156,8 +158,6 @@
       .custom-file-label i {
         margin-right: 5px;
       }
-      
-      /* Cropper Modal Styles */
       .modal-cropper .modal-dialog {
         max-width: 700px;
       }
@@ -183,8 +183,6 @@
         border: 1px solid #ddd;
         margin: 0 auto;
       }
-
-      /* Responsive Adjustments */
       @media (max-width: 991px) {
         .main-content {
           margin-left: 0;
@@ -198,7 +196,8 @@
           width: 80px;
           height: 80px;
         }
-        .col-md-4, .col-md-8 {
+        .col-md-4,
+        .col-md-8 {
           flex: 0 0 100%;
           max-width: 100%;
         }
@@ -221,34 +220,38 @@
     </style>
   </head>
   <body>
-    <!-- Include Sidebar Partial -->
     <%- include('../partials/admin/sidebar') %>
-
-    <!-- Main Content -->
     <div class="main-content">
       <nav aria-label="breadcrumb" class="breadcrumbs">
         <ol class="breadcrumb">
-          <li class="breadcrumb-item"><a href="/admin/adminDashboard">Dashboard</a></li>
-          <li class="breadcrumb-item"><a href="/admin/getproducts">Products</a></li>
-          <li class="breadcrumb-item active" aria-current="page">Add Product</li>
+          <li class="breadcrumb-item">
+            <a href="/admin/adminDashboard">Dashboard</a>
+          </li>
+          <li class="breadcrumb-item">
+            <a href="/admin/getproducts">Products</a>
+          </li>
+          <li class="breadcrumb-item active" aria-current="page">
+            Add Product
+          </li>
         </ol>
       </nav>
-
       <div class="page-header">
         <h1 class="page-title">Add New Product</h1>
         <p class="text-muted mb-0">Add a new book to the store</p>
       </div>
-
       <div class="card p-4">
-        <form id="addProductForm" enctype="multipart/form-data">
+        <form id="addProductForm">
           <div class="row">
-            <!-- Left Column: Images -->
             <div class="col-md-4">
               <div class="mb-3">
                 <label class="form-label">Main Image</label>
                 <div class="file-upload-wrapper">
                   <div class="file-preview">
-                    <img id="mainImagePreview" src="/api/placeholder/150/200" alt="Main Image Preview" />
+                    <img
+                      id="mainImagePreview"
+                      src="/api/placeholder/150/200"
+                      alt="Main Image Preview"
+                    />
                   </div>
                   <div class="custom-file-container">
                     <input
@@ -269,7 +272,11 @@
                 <label class="form-label">Sub Images (Up to 3)</label>
                 <div class="d-flex flex-wrap gap-3">
                   <div class="sub-image-preview mb-2">
-                    <img id="subImage1Preview" src="/api/placeholder/100/100" alt="Sub Image 1 Preview" />
+                    <img
+                      id="subImage1Preview"
+                      src="/api/placeholder/100/100"
+                      alt="Sub Image 1 Preview"
+                    />
                     <div class="custom-file-container">
                       <input
                         type="file"
@@ -284,7 +291,11 @@
                     </div>
                   </div>
                   <div class="sub-image-preview mb-2">
-                    <img id="subImage2Preview" src="/api/placeholder/100/100" alt="Sub Image 2 Preview" />
+                    <img
+                      id="subImage2Preview"
+                      src="/api/placeholder/100/100"
+                      alt="Sub Image 2 Preview"
+                    />
                     <div class="custom-file-container">
                       <input
                         type="file"
@@ -299,7 +310,11 @@
                     </div>
                   </div>
                   <div class="sub-image-preview mb-2">
-                    <img id="subImage3Preview" src="/api/placeholder/100/100" alt="Sub Image 3 Preview" />
+                    <img
+                      id="subImage3Preview"
+                      src="/api/placeholder/100/100"
+                      alt="Sub Image 3 Preview"
+                    />
                     <div class="custom-file-container">
                       <input
                         type="file"
@@ -316,8 +331,6 @@
                 </div>
               </div>
             </div>
-
-            <!-- Right Column: Product Details -->
             <div class="col-md-8">
               <div class="mb-3">
                 <label for="title" class="form-label">Book Title</label>
@@ -354,14 +367,20 @@
               </div>
               <div class="mb-3">
                 <label for="category" class="form-label">Category</label>
-                <select class="form-control" id="category" name="category" required>
+                <select
+                  class="form-control"
+                  id="category"
+                  name="category"
+                  required
+                >
                   <option value="">Select a category</option>
-                  <!-- Categories will be dynamically populated -->
                 </select>
               </div>
               <div class="row">
                 <div class="col-md-6 mb-3">
-                  <label for="regularPrice" class="form-label">Regular Price (₹)</label>
+                  <label for="regularPrice" class="form-label"
+                    >Regular Price (₹)</label
+                  >
                   <input
                     type="number"
                     class="form-control"
@@ -372,7 +391,9 @@
                   />
                 </div>
                 <div class="col-md-6 mb-3">
-                  <label for="salePrice" class="form-label">Sale Price (₹)</label>
+                  <label for="salePrice" class="form-label"
+                    >Sale Price (₹)</label
+                  >
                   <input
                     type="number"
                     class="form-control"
@@ -433,7 +454,9 @@
               </div>
               <div class="row">
                 <div class="col-md-6 mb-3">
-                  <label for="publishedDate" class="form-label">Published Date</label>
+                  <label for="publishedDate" class="form-label"
+                    >Published Date</label
+                  >
                   <input
                     type="date"
                     class="form-control"
@@ -467,52 +490,69 @@
                   <span class="ms-2 text-muted" id="statusText">Listed</span>
                 </label>
               </div>
-              <button type="submit" class="btn btn-add w-100" style="background-color: #6f42c1; color: white;">Add Product</button>
+              <button
+                type="submit"
+                class="btn btn-add w-100"
+                style="background-color: #6f42c1; color: white"
+                id="addProductButton"
+              >
+                <span class="btn-text">Add Product</span>
+              </button>
             </div>
           </div>
         </form>
       </div>
     </div>
-
-    <!-- Image Cropper Modal -->
-    <div class="modal fade modal-cropper" id="cropperModal" tabindex="-1" aria-hidden="true">
+    <div
+      class="modal fade modal-cropper"
+      id="cropperModal"
+      tabindex="-1"
+      aria-hidden="true"
+    >
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header">
             <h5 class="modal-title">Crop Image</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
           </div>
           <div class="modal-body">
             <div class="cropper-container">
-              <img id="cropperImage" src="" alt="Image to crop">
+              <img id="cropperImage" src="" alt="Image to crop" />
             </div>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-            <button type="button" class="btn btn-primary" id="cropButton">Crop & Save</button>
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              Cancel
+            </button>
+            <button type="button" class="btn btn-primary" id="cropButton">
+              Crop & Save
+            </button>
           </div>
         </div>
       </div>
     </div>
-
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.19/dist/sweetalert2.all.min.js"></script>
-    <!-- Add Cropperjs JS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
     <script>
-      // Cropper instance
       let cropper;
       let currentFileInput;
       let currentImagePreview;
       let aspectRatio;
       let cropData = {};
-
-      // Function to initialize cropper
       function initCropper(image, aspectRatioValue) {
         if (cropper) {
           cropper.destroy();
         }
-        
         cropper = new Cropper(image, {
           aspectRatio: aspectRatioValue,
           viewMode: 1,
@@ -520,136 +560,141 @@
           responsive: true,
           crop(event) {
             cropData = event.detail;
-          }
+          },
         });
       }
-
-      // Helper function to handle file input change and open cropper
       function handleFileInputChange(event, previewId, cropAspectRatio) {
         const file = event.target.files[0];
         if (!file) return;
-
         currentFileInput = event.target;
         currentImagePreview = document.getElementById(previewId);
         aspectRatio = cropAspectRatio;
-
         const reader = new FileReader();
-        reader.onload = function(e) {
-          document.getElementById('cropperImage').src = e.target.result;
-          const cropperModal = new bootstrap.Modal(document.getElementById('cropperModal'));
+        reader.onload = function (e) {
+          document.getElementById("cropperImage").src = e.target.result;
+          const cropperModal = new bootstrap.Modal(
+            document.getElementById("cropperModal")
+          );
           cropperModal.show();
-          
-          // Initialize cropper when modal is shown
-          document.getElementById('cropperModal').addEventListener('shown.bs.modal', function() {
-            initCropper(document.getElementById('cropperImage'), aspectRatio);
-          }, { once: true });
+          document.getElementById("cropperModal").addEventListener(
+            "shown.bs.modal",
+            function () {
+              initCropper(document.getElementById("cropperImage"), aspectRatio);
+            },
+            { once: true }
+          );
         };
         reader.readAsDataURL(file);
       }
-
-      // Set up crop button handler
-      document.getElementById('cropButton').addEventListener('click', function() {
-        if (!cropper) return;
-        
-        // Get cropped canvas
-        const canvas = cropper.getCroppedCanvas({
-          width: aspectRatio === 3/4 ? 300 : 200,
-          height: aspectRatio === 3/4 ? 400 : 200,
-          imageSmoothingEnabled: true,
-          imageSmoothingQuality: 'high',
+      document
+        .getElementById("cropButton")
+        .addEventListener("click", function () {
+          if (!cropper) return;
+          const canvas = cropper.getCroppedCanvas({
+            width: aspectRatio === 3 / 4 ? 300 : 200,
+            height: aspectRatio === 3 / 4 ? 400 : 200,
+            imageSmoothingEnabled: true,
+            imageSmoothingQuality: "high",
+          });
+          canvas.toBlob(function (blob) {
+            const croppedFile = new File(
+              [blob],
+              currentFileInput.files[0].name,
+              {
+                type: currentFileInput.files[0].type,
+                lastModified: new Date().getTime(),
+              }
+            );
+            const dataTransfer = new DataTransfer();
+            dataTransfer.items.add(croppedFile);
+            currentFileInput.files = dataTransfer.files;
+            currentImagePreview.src = canvas.toDataURL();
+            const cropperModal = bootstrap.Modal.getInstance(
+              document.getElementById("cropperModal")
+            );
+            cropperModal.hide();
+          }, currentFileInput.files[0].type);
         });
-        
-        // Convert canvas to blob
-        canvas.toBlob(function(blob) {
-          // Create a new file from the blob
-          const croppedFile = new File([blob], currentFileInput.files[0].name, {
-            type: currentFileInput.files[0].type,
-            lastModified: new Date().getTime()
-          });
-          
-          // Create a DataTransfer to set the file input's files
-          const dataTransfer = new DataTransfer();
-          dataTransfer.items.add(croppedFile);
-          currentFileInput.files = dataTransfer.files;
-          
-          // Update preview
-          currentImagePreview.src = canvas.toDataURL();
-          
-          // Close modal
-          const cropperModal = bootstrap.Modal.getInstance(document.getElementById('cropperModal'));
-          cropperModal.hide();
-        }, currentFileInput.files[0].type);
-      });
-
-      // Set up file input event listeners
-      document.getElementById("mainImage").addEventListener("change", function(event) {
-        handleFileInputChange(event, "mainImagePreview", 3/4); // Book cover aspect ratio
-      });
-
-      document.getElementById("subImage1").addEventListener("change", function(event) {
-        handleFileInputChange(event, "subImage1Preview", 1); // Square aspect ratio
-      });
-
-      document.getElementById("subImage2").addEventListener("change", function(event) {
-        handleFileInputChange(event, "subImage2Preview", 1); // Square aspect ratio
-      });
-
-      document.getElementById("subImage3").addEventListener("change", function(event) {
-        handleFileInputChange(event, "subImage3Preview", 1); // Square aspect ratio
-      });
-
-      // Status text update
-      document.getElementById("isListed").addEventListener("change", function() {
-        document.getElementById("statusText").textContent = this.checked ? "Listed" : "Unlisted";
-      });
-
-      // Form submission
-      document.getElementById("addProductForm").addEventListener("submit", async function(e) {
-        e.preventDefault();
-        const formData = new FormData(this);
-
-        try {
-          const response = await fetch("/admin/products", {
-            method: "POST",
-            body: formData,
-          });
-          const data = await response.json();
-
-          if (response.ok) {
-            Swal.fire({
-              title: "Success!",
-              text: data.message || "Product added successfully",
-              icon: "success",
-              timer: 2000,
-              showConfirmButton: false,
-            }).then(() => {
-              window.location.href = "/admin/products";
+      document
+        .getElementById("mainImage")
+        .addEventListener("change", function (event) {
+          handleFileInputChange(event, "mainImagePreview", 3 / 4);
+        });
+      document
+        .getElementById("subImage1")
+        .addEventListener("change", function (event) {
+          handleFileInputChange(event, "subImage1Preview", 1);
+        });
+      document
+        .getElementById("subImage2")
+        .addEventListener("change", function (event) {
+          handleFileInputChange(event, "subImage2Preview", 1);
+        });
+      document
+        .getElementById("subImage3")
+        .addEventListener("change", function (event) {
+          handleFileInputChange(event, "subImage3Preview", 1);
+        });
+      document
+        .getElementById("isListed")
+        .addEventListener("change", function () {
+          document.getElementById("statusText").textContent = this.checked
+            ? "Listed"
+            : "Unlisted";
+        });
+      const addProductButton = document.getElementById("addProductButton");
+      const btnText = addProductButton.querySelector(".btn-text");
+      document
+        .getElementById("addProductForm")
+        .addEventListener("submit", async function (e) {
+          e.preventDefault();
+          const formData = new FormData(this);
+          const subImages = formData.getAll('subImages');
+          console.log('Sub Images being sent:', subImages.map(file => file.name));
+          btnText.textContent = "Adding Product...";
+          addProductButton.disabled = true;
+          try {
+            const response = await fetch("/admin/products", {
+              method: "POST",
+              body: formData,
             });
-          } else {
+            const data = await response.json();
+            if (response.ok) {
+              Swal.fire({
+                title: "Success!",
+                text: data.message || "Product added successfully",
+                icon: "success",
+                timer: 2000,
+                showConfirmButton: false,
+              }).then(() => {
+                window.location.href = "/admin/getProducts";
+              });
+            } else {
+              Swal.fire({
+                title: "Error!",
+                text: data.error || "Failed to add product",
+                icon: "error",
+              });
+            }
+          } catch (error) {
             Swal.fire({
               title: "Error!",
-              text: data.error || "Failed to add product",
+              text: "Server Error: " + error.message,
               icon: "error",
             });
+          } finally {
+            btnText.textContent = "Add Product";
+            addProductButton.disabled = false;
           }
-        } catch (error) {
-          Swal.fire({
-            title: "Error!",
-            text: "Server Error",
-            icon: "error",
-          });
-        }
-      });
-
-      // Update file input labels with selected filename
-      const fileInputs = document.querySelectorAll('.custom-file-input');
-      fileInputs.forEach(input => {
-        input.addEventListener('change', function() {
+        });
+      const fileInputs = document.querySelectorAll(".custom-file-input");
+      fileInputs.forEach((input) => {
+        input.addEventListener("change", function () {
           const label = this.nextElementSibling;
           const fileName = this.files[0]?.name;
           if (fileName) {
             if (fileName.length > 12) {
-              label.textContent = fileName.substring(0, 10) + '...';
+              label.textContent = fileName.substring(0, 10) + "...";
             } else {
               label.textContent = fileName;
             }
@@ -658,14 +703,12 @@
           }
         });
       });
-
-      // Fetch categories for dropdown
       async function fetchCategories() {
         try {
           const response = await fetch("/admin/categories/list");
           const categories = await response.json();
           const categorySelect = document.getElementById("category");
-          categories.forEach(category => {
+          categories.forEach((category) => {
             const option = document.createElement("option");
             option.value = category._id;
             option.textContent = category.name;
@@ -675,8 +718,6 @@
           console.error("Error fetching categories:", error);
         }
       }
-
-      // Load categories on page load
       document.addEventListener("DOMContentLoaded", fetchCategories);
     </script>
   </body>

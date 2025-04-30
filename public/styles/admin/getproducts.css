@@ -465,3 +465,94 @@ input:checked + .toggle-slider:before {
     font-size: 12px;
   }
 }
+
+
+
+/* Pagination styles */
+.pagination-info {
+  margin-top: 20px;
+  text-align: center;
+}
+
+.pagination-info p {
+  margin: 0 0 10px;
+  color: #6b7280;
+  font-size: 16px;
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+}
+
+.page-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 14px;
+  margin: 0 4px;
+  background-color: #f1f1f1;
+  color: #333;
+  text-decoration: none;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 500;
+  transition: background-color 0.3s, transform 0.1s;
+  min-width: 40px;
+  height: 40px;
+}
+
+.page-btn:hover:not(.disabled) {
+  background-color: #ddd;
+  transform: scale(1.05);
+}
+
+.page-btn.active {
+  background-color: #6f42c1;
+  color: white;
+  font-weight: 600;
+}
+
+.page-btn.disabled {
+  background-color: #e9ecef;
+  color: #6c757d;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.prev-btn, .next-btn {
+  padding: 10px 20px;
+  background-color: #6f42c1;
+  color: white;
+  font-weight: 600;
+  min-width: 120px;
+}
+
+.prev-btn:hover:not(.disabled), .next-btn:hover:not(.disabled) {
+  background-color: #563d7c;
+  transform: scale(1.05);
+}
+
+.prev-btn.disabled, .next-btn.disabled {
+  background-color: #a29bce;
+  color: #d3d3d3;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.prev-btn i, .next-btn i {
+  margin: 0 8px;
+  font-size: 14px;
+}
+
+.page-number {
+  padding: 10px 14px;
+}
+
+.page-ellipsis {
+  padding: 10px 14px;
+  color: #6c757d;
+  font-size: 16px;
+}
