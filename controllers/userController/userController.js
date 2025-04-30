@@ -1,4 +1,5 @@
-const categoryController = require("../../controllers/userController/categoryController")
+const categoryController = require("../../controllers/userController/categoryController");
+const Product = require('../../models/productSchema');
 
 const pageNotFound = async (req, res) => {
   try {
@@ -10,11 +11,24 @@ const pageNotFound = async (req, res) => {
 
 const loadHomePage = async (req, res) => {
   try {
-    const categories = await categoryController.getCategories()
-    return res.render("home",{categories});
+    const categories = await categoryController.getCategories();
+
+    const LIMIT = 4;
+
+    // Top selling (assumed based on stock, ideally use soldCount)
+    const topSellingProducts = await Product.find()
+      .sort({ stock: -1 }) // Highest stock
+      .limit(LIMIT);
+
+    // New arrivals (based on dateAdded)
+    const newArrivals = await Product.find()
+      .sort({ createdAt: -1  }) // Newest first
+      .limit(LIMIT);
+
+    return res.render("home", { categories, topSellingProducts, newArrivals });
   } catch (error) {
-    console.log(`Error in rendering Home Page`);
-    res.status(500).send(`Server Error`);
+    console.log(`Error in rendering Home Page: ${error}`);
+    res.status(500).send("Server Error");
   }
 };
 

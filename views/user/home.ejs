@@ -1,4 +1,3 @@
-<!-- views/user/home.ejs -->
 <%- include("../partials/user/header") %>
 
 <!-- Hero Section -->
@@ -44,7 +43,7 @@
   </div>
 </section>
 
-<!-- Bestsellers (unchanged) -->
+<!-- Bestsellers (Based on Stock Count) -->
 <section class="py-5 bg-light">
   <div class="container">
     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -52,86 +51,39 @@
       <a href="#" class="text-dark text-decoration-none hover-dark">View All</a>
     </div>
     <div class="row g-4">
-      <!-- Product 1 -->
-      <div class="col-sm-6 col-md-4 col-lg-3">
-        <div class="product-card bg-white h-100">
-          <div class="product-image-container">
-            <span class="product-tag">New</span>
-            <img src="/api/placeholder/500/600" alt="The Silent Echo" class="product-image" />
-          </div>
-          <div class="p-3">
-            <h3 class="fs-5 fw-semibold mb-1">The Silent Echo</h3>
-            <p class="text-muted small mb-2">Eleanor Blackwood</p>
-            <div class="d-flex justify-content-between align-items-center">
-              <span class="fw-bold">₹24.99</span>
-              <button class="add-to-cart border-0">
-                <i class="ri-add-line"></i>
-              </button>
+      <% if (topSellingProducts && topSellingProducts.length > 0) { %>
+        <% topSellingProducts.slice(0, 4).forEach(product => { %>
+          <div class="col-sm-6 col-md-4 col-lg-3">
+            <div class="product-card bg-white h-100">
+              <div class="product-image-container">
+                <% if (product.isNew) { %>
+                  <span class="product-tag">New</span>
+                <% } %>
+                <img src="<%= product.mainImage %>" alt="<%= product.title %>" class="product-image" />
+              </div>
+              <div class="p-3">
+                <h3 class="fs-5 fw-semibold mb-1"><%= product.title %></h3>
+                <p class="text-muted small mb-2"><%= product.author %></p>
+                <div class="d-flex justify-content-between align-items-center">
+                  <span class="fw-bold">₹<%= product.salePrice %></span>
+                  <button class="add-to-cart border-0">
+                    <i class="ri-add-line"></i>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
+        <% }) %>
+      <% } else { %>
+        <div class="col-12 text-center">
+          <p>No bestselling products available.</p>
         </div>
-      </div>
-      <!-- Product 2 -->
-      <div class="col-sm-6 col-md-4 col-lg-3">
-        <div class="product-card bg-white h-100">
-          <div class="product-image-container">
-            <span class="product-tag">Bestseller</span>
-            <img src="/api/placeholder/500/600" alt="Whispers in the Void" class="product-image" />
-          </div>
-          <div class="p-3">
-            <h3 class="fs-5 fw-semibold mb-1">Whispers in the Void</h3>
-            <p class="text-muted small mb-2">Jonathan Mercer</p>
-            <div class="d-flex justify-content-between align-items-center">
-              <span class="fw-bold">$21.99</span>
-              <button class="add-to-cart border-0">
-                <i class="ri-add-line"></i>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-      <!-- Product 3 -->
-      <div class="col-sm-6 col-md-4 col-lg-3">
-        <div class="product-card bg-white h-100">
-          <div class="product-image-container">
-            <img src="/api/placeholder/500/600" alt="The Art of Stillness" class="product-image" />
-          </div>
-          <div class="p-3">
-            <h3 class="fs-5 fw-semibold mb-1">The Art of Stillness</h3>
-            <p class="text-muted small mb-2">Sophia Chen</p>
-            <div class="d-flex justify-content-between align-items-center">
-              <span class="fw-bold">$19.99</span>
-              <button class="add-to-cart border-0">
-                <i class="ri-add-line"></i>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-      <!-- Product 4 -->
-      <div class="col-sm-6 col-md-4 col-lg-3">
-        <div class="product-card bg-white h-100">
-          <div class="product-image-container">
-            <span class="product-tag">Limited</span>
-            <img src="/api/placeholder/500/600" alt="Fragments of Light" class="product-image" />
-          </div>
-          <div class="p-3">
-            <h3 class="fs-5 fw-semibold mb-1">Fragments of Light</h3>
-            <p class="text-muted small mb-2">Marcus Aurelius</p>
-            <div class="d-flex justify-content-between align-items-center">
-              <span class="fw-bold">$26.99</span>
-              <button class="add-to-cart border-0">
-                <i class="ri-add-line"></i>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+      <% } %>
     </div>
   </div>
 </section>
 
-<!-- New Arrivals (unchanged) -->
+<!-- New Arrivals (Based on Date Added) -->
 <section class="py-5 bg-white">
   <div class="container">
     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -139,80 +91,34 @@
       <a href="#" class="text-dark text-decoration-none hover-dark">View All</a>
     </div>
     <div class="row g-4">
-      <!-- Product 1 -->
-      <div class="col-sm-6 col-md-4 col-lg-3">
-        <div class="product-card bg-white h-100">
-          <div class="product-image-container">
-            <span class="product-tag">New</span>
-            <img src="/api/placeholder/500/600" alt="The Forgotten Path" class="product-image" />
-          </div>
-          <div class="p-3">
-            <h3 class="fs-5 fw-semibold mb-1">The Forgotten Path</h3>
-            <p class="text-muted small mb-2">Olivia Bennett</p>
-            <div class="d-flex justify-content-between align-items-center">
-              <span class.epam-bold">$22.99</span>
-              <button class="add-to-cart border-0">
-                <i class="ri-add-line"></i>
-              </button>
+      <% if (newArrivals && newArrivals.length > 0) { %>
+        <% newArrivals.slice(0, 4).forEach(product => { %>
+          <div class="col-sm-6 col-md-4 col-lg-3">
+            <div class="product-card bg-white h-100">
+              <div class="product-image-container">
+                <% if (product.isNew) { %>
+                  <span class="product-tag">New</span>
+                <% } %>
+                <img src="<%= product.mainImage %>" alt="<%= product.title %>" class="product-image" />
+              </div>
+              <div class="p-3">
+                <h3 class="fs-5 fw-semibold mb-1"><%= product.title %></h3>
+                <p class="text-muted small mb-2"><%= product.author %></p>
+                <div class="d-flex justify-content-between align-items-center">
+                  <span class="fw-bold">₹<%= product.salePrice %></span>
+                  <button class="add-to-cart border-0">
+                    <i class="ri-add-line"></i>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
+        <% }) %>
+      <% } else { %>
+        <div class="col-12 text-center">
+          <p>No new arrivals available.</p>
         </div>
-      </div>
-      <!-- Product 2 -->
-      <div class="col-sm-6 col-md-4 col-lg-3">
-        <div class="product-card bg-white h-100">
-          <div class="product-image-container">
-            <img src="/api/placeholder/500/600" alt="Echoes of Eternity" class="product-image" />
-          </div>
-          <div class="p-3">
-            <h3 class="fs-5 fw-semibold mb-1">Echoes of Eternity</h3>
-            <p class="text-muted small mb-2">Alexander Reid</p>
-            <div class="d-flex justify-content-between align-items-center">
-              <span class="fw-bold">$23.99</span>
-              <button class="add-to-cart border-0">
-                <i class="ri-add-line"></i>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-      <!-- Product 3 -->
-      <div class="col-sm-6 col-md-4 col-lg-3">
-        <div class="product-card bg-white h-100">
-          <div class="product-image-container">
-            <span class="product-tag">New</span>
-            <img src="/api/placeholder/500/600" alt="Silent Memories" class="product-image" />
-          </div>
-          <div class="p-3">
-            <h3 class="fs-5 fw-semibold mb-1">Silent Memories</h3>
-            <p class="text-muted small mb-2">Isabella Frost</p>
-            <div class="d-flex justify-content-between align-items-center">
-              <span class="fw-bold">$20.99</span>
-              <button class="add-to-cart border-0">
-                <i class="ri-add-line"></i>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-      <!-- Product 4 -->
-      <div class="col-sm-6 col-md-4 col-lg-3">
-        <div class="product-card bg-white h-100">
-          <div class="product-image-container">
-            <img src="/api/placeholder/500/600" alt="The Philosophy of Time" class="product-image" />
-          </div>
-          <div class="p-3">
-            <h3 class="fs-5 fw-semibold mb-1">The Philosophy of Time</h3>
-            <p class="text-muted small mb-2">Nicholas Harlow</p>
-            <div class="d-flex justify-content-between align-items-center">
-              <span class="fw-bold">$25.99</span>
-              <button class="add-to-cart border-0">
-                <i class="ri-add-line"></i>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+      <% } %>
     </div>
   </div>
 </section>
