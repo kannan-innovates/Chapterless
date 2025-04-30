@@ -11,6 +11,9 @@ const logoutController = require("../../controllers/userController/logoutControl
 const passwordController = require("../../controllers/userController/forgotPasswordController");
 const googleController = require("../../controllers/userController/googleAuthController");
 
+const shopPageController = require('../../controllers/userController/shop-page-controller');
+const productDetailsController = require('../../controllers/userController/product-details-controller')
+
 router.get("/", userController.loadHomePage);
 router.get("/pageNotFound", userController.pageNotFound);
 
@@ -46,5 +49,8 @@ router.post("/resend-signup-otp", signupController.resendOtp);
 
 router.get("/resetPassword", passwordController.getResetPassword);
 router.patch("/resetPassword", passwordController.patchResetPassword);
+
+router.get('/shopPage',shopPageController.shopPage);
+router.get('/productDetailsPage',productDetailsController.productDetails)
 
 module.exports = router;

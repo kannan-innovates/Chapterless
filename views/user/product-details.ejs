@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Product Details - Chapterless</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/styles/user/product-details.css" />
+    <style>
+      body {
+        font-family: "Inter", sans-serif;
+        color: #1a1a1a;
+      }
+      .paper-texture {
+        background-image: url('https://readdy.ai/api/search-image?query=Extremely%20subtle%20and%20minimal%20paper%20texture%2C%20almost%20completely%20white%20with%20very%20faint%20natural%20fiber%20patterns%20visible%20only%20upon%20close%20inspection.%20The%20texture%20is%20incredibly%20delicate%20and%20refined%2C%20providing%20just%20a%20hint%20of%20organic%20material%20quality%20while%20maintaining%20a%20clean%2C%20sophisticated%20appearance.%20Perfect%20for%20a%20minimalist%20design%20background%20that%20needs%20just%20a%20touch%20of%20warmth%20and%20depth%20without%20any%20distracting%20elements.&width=200&height=200&seq=123457&orientation=squarish');
+        background-repeat: repeat;
+      }
+      
+      /* Product Details Specific Styles */
+      .main-image {
+        width: 100%;
+        height: auto;
+        border-radius: 0.5rem;
+        object-fit: cover;
+      }
+      
+      .thumbnail {
+        width: 100%;
+        height: auto;
+        object-fit: cover;
+        border-radius: 0.25rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border: 2px solid transparent;
+        margin-bottom: 10px;
+      }
+      
+      .book-details {
+        border-bottom: 1px solid #e5e5e5;
+        padding-bottom: 1.5rem;
+        margin-bottom: 1.5rem;
+      }
+      
+      .book-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin-bottom: 1rem;
+      }
+      
+      .book-meta-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+      
+      .book-meta-icon {
+        color: #6b7280;
+      }
+      
+      .price-section {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+      }
+      
+      .original-price {
+        text-decoration: line-through;
+        color: #6b7280;
+      }
+      
+      .discount-badge {
+        background-color: #000;
+        color: #fff;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+        font-size: 0.875rem;
+      }
+      
+      .quantity-selector {
+        display: flex;
+        align-items: center;
+        border: 1px solid #e5e5e5;
+        border-radius: 0.5rem;
+        overflow: hidden;
+        width: fit-content;
+      }
+      
+      .quantity-btn {
+        background: none;
+        border: none;
+        width: 2.5rem;
+        height: 2.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+      }
+      
+      .quantity-btn:hover {
+        background-color: #f5f5f5;
+      }
+      
+      .quantity-input {
+        width: 3rem;
+        text-align: center;
+        border: none;
+        border-left: 1px solid #e5e5e5;
+        border-right: 1px solid #e5e5e5;
+        height: 2.5rem;
+      }
+      
+      .quantity-input:focus {
+        outline: none;
+      }
+      
+      .action-buttons {
+        display: flex;
+        gap: 1rem;
+        margin-top: 1.5rem;
+      }
+      
+      .btn-add-to-cart {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+      }
+      
+      .btn-wishlist {
+        width: 3rem;
+        height: 3rem;
+        border-radius: 0.5rem;
+        border: 1px solid #e5e5e5;
+        background: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+      }
+      
+      .btn-wishlist:hover {
+        background-color: #f5f5f5;
+      }
+      
+      .product-tabs {
+        margin-top: 3rem;
+      }
+      
+      .nav-tabs {
+        border-bottom: 1px solid #e5e5e5;
+      }
+      
+      .nav-tabs .nav-link {
+        border: none;
+        border-bottom: 2px solid transparent;
+        color: #6b7280;
+        font-weight: 500;
+        padding: 0.75rem 1.5rem;
+      }
+      
+      .nav-tabs .nav-link.active {
+        border-bottom-color: #000;
+        color: #000;
+      }
+      
+      .tab-content {
+        padding: 2rem 0;
+      }
+      
+      .book-specs {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 1.5rem;
+      }
+      
+      .book-spec {
+        display: flex;
+        flex-direction: column;
+      }
+      
+      .book-spec-label {
+        font-size: 0.875rem;
+        color: #6b7280;
+        margin-bottom: 0.25rem;
+      }
+      
+      .book-spec-value {
+        font-weight: 500;
+      }
+      
+      .related-products {
+        margin-top: 4rem;
+      }
+      
+      .stock-status {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 0.25rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+      }
+      
+      .in-stock {
+        background-color: #ecfdf5;
+        color: #047857;
+      }
+      
+      .low-stock {
+        background-color: #fffbeb;
+        color: #b45309;
+      }
+      
+      .out-of-stock {
+        background-color: #fef2f2;
+        color: #b91c1c;
+      }
+      
+      /* Add to cart button styling - similar to shop page */
+      .add-to-cart {
+        width: 2.5rem;
+        height: 2.5rem;
+        border-radius: 50%;
+        background-color: #000;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+        border: none;
+      }
+      
+      .add-to-cart:hover {
+        background-color: #333;
+      }
+      
+      @media (max-width: 767.98px) {
+        .thumbnails-container {
+          display: flex;
+          overflow-x: auto;
+          gap: 0.5rem;
+          padding-bottom: 0.5rem;
+        }
+        
+        .thumbnail {
+          width: 60px;
+          height: 80px;
+          flex-shrink: 0;
+        }
+        
+        .action-buttons {
+          flex-direction: column;
+        }
+        
+        .btn-wishlist {
+          width: 100%;
+        }
+      }
+
+      @media (max-width: 767.98px) {
+        .col-2 {
+          width: 20%;
+        }
+        .col-10 {
+          width: 80%;
+        }
+        .thumbnail {
+          margin-bottom: 5px !important;
+        }
+      }
+      /* Additional CSS for product actions on related products */
+.product-actions {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(255, 255, 255, 0.9);
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: all 0.3s ease;
+}
+
+.product-card:hover .product-actions {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.action-btn {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  border: none;
+  background-color: #fff;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.action-btn:hover {
+  background-color: #000;
+  color: #fff;
+}
+
+/* Improved product image container styling */
+.product-image-container {
+  position: relative;
+  overflow: hidden;
+}
+
+.product-image {
+  width: 100%;
+  height: auto;
+  transition: transform 0.3s ease;
+}
+
+.product-card:hover .product-image {
+  transform: scale(1.05);
+}
+
+/* Responsive adjustments */
+@media (max-width: 767.98px) {
+  .product-actions {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+    </style>
+  </head>
+  <body class="paper-texture">
+    <!-- Header -->
+    <%- include("../partials/user/header") %>
+
+    <!-- Breadcrumb -->
+    <section class="py-3 bg-light">
+      <div class="container">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a href="/" class="text-decoration-none text-muted">Home</a></li>
+            <li class="breadcrumb-item"><a href="/shop" class="text-decoration-none text-muted">Shop</a></li>
+            <li class="breadcrumb-item"><a href="/shop/fiction" class="text-decoration-none text-muted">Fiction</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Intermezzo</li>
+          </ol>
+        </nav>
+      </div>
+    </section>
+
+    <!-- Product Details -->
+    <section class="py-5 bg-white">
+      <div class="container">
+        <div class="row g-5">
+          <!-- Product Images -->
+          <div class="col-lg-5">
+            <div class="row">
+              <!-- Thumbnails - Vertical on left side -->
+              <div class="col-2">
+                <div class="d-flex flex-column">
+                  <img src="/api/placeholder/600/800" alt="The Silent Echo - Cover" class="thumbnail active" onclick="changeImage(this, '/api/placeholder/600/800')" style="width: 100%; height: auto; margin-bottom: 10px;" />
+                  <img src="/api/placeholder/600/800?query=book open pages" alt="The Silent Echo - Page Sample" class="thumbnail" onclick="changeImage(this, '/api/placeholder/600/800?query=book open pages')" style="width: 100%; height: auto; margin-bottom: 10px;" />
+                  <img src="/api/placeholder/600/800?query=book back cover" alt="The Silent Echo - Back Cover" class="thumbnail" onclick="changeImage(this, '/api/placeholder/600/800?query=book back cover')" style="width: 100%; height: auto; margin-bottom: 10px;" />
+                </div>
+              </div>
+              
+              <!-- Main Image -->
+              <div class="col-10">
+                <div class="mb-3">
+                  <img src="/api/placeholder/600/800" alt="The Silent Echo" class="main-image" id="mainImage" />
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Product Info -->
+          <div class="col-lg-7">
+            <div class="book-details">
+              <h1 class="fs-2 fw-bold mb-1">Intermezzo</h1>
+              <p class="fs-5 mb-3">by <a href="#" class="text-decoration-none">Sally Rooney</a></p>
+              
+              <div class="book-meta">
+                <div class="book-meta-item">
+                  <i class="ri-book-open-line book-meta-icon"></i>
+                  <span>Hardcover, 320 pages</span>
+                </div>
+                <div class="book-meta-item">
+                  <i class="ri-translate-2 book-meta-icon"></i>
+                  <span>English</span>
+                </div>
+                <div class="book-meta-item">
+                  <i class="ri-calendar-line book-meta-icon"></i>
+                  <span>Published: September 24, 2023</span>
+                </div>
+                
+                <div class="book-meta-item">
+                  <i class="ri-barcode-line book-meta-icon"></i>
+                  <span>ISBN: 978-0-571-37842-2</span>
+                </div>
+              </div>
+              
+              <div class="price-section">
+                <h2 class="fs-3 fw-bold mb-0">₹1,199</h2>
+                <span class="fs-5 original-price">₹1,499</span>
+                <span class="discount-badge">20% OFF</span>
+              </div>
+              
+              <div class="mb-3">
+                <span class="stock-status in-stock">
+                  <i class="ri-checkbox-circle-line me-1"></i> In Stock (25 copies available)
+                </span>
+              </div>
+              
+              <p class="text-muted mb-4">
+                From the internationally bestselling author of Normal People and Conversations with Friends, a new novel about the relationship between a successful writer and a younger woman, and the creative partnership that ensues between them.
+              </p>
+              
+              <div class="d-flex flex-column gap-4">
+                <div>
+                  <label class="form-label fw-medium mb-2">Quantity</label>
+                  <div class="quantity-selector">
+                    <button class="quantity-btn" onclick="decrementQuantity()">
+                      <i class="ri-subtract-line"></i>
+                    </button>
+                    <input type="number" class="quantity-input" id="quantity" value="1" min="1" max="25" />
+                    <button class="quantity-btn" onclick="incrementQuantity()">
+                      <i class="ri-add-line"></i>
+                    </button>
+                  </div>
+                </div>
+                
+                <div class="action-buttons">
+                  <button class="btn btn-primary btn-add-to-cart py-3">
+                    <i class="ri-shopping-cart-line"></i>
+                    <span>Add to Cart</span>
+                  </button>
+                  <button class="btn-wishlist">
+                    <i class="ri-heart-line"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Social Sharing -->
+            <div>
+              <p class="fw-medium mb-2">Share this book:</p>
+              <div class="d-flex gap-2">
+                <a href="#" class="social-icon">
+                  <i class="ri-facebook-line"></i>
+                </a>
+                <a href="#" class="social-icon">
+                  <i class="ri-twitter-x-line"></i>
+                </a>
+                <a href="#" class="social-icon">
+                  <i class="ri-pinterest-line"></i>
+                </a>
+                <a href="#" class="social-icon">
+                  <i class="ri-instagram-line"></i>
+                </a>
+                <a href="#" class="social-icon">
+                  <i class="ri-mail-line"></i>
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Product Tabs -->
+        <div class="product-tabs">
+          <ul class="nav nav-tabs" id="productTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+              <button class="nav-link active" id="description-tab" data-bs-toggle="tab" data-bs-target="#description" type="button" role="tab" aria-controls="description" aria-selected="true">Description</button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="details-tab" data-bs-toggle="tab" data-bs-target="#details" type="button" role="tab" aria-controls="details" aria-selected="false">Details</button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="reviews-tab" data-bs-toggle="tab" data-bs-target="#reviews" type="button" role="tab" aria-controls="reviews" aria-selected="false">Reviews</button>
+            </li>
+          </ul>
+          <div class="tab-content" id="productTabsContent">
+            <div class="tab-pane fade show active" id="description" role="tabpanel" aria-labelledby="description-tab">
+              <div class="row">
+                <div class="col-lg-12">
+                  <h3 class="fs-4 fw-bold mb-4">About the Book</h3>
+                  <p class="mb-4">
+                    A new novel from the author of Normal People and Conversations with Friends, Intermezzo is a story of relationships, family, and the passage of time. 
+                  </p>
+                  <p class="mb-4">
+                    Peter and Ivan are brothers in their thirties. Peter, the elder, is married with children and works as a teacher. Ivan, the younger, is a pianist and composer whose career has not lived up to its early promise. When Ivan begins a relationship with Peter's friend Margaret, a writer who is dealing with the success of her first novel, the brothers' bond is tested in new ways.
+                  </p>
+                  <p class="mb-4">
+                    As the lives of these characters intersect and diverge, moving through concert halls, classrooms, kitchens and living rooms, they are also connected by a shared history. Intermezzo is a story about art and ambition, about the bonds of family, and about how we communicate—or fail to communicate—with those closest to us.
+                  </p>
+                  <p>
+                    With her characteristic precision and insight, Sally Rooney explores the complexities of creative work, romantic relationships, and the ties that both constrain and sustain us.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div class="tab-pane fade" id="details" role="tabpanel" aria-labelledby="details-tab">
+              <h3 class="fs-4 fw-bold mb-4">Book Specifications</h3>
+              <div class="book-specs">
+                <div class="book-spec">
+                  <span class="book-spec-label">Title</span>
+                  <span class="book-spec-value">Intermezzo</span>
+                </div>
+                <div class="book-spec">
+                  <span class="book-spec-label">Author</span>
+                  <span class="book-spec-value">Sally Rooney</span>
+                </div>
+               
+                <div class="book-spec">
+                  <span class="book-spec-label">Publication Date</span>
+                  <span class="book-spec-value">September 24, 2023</span>
+                </div>
+                <div class="book-spec">
+                  <span class="book-spec-label">Language</span>
+                  <span class="book-spec-value">English</span>
+                </div>
+                <div class="book-spec">
+                  <span class="book-spec-label">Pages</span>
+                  <span class="book-spec-value">320</span>
+                </div>
+               
+               
+                <div class="book-spec">
+                  <span class="book-spec-label">Weight</span>
+                  <span class="book-spec-value">520g</span>
+                </div>
+                <div class="book-spec">
+                  <span class="book-spec-label">ISBN-13</span>
+                  <span class="book-spec-value">978-0-571-37842-2</span>
+                </div>
+                <div class="book-spec">
+                  <span class="book-spec-label">Genre</span>
+                  <span class="book-spec-value">Fiction, Literary Fiction</span>
+                </div>
+              </div>
+            </div>
+            <div class="tab-pane fade" id="reviews" role="tabpanel" aria-labelledby="reviews-tab">
+              <div class="row">
+                <div class="col-lg-12">
+                  <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h3 class="fs-4 fw-bold mb-0">Customer Reviews</h3>
+                    <button class="btn btn-outline-dark">Write a Review</button>
+                  </div>
+                  
+                  <!-- Review 1 -->
+                  <div class="mb-4 pb-4 border-bottom">
+                    <div class="d-flex justify-content-between mb-2">
+                      <div class="d-flex align-items-center">
+                        <div class="user-avatar me-3">
+                          <i class="ri-user-line"></i>
+                        </div>
+                        <div>
+                          <h4 class="fs-5 fw-semibold mb-0">James Wilson</h4>
+                          <div class="d-flex align-items-center">
+                            <div class="d-flex me-2">
+                              <i class="ri-star-fill text-warning"></i>
+                              <i class="ri-star-fill text-warning"></i>
+                              <i class="ri-star-fill text-warning"></i>
+                              <i class="ri-star-fill text-warning"></i>
+                              <i class="ri-star-fill text-warning"></i>
+                            </div>
+                            <span class="small text-muted">Verified Purchase</span>
+                          </div>
+                        </div>
+                      </div>
+                      <span class="text-muted small">October 15, 2023</span>
+                    </div>
+                    <p class="mb-0">
+                      Sally Rooney has done it again. Intermezzo is a masterful exploration of family dynamics and creative ambition. The characters are so well-drawn and the dialogue is as sharp and insightful as we've come to expect from Rooney. I couldn't put it down and finished it in two sittings.
+                    </p>
+                  </div>
+                  
+                  <!-- Review 2 -->
+                  <div class="mb-4 pb-4 border-bottom">
+                    <div class="d-flex justify-content-between mb-2">
+                      <div class="d-flex align-items-center">
+                        <div class="user-avatar me-3">
+                          <i class="ri-user-line"></i>
+                        </div>
+                        <div>
+                          <h4 class="fs-5 fw-semibold mb-0">Aisha Patel</h4>
+                          <div class="d-flex align-items-center">
+                            <div class="d-flex me-2">
+                              <i class="ri-star-fill text-warning"></i>
+                              <i class="ri-star-fill text-warning"></i>
+                              <i class="ri-star-fill text-warning"></i>
+                              <i class="ri-star-fill text-warning"></i>
+                              <i class="ri-star-line text-warning"></i>
+                            </div>
+                            <span class="small text-muted">Verified Purchase</span>
+                          </div>
+                        </div>
+                      </div>
+                      <span class="text-muted small">October 2, 2023</span>
+                    </div>
+                    <p class="mb-0">
+                      While not quite reaching the heights of Normal People, Intermezzo is still a compelling read. Rooney's ability to capture the nuances of relationships is unmatched. The exploration of artistic ambition and sibling rivalry feels fresh and authentic. My only critique is that some of the secondary characters could have been more developed.
+                    </p>
+                  </div>
+                  
+                  <!-- Review 3 -->
+                  <div>
+                    <div class="d-flex justify-content-between mb-2">
+                      <div class="d-flex align-items-center">
+                        <div class="user-avatar me-3">
+                          <i class="ri-user-line"></i>
+                        </div>
+                        <div>
+                          <h4 class="fs-5 fw-semibold mb-0">David Chen</h4>
+                          <div class="d-flex align-items-center">
+                            <div class="d-flex me-2">
+                              <i class="ri-star-fill text-warning"></i>
+                              <i class="ri-star-fill text-warning"></i>
+                              <i class="ri-star-fill text-warning"></i>
+                              <i class="ri-star-fill text-warning"></i>
+                              <i class="ri-star-half-fill text-warning"></i>
+                            </div>
+                            <span class="small text-muted">Verified Purchase</span>
+                          </div>
+                        </div>
+                      </div>
+                      <span class="text-muted small">October 10, 2023</span>
+                    </div>
+                    <p class="mb-0">
+                      Intermezzo is a beautifully written novel that examines the complexities of creative work and family relationships. Rooney's prose is as precise and elegant as ever, and her insights into human behavior are profound. The relationship between the brothers is particularly well-rendered. This book will stay with me for a long time.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Updated Related Products Section -->
+<div class="related-products">
+  <h3 class="fs-3 fw-bold mb-4">You May Also Like</h3>
+  <div class="row g-4">
+    <!-- Related Product 1 -->
+    <div class="col-sm-6 col-md-4 col-lg-3">
+      <div class="product-card bg-white h-100">
+        <div class="product-image-container">
+          <img src="/placeholder.svg?height=600&width=500" alt="Normal People" class="product-image" />
+          <div class="product-actions">
+            <button class="action-btn" title="Quick view">
+              <i class="ri-eye-line"></i>
+            </button>
+            <button class="action-btn" title="Add to wishlist">
+              <i class="ri-heart-line"></i>
+            </button>
+            <button class="action-btn" title="Add to cart">
+              <i class="ri-shopping-cart-line"></i>
+            </button>
+          </div>
+        </div>
+        <div class="p-3">
+          <h3 class="fs-5 fw-semibold mb-1">Normal People</h3>
+          <p class="text-muted small mb-2">Sally Rooney</p>
+          <div class="d-flex justify-content-between align-items-center">
+            <span class="fw-bold">₹999</span>
+            <button class="add-to-cart border-0">
+              <i class="ri-shopping-cart-line"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Related Product 2 -->
+    <div class="col-sm-6 col-md-4 col-lg-3">
+      <div class="product-card bg-white h-100">
+        <div class="product-image-container">
+          <img src="/placeholder.svg?height=600&width=500" alt="Conversations with Friends" class="product-image" />
+          <div class="product-actions">
+            <button class="action-btn" title="Quick view">
+              <i class="ri-eye-line"></i>
+            </button>
+            <button class="action-btn" title="Add to wishlist">
+              <i class="ri-heart-line"></i>
+            </button>
+            <button class="action-btn" title="Add to cart">
+              <i class="ri-shopping-cart-line"></i>
+            </button>
+          </div>
+        </div>
+        <div class="p-3">
+          <h3 class="fs-5 fw-semibold mb-1">Conversations with Friends</h3>
+          <p class="text-muted small mb-2">Sally Rooney</p>
+          <div class="d-flex justify-content-between align-items-center">
+            <span class="fw-bold">₹899</span>
+            <button class="add-to-cart border-0">
+              <i class="ri-shopping-cart-line"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Related Product 3 -->
+    <div class="col-sm-6 col-md-4 col-lg-3">
+      <div class="product-card bg-white h-100">
+        <div class="product-image-container">
+          <img src="/placeholder.svg?height=600&width=500" alt="Beautiful World, Where Are You" class="product-image" />
+          <div class="product-actions">
+            <button class="action-btn" title="Quick view">
+              <i class="ri-eye-line"></i>
+            </button>
+            <button class="action-btn" title="Add to wishlist">
+              <i class="ri-heart-line"></i>
+            </button>
+            <button class="action-btn" title="Add to cart">
+              <i class="ri-shopping-cart-line"></i>
+            </button>
+          </div>
+        </div>
+        <div class="p-3">
+          <h3 class="fs-5 fw-semibold mb-1">Beautiful World, Where Are You</h3>
+          <p class="text-muted small mb-2">Sally Rooney</p>
+          <div class="d-flex justify-content-between align-items-center">
+            <span class="fw-bold">₹1,099</span>
+            <button class="add-to-cart border-0">
+              <i class="ri-shopping-cart-line"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Related Product 4 -->
+    <div class="col-sm-6 col-md-4 col-lg-3">
+      <div class="product-card bg-white h-100">
+        <div class="product-image-container">
+          <img src="/placeholder.svg?height=600&width=500" alt="Mr. Salary" class="product-image" />
+          <div class="product-actions">
+            <button class="action-btn" title="Quick view">
+              <i class="ri-eye-line"></i>
+            </button>
+            <button class="action-btn" title="Add to wishlist">
+              <i class="ri-heart-line"></i>
+            </button>
+            <button class="action-btn" title="Add to cart">
+              <i class="ri-shopping-cart-line"></i>
+            </button>
+          </div>
+        </div>
+        <div class="p-3">
+          <h3 class="fs-5 fw-semibold mb-1">Mr. Salary</h3>
+          <p class="text-muted small mb-2">Sally Rooney</p>
+          <div class="d-flex justify-content-between align-items-center">
+            <span class="fw-bold">₹599</span>
+            <button class="add-to-cart border-0">
+              <i class="ri-shopping-cart-line"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    <!-- Footer -->
+    <%- include("../partials/user/footer") %>
+
+    <!-- JavaScript for product details functionality -->
+    <script>
+      // Image gallery functionality
+      function changeImage(thumbnail, imageSrc) {
+        // Update main image
+        document.getElementById('mainImage').src = imageSrc;
+        
+        // Update active thumbnail
+        const thumbnails = document.querySelectorAll('.thumbnail');
+        thumbnails.forEach(thumb => {
+          thumb.classList.remove('active');
+        });
+        thumbnail.classList.add('active');
+      }
+      
+      // Quantity selector functionality
+      function incrementQuantity() {
+        const quantityInput = document.getElementById('quantity');
+        const currentValue = parseInt(quantityInput.value);
+        const maxValue = parseInt(quantityInput.getAttribute('max'));
+        
+        if (currentValue < maxValue) {
+          quantityInput.value = currentValue + 1;
+        }
+      }
+      
+      function decrementQuantity() {
+        const quantityInput = document.getElementById('quantity');
+        const currentValue = parseInt(quantityInput.value);
+        
+        if (currentValue > 1) {
+          quantityInput.value = currentValue - 1;
+        }
+      }
+      
+      // Initialize Bootstrap tabs
+      document.addEventListener('DOMContentLoaded', function() {
+        const triggerTabList = [].slice.call(document.querySelectorAll('#productTabs button'));
+        triggerTabList.forEach(function(triggerEl) {
+          const tabTrigger = new bootstrap.Tab(triggerEl);
+          
+          triggerEl.addEventListener('click', function(event) {
+            event.preventDefault();
+            tabTrigger.show();
+          });
+        });
+      });
+    </script>
+    
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+  </body>
+</html>
