@@ -163,13 +163,63 @@
         </div>
         
         <!-- Pagination -->
-        <div class="d-flex justify-content-center mt-5">
-          <nav aria-label="Page navigation">
-            <ul class="pagination" id="pagination">
-              <!-- Pagination will be populated dynamically -->
-            </ul>
-          </nav>
-        </div>
+<div class="d-flex justify-content-center mt-5">
+  <nav aria-label="Page navigation">
+    <ul class="pagination">
+      <!-- Previous page button -->
+      <li class="page-item <%= pagination.hasPrevPage ? '' : 'disabled' %>">
+        <a class="page-link" href="<%= pagination.hasPrevPage ? `?page=${pagination.prevPage}${queryString}` : '#' %>" aria-label="Previous">
+          <span aria-hidden="true">&laquo;</span>
+        </a>
+      </li>
+      
+      <!-- First page if current page is far enough -->
+      <% if (pagination.currentPage > 3 && pagination.totalPages > 5) { %>
+      <li class="page-item">
+        <a class="page-link" href="?page=1<%= queryString %>">1</a>
+      </li>
+      <% if (pagination.currentPage > 4) { %>
+      <li class="page-item disabled">
+        <a class="page-link" href="#">...</a>
+      </li>
+      <% } %>
+      <% } %>
+      
+      <!-- Page numbers -->
+      <% pagination.pages.forEach(page => { %>
+      <li class="page-item <%= page === pagination.currentPage ? 'active' : '' %>">
+        <a class="page-link" href="?page=<%= page %><%= queryString %>"><%= page %></a>
+      </li>
+      <% }); %>
+      
+      <!-- Last page if current page is far enough from the end -->
+      <% if (pagination.currentPage < pagination.totalPages - 2 && pagination.totalPages > 5) { %>
+      <% if (pagination.currentPage < pagination.totalPages - 3) { %>
+      <li class="page-item disabled">
+        <a class="page-link" href="#">...</a>
+      </li>
+      <% } %>
+      <li class="page-item">
+        <a class="page-link" href="?page=<%= pagination.totalPages %><%= queryString %>"><%= pagination.totalPages %></a>
+      </li>
+      <% } %>
+      
+      <!-- Next page button -->
+      <li class="page-item <%= pagination.hasNextPage ? '' : 'disabled' %>">
+        <a class="page-link" href="<%= pagination.hasNextPage ? `?page=${pagination.nextPage}${queryString}` : '#' %>" aria-label="Next">
+          <span aria-hidden="true">&raquo;</span>
+        </a>
+      </li>
+    </ul>
+  </nav>
+</div>
+
+<!-- Product Count Information -->
+<div class="text-center text-muted mt-2">
+  <% const startItem = (pagination.currentPage - 1) * 12 + 1; %>
+  <% const endItem = Math.min(pagination.currentPage * 12, totalProducts); %>
+  Showing <%= startItem %> to <%= endItem %> of <%= totalProducts %> products
+</div>
       </div>
     </div>
   </div>
@@ -349,68 +399,145 @@
 
 <script>
   // Initialize price range
-  document.getElementById('priceRange').addEventListener('input', function() {
-    const max = parseInt(this.max);
-    const value = parseInt(this.value);
-    document.getElementById('maxPrice').textContent = `₹${value}`;
-    document.getElementById('maxPriceInput').value = value;
-    document.getElementById('minPriceInput').max = value;
-  });
+document.getElementById('priceRange').addEventListener('input', function() {
+  const max = parseInt(this.max);
+  const value = parseInt(this.value);
+  document.getElementById('maxPrice').textContent = `₹${value}`;
+  document.getElementById('maxPriceInput').value = value;
+  document.getElementById('minPriceInput').max = value;
+});
 
-  document.getElementById('minPriceInput').addEventListener('input', function() {
-    const min = parseInt(this.value);
-    const max = parseInt(document.getElementById('maxPriceInput').value);
-    if (min > max) document.getElementById('maxPriceInput').value = min;
-    document.getElementById('priceRange').value = max;
-    document.getElementById('minPrice').textContent = `₹${min}`;
-  });
+document.getElementById('minPriceInput').addEventListener('input', function() {
+  const min = parseInt(this.value);
+  const max = parseInt(document.getElementById('maxPriceInput').value);
+  if (min > max) document.getElementById('maxPriceInput').value = min;
+  document.getElementById('priceRange').value = max;
+  document.getElementById('minPrice').textContent = `₹${min}`;
+});
 
-  document.getElementById('maxPriceInput').addEventListener('input', function() {
-    const max = parseInt(this.value);
-    const min = parseInt(document.getElementById('minPriceInput').value);
-    if (max < min) document.getElementById('minPriceInput').value = max;
-    document.getElementById('priceRange').value = max;
-    document.getElementById('maxPrice').textContent = `₹${max}`;
-  });
+document.getElementById('maxPriceInput').addEventListener('input', function() {
+  const max = parseInt(this.value);
+  const min = parseInt(document.getElementById('minPriceInput').value);
+  if (max < min) document.getElementById('minPriceInput').value = max;
+  document.getElementById('priceRange').value = max;
+  document.getElementById('maxPrice').textContent = `₹${max}`;
+});
 
-  // Filter and Sort Functions
-  function applyFilters() {
-    const selectedCategories = Array.from(document.querySelectorAll('.category-checkbox:checked'))
-      .map(cb => cb.value)
-      .filter(value => value !== 'all');
-    const minPrice = parseInt(document.getElementById('minPriceInput').value) || 0;
-    const maxPrice = parseInt(document.getElementById('maxPriceInput').value) || 5000;
-    const items = document.getElementsByClassName('product-item');
-
-    for (let item of items) {
-      const itemCategory = item.getAttribute('data-category');
-      const itemPrice = parseInt(item.getAttribute('data-price'));
-      const matchesCategory = selectedCategories.length === 0 || selectedCategories.includes(itemCategory);
-      const matchesPrice = itemPrice >= minPrice && itemPrice <= maxPrice;
-      item.style.display = matchesCategory && matchesPrice ? 'block' : 'none';
-    }
+// Filter functions for server-side filtering and pagination
+function applyFilters() {
+  // Create URL with query parameters
+  const url = new URL(window.location.href);
+  const params = url.searchParams;
+  
+  // Always reset to page 1 when applying new filters
+  params.set('page', '1');
+  
+  // Get category filters
+  const selectedCategories = Array.from(document.querySelectorAll('.category-checkbox:checked'))
+    .map(cb => cb.value)
+    .filter(value => value !== 'all');
+  
+  // Clear any existing category parameters
+  params.delete('category');
+  
+  // Add selected categories
+  if (selectedCategories.length > 0) {
+    selectedCategories.forEach(cat => params.append('category', cat));
   }
+  
+  // Add price range
+  const minPrice = parseInt(document.getElementById('minPriceInput').value) || 0;
+  const maxPrice = parseInt(document.getElementById('maxPriceInput').value) || 5000;
+  params.set('minPrice', minPrice);
+  params.set('maxPrice', maxPrice);
+  
+  // Add sort option
+  const sortValue = document.getElementById('sortSelect').value;
+  params.set('sort', sortValue);
+  
+  // Navigate to filtered URL
+  window.location.href = url.toString();
+}
 
-  function sortProducts() {
-    const sortValue = document.getElementById('sortSelect').value;
-    const items = Array.from(document.getElementsByClassName('product-item'));
-    items.sort((a, b) => {
-      switch (sortValue) {
-        case 'price-asc': return parseInt(a.getAttribute('data-price')) - parseInt(b.getAttribute('data-price'));
-        case 'price-desc': return parseInt(b.getAttribute('data-price')) - parseInt(a.getAttribute('data-price'));
-        case 'date-desc': return parseInt(b.getAttribute('data-date')) - parseInt(a.getAttribute('data-date'));
-        case 'stock-desc': return parseInt(b.getAttribute('data-stock')) - parseInt(a.getAttribute('data-stock'));
-        case 'recommended':
-        default: return 0; // No sorting for recommended
+function sortProducts() {
+  const sortValue = document.getElementById('sortSelect').value;
+  
+  // Update URL with new sort parameter
+  const url = new URL(window.location.href);
+  url.searchParams.set('sort', sortValue);
+  
+  // Navigate to sorted URL
+  window.location.href = url.toString();
+}
+
+// All Categories checkbox logic
+document.addEventListener('DOMContentLoaded', function() {
+  const allCategoriesCheckbox = document.getElementById('allCategories');
+  const categoryCheckboxes = document.querySelectorAll('.category-checkbox');
+  
+  // Handle "All Categories" checkbox
+  if (allCategoriesCheckbox) {
+    allCategoriesCheckbox.addEventListener('change', function() {
+      if (this.checked) {
+        categoryCheckboxes.forEach(cb => {
+          cb.checked = false;
+        });
       }
     });
-    const productGrid = document.getElementById('productGrid');
-    items.forEach(item => productGrid.appendChild(item));
   }
-
-  // Initial load
-  document.addEventListener('DOMContentLoaded', () => {
-    sortProducts(); // Apply initial sort
-    applyFilters(); // Apply initial filters
+  
+  // When any category is checked, uncheck "All Categories"
+  categoryCheckboxes.forEach(cb => {
+    cb.addEventListener('change', function() {
+      if (this.checked && allCategoriesCheckbox) {
+        allCategoriesCheckbox.checked = false;
+      }
+      
+      // If no categories are checked, check "All Categories"
+      const anyChecked = Array.from(categoryCheckboxes).some(cb => cb.checked);
+      if (!anyChecked && allCategoriesCheckbox) {
+        allCategoriesCheckbox.checked = true;
+      }
+    });
   });
+  
+  // Set initial category checkboxes state based on URL parameters
+  const urlParams = new URLSearchParams(window.location.search);
+  const categoryParams = urlParams.getAll('category');
+  
+  if (categoryParams.length > 0) {
+    // Uncheck "All Categories" if specific categories are selected
+    if (allCategoriesCheckbox) {
+      allCategoriesCheckbox.checked = false;
+    }
+    
+    // Check the appropriate category checkboxes
+    categoryCheckboxes.forEach(cb => {
+      if (categoryParams.includes(cb.value)) {
+        cb.checked = true;
+      }
+    });
+  }
+  
+  // Set initial price range based on URL parameters
+  const minPrice = urlParams.get('minPrice');
+  const maxPrice = urlParams.get('maxPrice');
+  
+  if (minPrice) {
+    document.getElementById('minPriceInput').value = minPrice;
+    document.getElementById('minPrice').textContent = `₹${minPrice}`;
+  }
+  
+  if (maxPrice) {
+    document.getElementById('maxPriceInput').value = maxPrice;
+    document.getElementById('priceRange').value = maxPrice;
+    document.getElementById('maxPrice').textContent = `₹${maxPrice}`;
+  }
+  
+  // Set initial sort option based on URL parameter
+  const sortValue = urlParams.get('sort');
+  if (sortValue) {
+    document.getElementById('sortSelect').value = sortValue;
+  }
+});
 </script>

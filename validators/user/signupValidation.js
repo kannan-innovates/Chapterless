@@ -17,12 +17,7 @@ const signupValidator = (req, res, next) => {
        errors.email = 'Enter a valid email address';
      }
    
-     // Phone Number
-    //  const phoneRegex = /^\d{10}$/;
-    //  if (!phoneNumber || !phoneRegex.test(phoneNumber)) {
-    //    errors.phoneNumber = 'Phone number must be 10 digits';
-    //  }
-   
+    
      // Password
      if (!password || password.length < 6) {
        errors.password = 'Password must be at least 6 characters';
