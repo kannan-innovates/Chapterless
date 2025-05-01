@@ -1,3 +1,4 @@
+<!-- In login.ejs -->
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -19,15 +20,13 @@
       rel="stylesheet"
     />
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
-    <link rel="stylesheet" href='/styles/user/loginPage.css' />
+    <link rel="stylesheet" href="/styles/user/loginPage.css" />
   </head>
   <body
     class="paper-texture d-flex align-items-center justify-content-center min-vh-100 py-3"
   >
     <div class="container">
       <div class="login-container mx-auto bg-white row">
-        <!-- Left image side -->
         <div class="col-md-5 p-0 image-side d-none d-md-block">
           <div class="overlay">
             <div class="text-white">
@@ -36,8 +35,6 @@
             </div>
           </div>
         </div>
-
-        <!-- Right form side -->
         <div class="col-12 col-md-7 form-side">
           <div class="text-center mb-4">
             <div class="d-flex align-items-center justify-content-center mb-2">
@@ -52,7 +49,6 @@
             <h2 class="fw-bold h4">Log in to your account</h2>
             <p class="text-muted small mb-3">Pick up where you left off</p>
           </div>
-
           <form id="userLogin" method="post">
             <div class="compact-mb">
               <label for="email" class="form-label">Email Address</label>
@@ -76,28 +72,24 @@
               />
               <div id="passwordError" class="text-danger small mt-1"></div>
             </div>
-
             <a href="/forgotPassword" class="forgot-password text-decoration-none"
               >Forgot password?</a
             >
-
             <button
               type="submit"
               class="btn btn-primary btn-sm w-100 mb-2 py-2"
+              id="submitButton"
             >
               Log In
             </button>
-
             <div class="divider">
               <span>OR</span>
             </div>
-
             <a href="/auth/google" class="btn btn-google w-100 mb-3">
               <i class="ri-google-fill"></i>
               Continue with Google
             </a>
           </form>
-
           <div class="text-center mt-3">
             <p class="small text-muted mb-0">
               Don't have an account?
@@ -108,89 +100,147 @@
       </div>
     </div>
     <script>
-      document
-        .getElementById("userLogin")
-        .addEventListener("submit", async (event) => {
-          event.preventDefault();
+      // Handle query parameter for blocked user
+      const urlParams = new URLSearchParams(window.location.search);
+      const error = urlParams.get("error");
+      if (error === "blocked") {
+        Swal.fire({
+          icon: "error",
+          title: "Account Blocked",
+          text: "Your account is blocked. Please contact support.",
+          confirmButtonText: "OK",
+        });
+      }
 
-          const email = document.getElementById("email").value.trim();
-          const password = document.getElementById("password").value.trim();
+      // Validation styling functions
+      function setInvalid(element) {
+        element.classList.add("is-invalid");
+        element.classList.remove("is-valid");
+      }
+      function setValid(element) {
+        element.classList.add("is-valid");
+        element.classList.remove("is-invalid");
+      }
+      function resetValidation(element) {
+        element.classList.remove("is-valid");
+        element.classList.remove("is-invalid");
+      }
 
-          const emailError = (document.getElementById(
-            "emailError"
-          ).textContent = "");
-          const passwordError = (document.getElementById(
-            "passwordError"
-          ).textContent = "");
+      // Real-time validation
+      document.getElementById("email").addEventListener("input", function () {
+        const email = this.value.trim();
+        const emailError = document.getElementById("emailError");
+        if (email === "") {
+          emailError.textContent = "";
+          resetValidation(this);
+        } else if (!/^\S+@\S+\.\S+$/.test(email)) {
+          emailError.textContent = "Enter a valid email address";
+          setInvalid(this);
+        } else {
+          emailError.textContent = "";
+          setValid(this);
+        }
+      });
 
-          let isValid = true;
+      document.getElementById("password").addEventListener("input", function () {
+        const password = this.value;
+        const passwordError = document.getElementById("passwordError");
+        if (password === "") {
+          passwordError.textContent = "";
+          resetValidation(this);
+        } else if (password.length < 6) {
+          passwordError.textContent = "Password must be at least 6 characters";
+          setInvalid(this);
+        } else {
+          passwordError.textContent = "";
+          setValid(this);
+        }
+      });
 
-          if (!email || !/^\S+@\S+\.\S+$/.test(email)) {
-            document.getElementById("emailError").textContent =
-              "Valid email is required.";
-            isValid = false;
-          }
+      // Form submission
+      document.getElementById("userLogin").addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const email = document.getElementById("email").value.trim();
+        const password = document.getElementById("password").value.trim();
+        const submitButton = document.getElementById("submitButton");
+        document.getElementById("emailError").textContent = "";
+        document.getElementById("passwordError").textContent = "";
+        let isValid = true;
 
-          if (!password || password.length < 6) {
-            document.getElementById("passwordError").textContent =
-              "Password must be at least 6 characters.";
-            isValid = false;
-          }
+        if (!email || !/^\S+@\S+\.\S+$/.test(email)) {
+          document.getElementById("emailError").textContent = "Valid email is required";
+          setInvalid(document.getElementById("email"));
+          isValid = false;
+        }
+        if (!password || password.length < 6) {
+          document.getElementById("passwordError").textContent =
+            "Password must be at least 6 characters";
+          setInvalid(document.getElementById("password"));
+          isValid = false;
+        }
 
-          if (isValid) {
-            try {
-              const response = await fetch("/login", {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                  email,
-                  password,
-                }),
+        if (isValid) {
+          try {
+            submitButton.disabled = true;
+            submitButton.innerHTML =
+              '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Logging In...';
+            const response = await fetch("/login", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ email, password }),
+            });
+            const result = await response.json();
+            submitButton.disabled = false;
+            submitButton.textContent = "Log In";
+
+            if (result.success) {
+              Swal.fire({
+                icon: "success",
+                title: "Sign In Successful",
+                text: result.message || "Welcome to Chapterless",
+                confirmButtonText: "Proceed to Home Page",
+              }).then(() => {
+                window.location.href = "/";
               });
-
-              const result = await response.json();
-              if (result.success) {
+            } else {
+              if (response.status === 403 && result.message.includes("verify")) {
                 Swal.fire({
-                  icon: "success",
-                  title: "Sign in Successful",
-                  text: result.message||'Welcome to chapterless',
-                  confirmButtonText: "Proceed to Home Page",
-                })
-                 .then(() => {
-                  window.location.href =  "/";
+                  icon: "warning",
+                  title: "Verification Required",
+                  text: "Please verify your email first",
+                  confirmButtonText: "Go to Verification",
+                }).then(() => {
+                  window.location.href = "/verify-otp";
+                });
+              } else if (response.status === 403 && result.message.includes("blocked")) {
+                Swal.fire({
+                  icon: "error",
+                  title: "Account Blocked",
+                  text: result.message || "Your account is blocked. Please contact support.",
+                  confirmButtonText: "OK",
                 });
               } else {
-                if (
-                  response.status === 403 &&
-                  result.redirectTO === "/verify-otp"
-                ) {
-                  Swal.fire({
-                    icon: "warning",
-                    title: "verification required",
-                    text: "Please verify your email first",
-                  }).then(() => {
-                    window.location.href("/verify-otp");
-                  });
-                } else {
-                  Swal.fire({
-                    icon: "error",
-                    title: "Sign in Error",
-                    text: result.message || "Something went wrong!",
-                  });
-                }
+                Swal.fire({
+                  icon: "error",
+                  title: "Sign In Failed",
+                  text: result.message || "Something went wrong!",
+                  confirmButtonText: "Try Again",
+                });
               }
-            } catch (error) {
-              console.log("Signing in error", error);
-              Swal.fire({
-                icon: "error",
-                title: "error",
-                text: "Server not responding. Try again later.",
-              });
             }
+          } catch (error) {
+            console.error("Signin error:", error);
+            submitButton.disabled = false;
+            submitButton.textContent = "Log In";
+            Swal.fire({
+              icon: "error",
+              title: "Error",
+              text: "Unable to connect to the server. Please try again later.",
+              confirmButtonText: "OK",
+            });
           }
-        });
+        }
+      });
     </script>
   </body>
 </html>

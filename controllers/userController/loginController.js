@@ -23,6 +23,13 @@ const postLogin = async (req, res) => {
       });
     }
 
+    if (existingUser.isBlocked) {
+      return res.status(403).json({
+        success: false,
+        message: "Your account is blocked. Please contact support.",
+      });
+    }
+
     const verifiedPassword = await bcrypt.compare(
       password,
       existingUser.password

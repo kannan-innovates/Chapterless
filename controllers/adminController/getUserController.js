@@ -84,7 +84,7 @@ const unblockUser = async (req, res) => {
     const userId = req.params.id;
     const user = await User.findByIdAndUpdate(
       userId,
-      { isBlocked: true },
+      { isBlocked: false},
       { new: true }
     );
 
@@ -96,7 +96,7 @@ const unblockUser = async (req, res) => {
     }
 
     return res.status(200).json({
-      success: false,
+      success: true,
       message: "User unblocked successfully",
     });
   } catch (error) {
