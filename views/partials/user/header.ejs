@@ -87,8 +87,7 @@
             </li>
           </ul>
           <div class="d-flex align-items-center">
-            <% if (!user) { %>
-            <!-- For non-authenticated users: show search and login icon -->
+            <!-- Search input field moved outside conditionals to show for all users -->
             <div class="search-input d-none d-lg-block me-3">
               <input
                 type="text"
@@ -100,6 +99,9 @@
                 <i class="ri-search-line"></i>
               </div>
             </div>
+            
+            <% if (!user) { %>
+            <!-- For non-authenticated users: show login icon -->
             <div class="d-flex">
               <a href="/login" class="p-2 text-dark">
                 <i class="ri-user-line fs-5"></i>
