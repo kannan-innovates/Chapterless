@@ -5,6 +5,7 @@ const passport = require("passport");
 const userController = require("../../controllers/userController/userController");
 const signupController = require("../../controllers/userController/signupController");
 const signupValidator = require("../../validators/user/signupValidation");
+const loginValidator = require('../../validators/user/loginValidator')
 const loginController = require("../../controllers/userController/loginController");
 const logoutController = require("../../controllers/userController/logoutController");
 
@@ -28,7 +29,7 @@ router.get("/verify-otp", signupController.getOtp);
 router.post("/verify-otp", signupController.verifyOtp);
 
 router.get("/login", loginController.getLogin);
-router.post("/login", loginController.postLogin);
+router.post("/login", loginValidator.loginValidator,loginController.postLogin);
 
 router.get("/logout", logoutController.logout);
 

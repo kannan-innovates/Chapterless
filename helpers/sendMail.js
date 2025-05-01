@@ -15,7 +15,7 @@ const sendOtpEmail = async (toEmail, name, otp,subjectContent) => {
       from: `"Chapterless 📚" <${process.env.EMAIL}>`,
       to: toEmail,
       subject:subjectContent,
-      text: `Hello ${name},\n\nYour OTP for Chapterless signup is: ${otp}\n\nThanks,\nTeam Chapterless`,
+      text: `Hello ${fullName},\n\nYour OTP for Chapterless signup is: ${otp}\n\nThank You!,\nTeam Chapterless`,
     };
 
     await transporter.sendMail(mailOptions);
