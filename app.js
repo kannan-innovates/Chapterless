@@ -31,6 +31,13 @@ app.use(
     },
   })
 );
+app.use((req, res, next) => {
+  // Make the user available to all templates
+  res.locals.isAuthenticated = !!req.session.user_id;
+  res.locals.user = req.session.user_id ? { id: req.session.user_id } : null;
+  next();
+});
+
 
 app.use(passport.initialize());
 app.use(passport.session());

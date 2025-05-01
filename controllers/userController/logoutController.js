@@ -5,7 +5,13 @@ const logout = async (req, res) => {
         console.error("Error destroying session:", err);
         return res.status(500).send("Logout failed");
       }
-      res.redirect("/");
+      
+      // Set cache-control headers to prevent back button access
+      res.header('Cache-Control', 'no-cache, private, no-store, must-revalidate, max-stale=0, post-check=0, pre-check=0');
+      res.header('Pragma', 'no-cache');
+      res.header('Expires', '0');
+      
+      res.redirect("/login");
     });
   } catch (error) {
     console.error("Logout error:", error);
@@ -13,4 +19,4 @@ const logout = async (req, res) => {
   }
 };
 
-module.exports = {logout}
+module.exports = { logout };

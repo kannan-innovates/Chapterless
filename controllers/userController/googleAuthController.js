@@ -25,7 +25,13 @@ const googleController = (req, res, next) => {
 
       console.log("Google auth successful, user:", user.email);
       req.session.user_id = user._id;
+      req.session.user_email = user.email;
       console.log("Setting session user_id:", req.session.user_id);
+
+      // Set cache control headers
+      res.header('Cache-Control', 'no-cache, private, no-store, must-revalidate, max-stale=0, post-check=0, pre-check=0');
+      res.header('Pragma', 'no-cache');
+      res.header('Expires', '0');
 
       req.session.save((err) => {
         if (err) {

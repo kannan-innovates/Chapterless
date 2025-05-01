@@ -13,45 +13,50 @@ const passwordController = require("../../controllers/userController/forgotPassw
 const googleController = require("../../controllers/userController/googleAuthController");
 
 const shopPageController = require('../../controllers/userController/shop-page-controller');
-const productDetailsController = require('../../controllers/userController/product-details-controller')
+const productDetailsController = require('../../controllers/userController/product-details-controller');
 
+// Import the auth middleware
+const { isAuthenticated, isNotAuthenticated, preventBackButtonCache } = require('../../middlewares/authMiddleware');
+
+// Public routes (accessible to all)
 router.get("/", userController.loadHomePage);
 router.get("/pageNotFound", userController.pageNotFound);
 
-router.get("/signup", signupController.getSignup);
-router.post(
-  "/signup",
-  signupValidator.signupValidator,
-  signupController.postSignup
-);
+// Auth routes (only for non-authenticated users)
+router.get("/signup", isNotAuthenticated, preventBackButtonCache, signupController.getSignup);
+router.post("/signup", isNotAuthenticated, signupValidator.signupValidator, signupController.postSignup);
 
-router.get("/verify-otp", signupController.getOtp);
-router.post("/verify-otp", signupController.verifyOtp);
+router.get("/verify-otp", isNotAuthenticated, preventBackButtonCache, signupController.getOtp);
+router.post("/verify-otp", isNotAuthenticated, signupController.verifyOtp);
 
-router.get("/login", loginController.getLogin);
-router.post("/login", loginValidator.loginValidator,loginController.postLogin);
+router.get("/login", isNotAuthenticated, preventBackButtonCache, loginController.getLogin);
+router.post("/login", isNotAuthenticated, loginValidator.loginValidator, loginController.postLogin);
 
-router.get("/logout", logoutController.logout);
+// Password reset routes (only for non-authenticated users)
+router.get("/forgotPassword", isNotAuthenticated, preventBackButtonCache, passwordController.getForgotPassword);
+router.post("/forgotPassword", isNotAuthenticated, passwordController.postForgotPassword);
 
-router.get(
-  "/auth/google",
-  passport.authenticate("google", { scope: ["profile", "email"] })
-);
+router.get("/otpForgotPassword", isNotAuthenticated, preventBackButtonCache, passwordController.getOtpForgotPassword);
+router.post("/otpForgotPassword", isNotAuthenticated, passwordController.verifyOtp);
+
+router.post("/resend-otp", isNotAuthenticated, passwordController.resendOtp);
+router.post("/resend-signup-otp", isNotAuthenticated, signupController.resendOtp);
+
+router.get("/resetPassword", isNotAuthenticated, preventBackButtonCache, passwordController.getResetPassword);
+router.patch("/resetPassword", isNotAuthenticated, passwordController.patchResetPassword);
+
+// Logout route (only for authenticated users)
+router.get("/logout", isAuthenticated, logoutController.logout);
+
+// OAuth routes
+router.get("/auth/google", passport.authenticate("google", { scope: ["profile", "email"] }));
 router.get("/auth/google/callback", googleController.googleController);
 
-router.get("/forgotPassword", passwordController.getForgotPassword);
-router.post("/forgotPassword", passwordController.postForgotPassword);
+// Product routes (accessible to all)
+router.get('/shopPage', shopPageController.shopPage);
+router.get('/products/:id', productDetailsController.productDetails);
 
-router.get("/otpForgotPassword", passwordController.getOtpForgotPassword);
-router.post("/otpForgotPassword", passwordController.verifyOtp);
-
-router.post("/resend-otp", passwordController.resendOtp);
-router.post("/resend-signup-otp", signupController.resendOtp);
-
-router.get("/resetPassword", passwordController.getResetPassword);
-router.patch("/resetPassword", passwordController.patchResetPassword);
-
-router.get('/shopPage',shopPageController.shopPage);
-router.get('/products/:id',productDetailsController.productDetails)
+// Protected routes can be added here with isAuthenticated middleware
+// Example: router.get('/profile', isAuthenticated, userProfileController.getProfile);
 
 module.exports = router;

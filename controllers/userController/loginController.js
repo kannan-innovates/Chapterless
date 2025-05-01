@@ -3,6 +3,11 @@ const bcrypt = require("bcrypt");
 
 const getLogin = async (req, res) => {
   try {
+    // Apply cache-control headers here as well for added security
+    res.header('Cache-Control', 'no-cache, private, no-store, must-revalidate, max-stale=0, post-check=0, pre-check=0');
+    res.header('Pragma', 'no-cache');
+    res.header('Expires', '0');
+    
     res.render("login");
   } catch (error) {
     console.log(error);
@@ -42,11 +47,21 @@ const postLogin = async (req, res) => {
       });
     }
 
+    // Set user session
     req.session.user_id = existingUser._id;
-
-    return res.status(200).json({
-      success: true,
-      message: "Welcome to Chapterless",
+    req.session.user_email = existingUser.email;
+    
+    // Ensure session is saved before sending response
+    req.session.save((err) => {
+      if (err) {
+        console.error("Session save error:", err);
+        return res.status(500).json({ success: false, message: "Session error" });
+      }
+      
+      return res.status(200).json({
+        success: true,
+        message: "Welcome to Chapterless",
+      });
     });
   } catch (error) {
     console.log("Signin ERROR", error);
