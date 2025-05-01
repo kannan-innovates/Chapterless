@@ -49,7 +49,7 @@ const postForgotPassword = async (req, res) => {
     await otpDoc.save();
 
     let subjectContent = "OTP for Resetting your Password";
-    await sendOtpEmail(email, otp, subjectContent);
+    await sendOtpEmail(email, otp, subjectContent,"forgot-password");
 
     req.session.user_email = email;
 

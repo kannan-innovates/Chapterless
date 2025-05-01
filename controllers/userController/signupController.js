@@ -28,8 +28,14 @@ const postSignup = async (req, res) => {
   try {
     const { fullName, email, phoneNumber, password } = req.body;
 
+    // Trim and sanitize inputs
+    const trimmedEmail = email.trim().toLowerCase();
+    const trimmedName = fullName.trim();
+    const trimmedPhone = phoneNumber.trim();
+
+    // Check if user already exists
     const existingUser = await User.findOne({
-      $or: [{ email }, { phone: phoneNumber }],
+      $or: [{ email: trimmedEmail }, { phone: trimmedPhone }],
     });
 
     if (existingUser) {
@@ -39,39 +45,53 @@ const postSignup = async (req, res) => {
       });
     }
 
+    // Generate OTP
     const otp = otpGenerator();
-    console.log(otp);
+    console.log("Generated OTP:", otp);
 
-    let subjectContent = "Verify your email for Chapterless";
-    await sendOtpEmail(email, fullName, otp, subjectContent);
+    const subjectContent = "Verify your email for Chapterless";
+
+    // ✅ Try sending the email first
+    try {
+      await sendOtpEmail(trimmedEmail, trimmedName, otp, subjectContent,"signup");
+    } catch (err) {
+      // ❌ Failed to send OTP email
+      return res.status(500).json({
+        success: false,
+        message: "Failed to send OTP email. Please try again later.",
+      });
+    }
+
+    // ✅ Email sent successfully → continue
 
     const hashedPassword = await hashPasswordHelper.hashPassword(password);
 
-    // Create user without OTP fields
-    const newUser = new User({
-      fullName,
-      email,
-      phone: phoneNumber,
-      password: hashedPassword,
-      // No longer storing OTP in user document
-    });
+    // Delete any existing OTPs (optional but safe)
+    await OTP.deleteMany({ email: trimmedEmail, purpose: "signup" });
 
-    await newUser.save();
-
-    // Store OTP in separate collection
+    // Store OTP in DB
     const otpDoc = new OTP({
-      email,
+      email: trimmedEmail,
       otp,
-      purpose: 'signup'
+      purpose: "signup",
     });
-    
     await otpDoc.save();
-    
-    req.session.email = email;
 
-    return res.json({ message: "redirecting to otp page", success: true });
+    // Temporarily store user data in session
+    req.session.tempUser = {
+      fullName: trimmedName,
+      email: trimmedEmail,
+      phone: trimmedPhone,
+      password: hashedPassword,
+    };
+
+    return res.status(200).json({
+      success: true,
+      message: "OTP sent successfully. Redirecting to OTP page.",
+    });
+
   } catch (error) {
-    console.error(`Error in posting user`, error);
+    console.error("Error in postSignup:", error);
     return res.status(500).json({
       success: false,
       message: "Internal Server Error",
@@ -82,20 +102,14 @@ const postSignup = async (req, res) => {
 const verifyOtp = async (req, res) => {
   try {
     const { otp } = req.body;
-    const email = req.session.email;
-    
-    // Find user
-    const user = await User.findOne({ email });
+    const tempUser = req.session.tempUser;
 
-    if (!user) {
-      return res
-        .status(404)
-        .json({ success: false, message: "User not found", success: false });
+    if (!tempUser || !tempUser.email) {
+      return res.status(400).json({ success: false, message: "Session expired. Please sign up again." });
     }
 
-    // Find OTP document
-    const otpDoc = await OTP.findOne({ email, purpose: 'signup' });
-    
+    const otpDoc = await OTP.findOne({ email: tempUser.email, purpose: "signup" });
+
     if (!otpDoc) {
       return res.status(400).json({
         success: false,
@@ -107,19 +121,26 @@ const verifyOtp = async (req, res) => {
       return res.status(400).json({ success: false, message: "Invalid OTP" });
     }
 
-    // OTP is valid - verify the user
-    user.isVerified = true;
-    await user.save();
-    
-    // Delete the OTP document
+    // Create user after OTP is verified
+    const newUser = new User({
+      fullName: tempUser.fullName,
+      email: tempUser.email,
+      phone: tempUser.phone,
+      password: tempUser.password,
+      isVerified: true, // already verified
+    });
+    await newUser.save();
+
+    // Clean up
     await OTP.deleteOne({ _id: otpDoc._id });
+    delete req.session.tempUser;
 
     return res.status(200).json({
       success: true,
-      message: "OTP verification successful",
+      message: "Account created successfully",
     });
   } catch (error) {
-    console.log(error);
+    console.log("Error in verifyOtp:", error);
     return res.status(500).json({
       success: false,
       message: "Internal Server Error",
@@ -155,7 +176,7 @@ const resendOtp = async (req, res) => {
     await otpDoc.save();
 
     let subjectContent = "Your new OTP for Chapterless";
-    await sendOtpEmail(email, user.fullName, otp, subjectContent);
+    await sendOtpEmail(email, user.fullName, otp, subjectContent,"resend");
 
     return res.status(200).json({
       success: true,
