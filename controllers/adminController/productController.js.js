@@ -4,23 +4,29 @@ const cloudinary = require('../../config/cloudinary');
 const fs = require('fs');
 
 // Get Products Page
+// Updated getProducts function to show all products in admin panel
 const getProducts = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10; // Define limit here
+    const limit = parseInt(req.query.limit) || 10;
     const search = req.query.search || '';
     const categoryFilter = req.query.category || '';
     const sortBy = req.query.sort || 'newest';
     const skip = (page - 1) * limit;
 
-    // Build query
-    const query = { isListed: true, isDeleted: false }; // Only listed and non-deleted products
+    // Changed query to include all products for admin panel
+    // This should include both listed and unlisted products
+    const query = { isDeleted: false }; // Only exclude permanently deleted products
+    
+    // Add search filters if provided
     if (search) {
       query.$or = [
         { title: { $regex: search, $options: 'i' } },
         { author: { $regex: search, $options: 'i' } },
       ];
     }
+    
+    // Add category filter if provided
     if (categoryFilter) {
       query.category = categoryFilter;
     }
@@ -32,6 +38,7 @@ const getProducts = async (req, res) => {
     else if (sortBy === 'price-high') sortOption = { salePrice: -1 };
     else if (sortBy === 'stock-high') sortOption = { stock: -1 };
 
+    // Count and fetch products
     const totalProducts = await Product.countDocuments(query);
     const products = await Product.find(query)
       .populate('category')
@@ -39,7 +46,8 @@ const getProducts = async (req, res) => {
       .skip(skip)
       .limit(limit);
 
-    const categories = await Category.find({ isListed: true }); // For filter dropdown
+    // Fetch all categories for filter dropdown
+    const categories = await Category.find({ isListed: true });
 
     res.render('getProducts', {
       products,
@@ -50,7 +58,7 @@ const getProducts = async (req, res) => {
       search,
       categoryFilter,
       sortBy,
-      limit, // Add limit to the render data
+      limit,
     });
   } catch (error) {
     console.error('Error fetching products:', error);
