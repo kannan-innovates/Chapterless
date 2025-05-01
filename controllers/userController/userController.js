@@ -16,12 +16,12 @@ const loadHomePage = async (req, res) => {
     const LIMIT = 4;
 
     // Top selling (assumed based on stock, ideally use soldCount)
-    const topSellingProducts = await Product.find()
+    const topSellingProducts = await Product.find({ isListed: true })
       .sort({ stock: -1 }) // Highest stock
       .limit(LIMIT);
 
     // New arrivals (based on dateAdded)
-    const newArrivals = await Product.find()
+    const newArrivals = await Product.find({ isListed: true })
       .sort({ createdAt: -1  }) // Newest first
       .limit(LIMIT);
 
