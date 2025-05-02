@@ -18,6 +18,8 @@ const productDetailsController = require('../../controllers/userController/produ
 // Import the auth middleware
 const { isAuthenticated, isNotAuthenticated, preventBackButtonCache } = require('../../middlewares/authMiddleware');
 
+const { searchProducts } = require('../../controllers/userController/searchController');
+
 // Public routes (accessible to all)
 router.get("/", userController.loadHomePage);
 router.get("/pageNotFound", userController.pageNotFound);
@@ -56,7 +58,7 @@ router.get("/auth/google/callback", googleController.googleController);
 router.get('/shopPage', shopPageController.shopPage);
 router.get('/products/:id', productDetailsController.productDetails);
 
-// Protected routes can be added here with isAuthenticated middleware
-// Example: router.get('/profile', isAuthenticated, userProfileController.getProfile);
+
+router.get('/search', searchProducts);
 
 module.exports = router;
