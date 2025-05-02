@@ -35,14 +35,22 @@ const getCategory = async (req, res) => {
 };
 
 // Add Category
+// Updated addCategory function
 const addCategory = async (req, res) => {
   try {
     const { name, description, isListed } = req.body;
 
-    // Check if category already exists
-    const existingCategory = await Category.findOne({ name });
+    // Check if category already exists (case insensitive)
+    const existingCategory = await Category.findOne({ 
+      name: { $regex: new RegExp(`^${name}$`, 'i') } 
+    });
+
     if (existingCategory) {
-      return res.status(400).json({ error: "Category already exists" });
+      // Return 200 status with a warning flag instead of 400 error
+      return res.status(200).json({ 
+        warning: true,
+        message: "This category already exists in the database." 
+      });
     }
 
     // Upload image to Cloudinary
@@ -71,7 +79,7 @@ const addCategory = async (req, res) => {
   }
 };
 
-// Edit Category
+//  editCategory function
 const editCategory = async (req, res) => {
   try {
     const { id } = req.params;
@@ -84,9 +92,16 @@ const editCategory = async (req, res) => {
     }
 
     // Check for duplicate name (excluding current category)
-    const existingCategory = await Category.findOne({ name, _id: { $ne: id } });
+    const existingCategory = await Category.findOne({ 
+      name: { $regex: new RegExp(`^${name}$`, 'i') },
+      _id: { $ne: id }
+    });
     if (existingCategory) {
-      return res.status(400).json({ error: "Category name already exists" });
+      // Return 200 status with a warning flag instead of 400 error
+      return res.status(200).json({ 
+        warning: true,
+        message: "Another category with this name already exists." 
+      });
     }
 
     // Upload new image if provided

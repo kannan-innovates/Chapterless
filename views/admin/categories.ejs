@@ -452,86 +452,108 @@
           : "Unlisted";
       });
 
-      // Add Category Form Submission
-      document
-        .getElementById("addCategoryForm")
-        .addEventListener("submit", async function (e) {
-          e.preventDefault();
-          const formData = new FormData(this);
+      // Add Category Form Submission (Updated)
+document
+  .getElementById("addCategoryForm")
+  .addEventListener("submit", async function (e) {
+    e.preventDefault();
+    const formData = new FormData(this);
 
-          try {
-            const response = await fetch("/admin/categories", {
-              method: "POST",
-              body: formData,
-            });
-            const data = await response.json();
+    try {
+      const response = await fetch("/admin/categories", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await response.json();
 
-            if (response.ok) {
-              Swal.fire({
-                title: "Success!",
-                text: data.message,
-                icon: "success",
-                timer: 2000,
-                showConfirmButton: false,
-              }).then(() => {
-                window.location.reload();
-              });
-            } else {
-              Swal.fire({
-                title: "Error!",
-                text: data.error || "Failed to add category",
-                icon: "error",
-              });
-            }
-          } catch (error) {
-            Swal.fire({
-              title: "Error!",
-              text: "Server Error",
-              icon: "error",
-            });
-          }
+      if (response.ok) {
+        // Check if it's a warning about duplicate category
+        if (data.warning) {
+          Swal.fire({
+            title: "Category Exists",
+            text: data.message,
+            icon: "info",
+            confirmButtonText: "OK"
+          });
+        } else {
+          // Regular success message
+          Swal.fire({
+            title: "Success!",
+            text: data.message,
+            icon: "success",
+            timer: 2000,
+            showConfirmButton: false,
+          }).then(() => {
+            window.location.reload();
+          });
+        }
+      } else {
+        Swal.fire({
+          title: "Error!",
+          text: data.error || "Failed to add category",
+          icon: "error",
         });
+      }
+    } catch (error) {
+      Swal.fire({
+        title: "Error!",
+        text: "Server Error",
+        icon: "error",
+      });
+    }
+  });
 
-      // Edit Category Form Submission
-      document
-        .getElementById("editCategoryForm")
-        .addEventListener("submit", async function (e) {
-          e.preventDefault();
-          const categoryId = document.getElementById("editCategoryId").value;
-          const formData = new FormData(this);
+// Edit Category Form Submission (Same update pattern)
+document
+  .getElementById("editCategoryForm")
+  .addEventListener("submit", async function (e) {
+    e.preventDefault();
+    const categoryId = document.getElementById("editCategoryId").value;
+    const formData = new FormData(this);
 
-          try {
-            const response = await fetch(`/admin/categories/${categoryId}`, {
-              method: "PUT",
-              body: formData,
-            });
-            const data = await response.json();
+    try {
+      const response = await fetch(`/admin/categories/${categoryId}`, {
+        method: "PUT",
+        body: formData,
+      });
+      const data = await response.json();
 
-            if (response.ok) {
-              Swal.fire({
-                title: "Success!",
-                text: data.message,
-                icon: "success",
-                timer: 2000,
-                showConfirmButton: false,
-              }).then(() => {
-                window.location.reload();
-              });
-            } else {
-              Swal.fire({
-                title: "Error!",
-                text: data.error || "Failed to update category",
-                icon: "error",
-              });
-            }
-          } catch (error) {
-            Swal.fire({
-              title: "Error!",
-              text: "Server Error",
-              icon: "error",
-            });
-          }
+      if (response.ok) {
+        // Check if it's a warning about duplicate category
+        if (data.warning) {
+          Swal.fire({
+            title: "Category Exists",
+            text: data.message,
+            icon: "info",
+            confirmButtonText: "OK"
+          });
+        } else {
+          // Regular success message
+          Swal.fire({
+            title: "Success!",
+            text: data.message,
+            icon: "success",
+            timer: 2000,
+            showConfirmButton: false,
+          }).then(() => {
+            window.location.reload();
+          });
+        }
+      } else {
+        Swal.fire({
+          title: "Error!",
+          text: data.error || "Failed to update category",
+          icon: "error",
         });
+      }
+    } catch (error) {
+      Swal.fire({
+        title: "Error!",
+        text: "Server Error",
+        icon: "error",
+      });
+    }
+  });
 
       // Toggle List/Unlist
       const toggleSwitches = document.querySelectorAll(".toggle-status");
