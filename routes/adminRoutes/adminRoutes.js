@@ -7,11 +7,20 @@ const categoryController = require('../../controllers/adminController/categoryCo
 const productController = require('../../controllers/adminController/productController.js');
 const manageProductController = require('../../controllers/adminController/manageProducts');
 
+// Import admin middleware
+const { isAdminAuthenticated, isAdminNotAuthenticated, preventCache } = require('../../middlewares/adminMiddleware');
+
 const upload = require('../../config/multer');
 
-// Admin Login
-adminRoute.get('/adminLogin', adminController.getAdminLogin);
-adminRoute.post('/adminLogin', adminController.postAdminLogin);
+// Public admin routes (no authentication required)
+adminRoute.get('/adminLogin', isAdminNotAuthenticated, preventCache, adminController.getAdminLogin);
+adminRoute.post('/adminLogin', isAdminNotAuthenticated, adminController.postAdminLogin);
+
+// Protected admin routes (authentication required)
+// Apply middleware to all protected routes
+
+adminRoute.use(isAdminAuthenticated);
+adminRoute.use(preventCache);
 
 // Admin Dashboard
 adminRoute.get('/adminDashboard', adminController.getAdminDashboard);
@@ -50,11 +59,9 @@ adminRoute.get('/categories/list', async (req, res) => {
     res.status(500).json({ error: 'Server Error' });
   }
 });
-adminRoute.get('/products/:id/edit',  productController.getEditProduct);
+
+adminRoute.get('/products/:id/edit', productController.getEditProduct);
 adminRoute.post('/products/:id', upload.fields([{ name: 'mainImage' }, { name: 'subImages', maxCount: 3 }]), productController.updateProduct);
-
-  adminRoute.put('/products/:id/soft-delete',  productController.softDeleteProduct);
-
-  adminRoute.get('/getProducts', productController.getProducts);
+adminRoute.put('/products/:id/soft-delete', productController.softDeleteProduct);
 
 module.exports = adminRoute;

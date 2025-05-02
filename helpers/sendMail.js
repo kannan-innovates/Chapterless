@@ -3,7 +3,11 @@ const nodemailer = require("nodemailer");
 
 const sendOtpEmail = async (email, name, otp, subject, purpose = "signup") => {
   const transporter = nodemailer.createTransport({
-    // Your transporter config
+    service: "gmail",
+      auth: {
+        user: process.env.EMAIL,
+        pass: process.env.EMAIL_PASS,
+      }
   });
 
   let messageText;
