@@ -150,33 +150,33 @@ const verifyOtp = async (req, res) => {
 
 const resendOtp = async (req, res) => {
   try {
-    const email = req.session.email;
-    const user = await User.findOne({ email });
+    const email = req.session.tempUser?.email;
 
-    if (!user) {
-      return res.status(404).json({
+    if (!email) {
+      return res.status(400).json({
         success: false,
-        message: "User not found",
+        message: "Session expired. Please sign up again.",
       });
     }
 
     const otp = otpGenerator();
-    console.log(otp);
+    console.log("Resending OTP:", otp);
 
-    // Delete any existing OTP for this email and purpose
-    await OTP.deleteMany({ email, purpose: 'signup' });
-    
-    // Create new OTP document
+    // Delete old OTP
+    await OTP.deleteMany({ email, purpose: "signup" });
+
+    // Save new OTP
     const otpDoc = new OTP({
       email,
       otp,
-      purpose: 'signup'
+      purpose: "signup",
     });
-    
     await otpDoc.save();
 
-    let subjectContent = "Your new OTP for Chapterless";
-    await sendOtpEmail(email, user.fullName, otp, subjectContent,"resend");
+    const fullName = req.session.tempUser.fullName;
+    const subjectContent = "Your new OTP for Chapterless";
+
+    await sendOtpEmail(email, fullName, otp, subjectContent, "resend");
 
     return res.status(200).json({
       success: true,
@@ -190,5 +190,4 @@ const resendOtp = async (req, res) => {
     });
   }
 };
-
 module.exports = { getSignup, postSignup, verifyOtp, getOtp, resendOtp };
