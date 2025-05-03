@@ -1,0 +1,553 @@
+<%- include("../partials/user/header") %>
+
+<!-- Cart Header Section -->
+<section class="py-5 bg-light">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-lg-8 text-center">
+        <h1 class="display-5 fw-bold mb-2">Your Cart</h1>
+        <p class="text-muted mb-0">Review and modify your selected stories</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Cart Content Section -->
+<section class="py-5">
+  <div class="container">
+    <div class="row g-5">
+      <!-- Cart Items -->
+      <div class="col-lg-8">
+        <!-- Empty Cart State -->
+        <div class="empty-cart text-center py-5 d-none">
+          <div class="mb-4">
+            <i class="ri-shopping-cart-line" style="font-size: 4rem; color: #ccc;"></i>
+          </div>
+          <h3 class="fs-4 fw-semibold mb-3">Your cart is empty</h3>
+          <p class="text-muted mb-4">Looks like you haven't found your story yet</p>
+          <a href="/shopPage" class="btn btn-dark px-4 py-2">Continue Shopping</a>
+        </div>
+
+        <!-- Cart Items List -->
+        <div class="cart-items">
+          <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="fs-4 fw-bold">Items (3)</h2>
+            <button class="btn btn-link text-dark p-0 text-decoration-none">Clear Cart</button>
+          </div>
+
+          <!-- Cart Item 1 -->
+          <div class="cart-item bg-white p-4 mb-3 rounded shadow-sm">
+            <div class="row align-items-center">
+              <div class="col-md-2 col-4 mb-3 mb-md-0">
+                <img src="/api/placeholder/150/200" alt="Book Cover" class="img-fluid rounded" />
+              </div>
+              <div class="col-md-6 col-8 mb-3 mb-md-0">
+                <h3 class="fs-5 fw-semibold mb-1">The Silent Echo</h3>
+                <p class="text-muted small mb-1">Elena Ferrante</p>
+                <p class="small mb-0">Hardcover</p>
+                <span class="badge bg-success mt-2">In Stock</span>
+              </div>
+              <div class="col-md-2 col-6 text-md-center">
+                <div class="quantity-selector d-flex align-items-center">
+                  <button class="btn btn-sm btn-outline-dark quantity-btn">-</button>
+                  <input type="number" class="form-control form-control-sm mx-2 text-center" value="1" min="1" max="99" style="width: 50px;" />
+                  <button class="btn btn-sm btn-outline-dark quantity-btn">+</button>
+                </div>
+              </div>
+              <div class="col-md-2 col-6 text-end">
+                <div class="d-flex flex-column align-items-end">
+                  <span class="fw-bold mb-2">₹899</span>
+                  <button class="btn btn-link text-danger p-0 small text-decoration-none">Remove</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Cart Item 2 -->
+          <div class="cart-item bg-white p-4 mb-3 rounded shadow-sm">
+            <div class="row align-items-center">
+              <div class="col-md-2 col-4 mb-3 mb-md-0">
+                <img src="/api/placeholder/150/200" alt="Book Cover" class="img-fluid rounded" />
+              </div>
+              <div class="col-md-6 col-8 mb-3 mb-md-0">
+                <h3 class="fs-5 fw-semibold mb-1">Fragments of Time</h3>
+                <p class="text-muted small mb-1">Haruki Murakami</p>
+                <p class="small mb-0">Paperback</p>
+                <span class="badge bg-success mt-2">In Stock</span>
+              </div>
+              <div class="col-md-2 col-6 text-md-center">
+                <div class="quantity-selector d-flex align-items-center">
+                  <button class="btn btn-sm btn-outline-dark quantity-btn">-</button>
+                  <input type="number" class="form-control form-control-sm mx-2 text-center" value="1" min="1" max="99" style="width: 50px;" />
+                  <button class="btn btn-sm btn-outline-dark quantity-btn">+</button>
+                </div>
+              </div>
+              <div class="col-md-2 col-6 text-end">
+                <div class="d-flex flex-column align-items-end">
+                  <span class="fw-bold mb-2">₹649</span>
+                  <button class="btn btn-link text-danger p-0 small text-decoration-none">Remove</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Cart Item 3 -->
+          <div class="cart-item bg-white p-4 mb-3 rounded shadow-sm">
+            <div class="row align-items-center">
+              <div class="col-md-2 col-4 mb-3 mb-md-0">
+                <img src="/api/placeholder/150/200" alt="Book Cover" class="img-fluid rounded" />
+              </div>
+              <div class="col-md-6 col-8 mb-3 mb-md-0">
+                <h3 class="fs-5 fw-semibold mb-1">The Midnight Library</h3>
+                <p class="text-muted small mb-1">Matt Haig</p>
+                <p class="small mb-0">Hardcover, Limited Edition</p>
+                <span class="badge bg-warning text-dark mt-2">Low Stock</span>
+              </div>
+              <div class="col-md-2 col-6 text-md-center">
+                <div class="quantity-selector d-flex align-items-center">
+                  <button class="btn btn-sm btn-outline-dark quantity-btn">-</button>
+                  <input type="number" class="form-control form-control-sm mx-2 text-center" value="1" min="1" max="99" style="width: 50px;" />
+                  <button class="btn btn-sm btn-outline-dark quantity-btn">+</button>
+                </div>
+              </div>
+              <div class="col-md-2 col-6 text-end">
+                <div class="d-flex flex-column align-items-end">
+                  <span class="fw-bold mb-2">₹1,299</span>
+                  <button class="btn btn-link text-danger p-0 small text-decoration-none">Remove</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Continue Shopping -->
+        <div class="mt-4">
+          <a href="/shopPage" class="text-dark d-flex align-items-center text-decoration-none">
+            <i class="ri-arrow-left-line me-2"></i> Continue Shopping
+          </a>
+        </div>
+      </div>
+
+      <!-- Order Summary -->
+      <div class="col-lg-4">
+        <div class="order-summary bg-white p-4 rounded shadow-sm" id="orderSummary">
+          <h2 class="fs-4 fw-bold mb-4">Order Summary</h2>
+          
+          <!-- Subtotal -->
+          <div class="d-flex justify-content-between mb-3">
+            <span>Subtotal (3 items)</span>
+            <span class="fw-semibold">₹2,847</span>
+          </div>
+          
+          <!-- Shipping -->
+          <div class="d-flex justify-content-between mb-3">
+            <span>Shipping</span>
+            <span class="fw-semibold">₹99</span>
+          </div>
+          
+          <!-- Discount -->
+          <div class="d-flex justify-content-between mb-3 text-success">
+            <span>Discount</span>
+            <span class="fw-semibold">-₹150</span>
+          </div>
+          
+          <!-- Promo Code -->
+          <div class="promo-code mb-4">
+            <div class="input-group mb-2">
+              <input type="text" class="form-control" placeholder="Enter promo code" aria-label="Promo code">
+              <button class="btn btn-dark" type="button">Apply</button>
+            </div>
+            <div class="applied-promo text-success small">
+              <i class="ri-checkbox-circle-line me-1"></i> "NEWREADER" applied successfully
+            </div>
+          </div>
+          
+          <hr class="my-3">
+          
+          <!-- Total -->
+          <div class="d-flex justify-content-between align-items-center mb-4">
+            <span class="fs-5 fw-bold">Total</span>
+            <span class="fs-5 fw-bold">₹2,796</span>
+          </div>
+          
+          <!-- Checkout Button -->
+          <button class="btn btn-dark w-100 py-3 fw-medium">Proceed to Checkout</button>
+          
+          <!-- Payment Methods -->
+          <div class="payment-methods mt-3 text-center">
+            <p class="text-muted small mb-2">We accept</p>
+            <div class="d-flex justify-content-center gap-2">
+              <div class="payment-icon"><i class="ri-visa-line"></i></div>
+              <div class="payment-icon"><i class="ri-mastercard-line"></i></div>
+              <div class="payment-icon"><i class="ri-paypal-line"></i></div>
+              <div class="payment-icon"><i class="ri-apple-line"></i></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- You May Also Like Section -->
+<section class="py-5 bg-light">
+  <div class="container">
+    <h2 class="fs-2 fw-bold mb-4">You May Also Like</h2>
+    <div class="row g-4">
+      <!-- Recommendation 1 -->
+      <div class="col-6 col-md-3">
+        <div class="product-card bg-white h-100">
+          <div class="product-image-container">
+            <a href="#" class="text-decoration-none">
+              <img src="/api/placeholder/600/800" alt="Book Cover" class="product-image" />
+            </a>
+          </div>
+          <div class="p-3">
+            <h3 class="fs-5 fw-semibold mb-1">
+              <a href="#" class="text-dark text-decoration-none">The Alchemist</a>
+            </h3>
+            <p class="text-muted small mb-2">Paulo Coelho</p>
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <span class="fw-bold">₹499</span>
+                <span class="badge bg-success ms-2">In Stock</span>
+              </div>
+              <button class="add-to-cart border-0">
+                <i class="ri-add-line"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Recommendation 2 -->
+      <div class="col-6 col-md-3">
+        <div class="product-card bg-white h-100">
+          <div class="product-image-container">
+            <span class="product-tag">New</span>
+            <a href="#" class="text-decoration-none">
+              <img src="/api/placeholder/600/800" alt="Book Cover" class="product-image" />
+            </a>
+          </div>
+          <div class="p-3">
+            <h3 class="fs-5 fw-semibold mb-1">
+              <a href="#" class="text-dark text-decoration-none">Norwegian Wood</a>
+            </h3>
+            <p class="text-muted small mb-2">Haruki Murakami</p>
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <span class="fw-bold">₹599</span>
+                <span class="badge bg-success ms-2">In Stock</span>
+              </div>
+              <button class="add-to-cart border-0">
+                <i class="ri-add-line"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Recommendation 3 -->
+      <div class="col-6 col-md-3">
+        <div class="product-card bg-white h-100">
+          <div class="product-image-container">
+            <a href="#" class="text-decoration-none">
+              <img src="/api/placeholder/600/800" alt="Book Cover" class="product-image" />
+            </a>
+          </div>
+          <div class="p-3">
+            <h3 class="fs-5 fw-semibold mb-1">
+              <a href="#" class="text-dark text-decoration-none">Normal People</a>
+            </h3>
+            <p class="text-muted small mb-2">Sally Rooney</p>
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <span class="fw-bold">₹549</span>
+                <span class="badge bg-danger ms-2">Out of Stock</span>
+              </div>
+              <button class="add-to-cart border-0" disabled style="background-color: #ccc;">
+                <i class="ri-add-line"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Recommendation 4 -->
+      <div class="col-6 col-md-3">
+        <div class="product-card bg-white h-100">
+          <div class="product-image-container">
+            <a href="#" class="text-decoration-none">
+              <img src="/api/placeholder/600/800" alt="Book Cover" class="product-image" />
+            </a>
+          </div>
+          <div class="p-3">
+            <h3 class="fs-5 fw-semibold mb-1">
+              <a href="#" class="text-dark text-decoration-none">The Song of Achilles</a>
+            </h3>
+            <p class="text-muted small mb-2">Madeline Miller</p>
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <span class="fw-bold">₹679</span>
+                <span class="badge bg-warning text-dark ms-2">Low Stock</span>
+              </div>
+              <button class="add-to-cart border-0">
+                <i class="ri-add-line"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<%- include("../partials/user/footer") %>
+
+<style>
+  body {
+    font-family: "Inter", sans-serif;
+    color: #1a1a1a;
+    background-color: #f9f9f9;
+  }
+  
+  .cart-item {
+    transition: all 0.2s ease;
+  }
+  
+  .cart-item:hover {
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+  }
+  
+  .quantity-btn {
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .quantity-btn:focus {
+    box-shadow: none;
+  }
+  
+  .form-control:focus {
+    box-shadow: none;
+    border-color: #000;
+  }
+  
+  .btn-dark {
+    background-color: #000;
+    border-color: #000;
+  }
+  
+  .btn-dark:hover {
+    background-color: #333;
+    border-color: #333;
+  }
+  
+  .btn-outline-dark:hover {
+    background-color: #000;
+    border-color: #000;
+  }
+  
+  .product-image-container {
+    height: 16rem;
+    overflow: hidden;
+    position: relative;
+  }
+  
+  .product-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: top;
+    transition: transform 0.5s ease;
+  }
+  
+  .product-card:hover .product-image {
+    transform: scale(1.05);
+  }
+  
+  .product-tag {
+    position: absolute;
+    top: 0.75rem;
+    left: 0.75rem;
+    z-index: 10;
+    background-color: #000;
+    color: #fff;
+    font-size: 0.75rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+  }
+  
+  .add-to-cart {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 9999px;
+    background-color: #000;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+  }
+  
+  .add-to-cart:hover {
+    background-color: #333;
+  }
+  
+  .payment-icon {
+    width: 2rem;
+    height: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #6b7280;
+  }
+  
+  /* Fix for order summary position */
+  #orderSummary.fixed {
+    position: fixed;
+    top: 80px; /* Adjust based on your header height */
+    width: inherit;
+    max-width: inherit;
+  }
+  
+  @media (max-width: 767.98px) {
+    .quantity-selector {
+      justify-content: flex-start;
+    }
+    
+    #orderSummary.fixed {
+      position: static !important;
+    }
+  }
+</style>
+
+<script>
+  // For demo purposes - toggle empty cart state
+  document.addEventListener('DOMContentLoaded', function() {
+    const clearCartBtn = document.querySelector('button.btn-link');
+    const emptyCart = document.querySelector('.empty-cart');
+    const cartItems = document.querySelector('.cart-items');
+    const orderSummary = document.querySelector('.order-summary');
+    
+    if (clearCartBtn) {
+      clearCartBtn.addEventListener('click', function() {
+        emptyCart.classList.remove('d-none');
+        cartItems.classList.add('d-none');
+        orderSummary.classList.add('d-none');
+      });
+    }
+    
+    // Quantity buttons functionality
+    const minusBtns = document.querySelectorAll('.quantity-btn:first-child');
+    const plusBtns = document.querySelectorAll('.quantity-btn:last-child');
+    
+    minusBtns.forEach(btn => {
+      btn.addEventListener('click', function() {
+        const input = this.nextElementSibling;
+        let value = parseInt(input.value);
+        if (value > 1) {
+          input.value = value - 1;
+        }
+      });
+    });
+    
+    plusBtns.forEach(btn => {
+      btn.addEventListener('click', function() {
+        const input = this.previousElementSibling;
+        let value = parseInt(input.value);
+        if (value < 99) {
+          input.value = value + 1;
+        }
+      });
+    });
+    
+    // Individual item removal
+    const removeButtons = document.querySelectorAll('.btn-link.text-danger');
+    removeButtons.forEach(button => {
+      button.addEventListener('click', function() {
+        const cartItem = this.closest('.cart-item');
+        cartItem.style.opacity = '0';
+        setTimeout(() => {
+          cartItem.remove();
+          
+          // If no items left, show empty cart
+          if (document.querySelectorAll('.cart-item').length === 0) {
+            emptyCart.classList.remove('d-none');
+            cartItems.classList.add('d-none');
+            orderSummary.classList.add('d-none');
+          }
+        }, 300);
+      });
+    });
+    
+    // Fix for order summary overlapping header when scrolling
+    const orderSummaryElement = document.getElementById('orderSummary');
+    const orderSummaryParent = orderSummaryElement.parentElement;
+    const orderSummaryWidth = orderSummaryElement.offsetWidth;
+    const orderSummaryRect = orderSummaryElement.getBoundingClientRect();
+    const headerHeight = document.querySelector('header') ? document.querySelector('header').offsetHeight : 0;
+    
+    // Variables to store original position
+    let orderSummaryOriginalTop = orderSummaryElement.getBoundingClientRect().top + window.pageYOffset;
+    let orderSummaryOriginalBottom = orderSummaryParent.getBoundingClientRect().bottom + window.pageYOffset;
+    
+    function handleScroll() {
+      // Only apply sticky behavior on desktop
+      if (window.innerWidth >= 992) {
+        const scrollY = window.pageYOffset;
+        const viewportHeight = window.innerHeight;
+        const orderSummaryHeight = orderSummaryElement.offsetHeight;
+        
+        // Recalculate parent bottom position as it might change
+        orderSummaryOriginalBottom = orderSummaryParent.getBoundingClientRect().bottom + window.pageYOffset;
+        
+        // If we've scrolled past the original position of the summary
+        if (scrollY > orderSummaryOriginalTop - headerHeight - 20) {
+          // Check if the summary would go beyond its container
+          if (scrollY + headerHeight + orderSummaryHeight + 20 < orderSummaryOriginalBottom) {
+            orderSummaryElement.classList.add('fixed');
+            orderSummaryElement.style.width = orderSummaryWidth + 'px';
+            orderSummaryElement.style.top = (headerHeight + 20) + 'px'; // Add some padding
+          } else {
+            // Allow the summary to scroll normally at the bottom of its container
+            orderSummaryElement.classList.remove('fixed');
+            orderSummaryElement.style.width = '';
+            orderSummaryElement.style.top = '';
+          }
+        } else {
+          // Reset to original position
+          orderSummaryElement.classList.remove('fixed');
+          orderSummaryElement.style.width = '';
+          orderSummaryElement.style.top = '';
+        }
+      }
+    }
+    
+    // Initial calculation
+    window.addEventListener('load', function() {
+      orderSummaryOriginalTop = orderSummaryElement.getBoundingClientRect().top + window.pageYOffset;
+      handleScroll();
+    });
+    
+    // Handle scroll events
+    window.addEventListener('scroll', handleScroll);
+    
+    // Handle resize events (recalculate dimensions)
+    window.addEventListener('resize', function() {
+      if (window.innerWidth < 992) {
+        orderSummaryElement.classList.remove('fixed');
+        orderSummaryElement.style.width = '';
+        orderSummaryElement.style.top = '';
+      } else {
+        orderSummaryOriginalTop = orderSummaryElement.getBoundingClientRect().top + window.pageYOffset;
+        orderSummaryWidth = orderSummaryParent.offsetWidth;
+        handleScroll();
+      }
+    });
+  });
+</script>

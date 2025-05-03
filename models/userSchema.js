@@ -27,7 +27,7 @@ const userSchema = new mongoose.Schema({
     type: String,
     unique: true,
   },
-  // OTP fields removed
+  
   isBlocked: {
     type: Boolean,
     default: false,
