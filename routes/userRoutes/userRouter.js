@@ -15,6 +15,9 @@ const googleController = require("../../controllers/userController/googleAuthCon
 const shopPageController = require('../../controllers/userController/shop-page-controller');
 const productDetailsController = require('../../controllers/userController/product-details-controller');
 
+const cartController = require('../../controllers/userController/cart-controller');
+const wishlistController = require('../../controllers/userController/wishlist-controller')
+
 // Import the auth middleware
 const { isAuthenticated, isNotAuthenticated, preventBackButtonCache } = require('../../middlewares/authMiddleware');
 
@@ -59,6 +62,10 @@ router.get('/shopPage', shopPageController.shopPage);
 router.get('/products/:id', productDetailsController.productDetails);
 
 
+router.get('/cart',cartController.getCart);
+router.get('/wishlist',wishlistController.getWishlist)
+
 router.get('/search', searchProducts);
+
 
 module.exports = router;

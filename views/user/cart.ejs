@@ -45,7 +45,9 @@
                 <h3 class="fs-5 fw-semibold mb-1">The Silent Echo</h3>
                 <p class="text-muted small mb-1">Elena Ferrante</p>
                 <p class="small mb-0">Hardcover</p>
-                <span class="badge bg-success mt-2">In Stock</span>
+                <span class="stock-status in-stock">
+                  <i class="ri-checkbox-circle-line me-1"></i> In Stock (15 copies available)
+                </span>
               </div>
               <div class="col-md-2 col-6 text-md-center">
                 <div class="quantity-selector d-flex align-items-center">
@@ -73,7 +75,9 @@
                 <h3 class="fs-5 fw-semibold mb-1">Fragments of Time</h3>
                 <p class="text-muted small mb-1">Haruki Murakami</p>
                 <p class="small mb-0">Paperback</p>
-                <span class="badge bg-success mt-2">In Stock</span>
+                <span class="stock-status in-stock">
+                  <i class="ri-checkbox-circle-line me-1"></i> In Stock (8 copies available)
+                </span>
               </div>
               <div class="col-md-2 col-6 text-md-center">
                 <div class="quantity-selector d-flex align-items-center">
@@ -101,7 +105,9 @@
                 <h3 class="fs-5 fw-semibold mb-1">The Midnight Library</h3>
                 <p class="text-muted small mb-1">Matt Haig</p>
                 <p class="small mb-0">Hardcover, Limited Edition</p>
-                <span class="badge bg-warning text-dark mt-2">Low Stock</span>
+                <span class="stock-status low-stock">
+                  <i class="ri-alert-line me-1"></i> Low Stock (3 copies left)
+                </span>
               </div>
               <div class="col-md-2 col-6 text-md-center">
                 <div class="quantity-selector d-flex align-items-center">
@@ -210,7 +216,9 @@
             <div class="d-flex justify-content-between align-items-center">
               <div>
                 <span class="fw-bold">₹499</span>
-                <span class="badge bg-success ms-2">In Stock</span>
+                <span class="stock-status in-stock">
+                  <i class="ri-checkbox-circle-line me-1"></i> In Stock
+                </span>
               </div>
               <button class="add-to-cart border-0">
                 <i class="ri-add-line"></i>
@@ -237,7 +245,9 @@
             <div class="d-flex justify-content-between align-items-center">
               <div>
                 <span class="fw-bold">₹599</span>
-                <span class="badge bg-success ms-2">In Stock</span>
+                <span class="stock-status in-stock">
+                  <i class="ri-checkbox-circle-line me-1"></i> In Stock
+                </span>
               </div>
               <button class="add-to-cart border-0">
                 <i class="ri-add-line"></i>
@@ -263,7 +273,9 @@
             <div class="d-flex justify-content-between align-items-center">
               <div>
                 <span class="fw-bold">₹549</span>
-                <span class="badge bg-danger ms-2">Out of Stock</span>
+                <span class="stock-status out-of-stock">
+                  <i class="ri-close-circle-line me-1"></i> Out of Stock
+                </span>
               </div>
               <button class="add-to-cart border-0" disabled style="background-color: #ccc;">
                 <i class="ri-add-line"></i>
@@ -289,7 +301,9 @@
             <div class="d-flex justify-content-between align-items-center">
               <div>
                 <span class="fw-bold">₹679</span>
-                <span class="badge bg-warning text-dark ms-2">Low Stock</span>
+                <span class="stock-status low-stock">
+                  <i class="ri-alert-line me-1"></i> Low Stock
+                </span>
               </div>
               <button class="add-to-cart border-0">
                 <i class="ri-add-line"></i>
@@ -407,6 +421,31 @@
     color: #6b7280;
   }
   
+  /* Stock status styles from shop page */
+  .stock-status {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 0.25rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    margin-top: 0.5rem;
+  }
+  
+  .in-stock {
+    background-color: #ecfdf5;
+    color: #047857;
+  }
+  
+  .low-stock {
+    background-color: #fffbeb;
+    color: #b45309;
+  }
+  
+  .out-of-stock {
+    background-color: #fef2f2;
+    color: #b91c1c;
+  }
+  
   /* Fix for order summary position */
   #orderSummary.fixed {
     position: fixed;
@@ -422,6 +461,12 @@
     
     #orderSummary.fixed {
       position: static !important;
+    }
+    
+    /* Make stock status more compact on mobile */
+    .stock-status {
+      padding: 0.15rem 0.5rem;
+      font-size: 0.75rem;
     }
   }
 </style>
