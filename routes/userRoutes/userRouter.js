@@ -63,12 +63,10 @@ router.get('/products/:id', productDetailsController.productDetails);
 
 // Cart and Wishlist routes
 router.get('/cart', cartController.getCart);
-router.post('/cart/add', cartController.addToCart);
-router.post('/cart/remove', cartController.removeFromCart);
+
 
 router.get('/wishlist', wishlistController.getWishlist);
-router.post('/wishlist/add', wishlistController.addToWishlist);
-router.post('/wishlist/remove', wishlistController.removeFromWishlist);
+
 
 router.get('/search', searchProducts);
 
