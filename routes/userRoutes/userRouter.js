@@ -22,6 +22,8 @@ const { isAuthenticated, isNotAuthenticated, preventBackButtonCache } = require(
 
 const { searchProducts } = require('../../controllers/userController/searchController');
 
+const profileController = require('../../controllers/userController/profile-controller')
+
 // Public routes
 router.get("/", userController.loadHomePage);
 router.get("/pageNotFound", userController.pageNotFound);
@@ -75,5 +77,8 @@ router.post('/wishlist/clear', isAuthenticated, wishlistController.clearWishlist
 
 // Search route
 router.get('/search', searchProducts);
+
+//Profile Routes
+router.get('/profile',profileController.getProfile)
 
 module.exports = router;
