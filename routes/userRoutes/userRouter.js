@@ -5,7 +5,7 @@ const passport = require("passport");
 const userController = require("../../controllers/userController/userController");
 const signupController = require("../../controllers/userController/signupController");
 const signupValidator = require("../../validators/user/signupValidation");
-const loginValidator = require('../../validators/user/loginValidator')
+const loginValidator = require('../../validators/user/loginValidator');
 const loginController = require("../../controllers/userController/loginController");
 const logoutController = require("../../controllers/userController/logoutController");
 
@@ -16,18 +16,17 @@ const shopPageController = require('../../controllers/userController/shop-page-c
 const productDetailsController = require('../../controllers/userController/product-details-controller');
 
 const cartController = require('../../controllers/userController/cart-controller');
-const wishlistController = require('../../controllers/userController/wishlist-controller')
+const wishlistController = require('../../controllers/userController/wishlist-controller');
 
-// Import the auth middleware
 const { isAuthenticated, isNotAuthenticated, preventBackButtonCache } = require('../../middlewares/authMiddleware');
 
 const { searchProducts } = require('../../controllers/userController/searchController');
 
-// Public routes (accessible to all)
+// Public routes
 router.get("/", userController.loadHomePage);
 router.get("/pageNotFound", userController.pageNotFound);
 
-// Auth routes (only for non-authenticated users)
+// Auth routes
 router.get("/signup", isNotAuthenticated, preventBackButtonCache, signupController.getSignup);
 router.post("/signup", isNotAuthenticated, signupValidator.signupValidator, signupController.postSignup);
 
@@ -37,7 +36,7 @@ router.post("/verify-otp", isNotAuthenticated, signupController.verifyOtp);
 router.get("/login", isNotAuthenticated, preventBackButtonCache, loginController.getLogin);
 router.post("/login", isNotAuthenticated, loginValidator.loginValidator, loginController.postLogin);
 
-// Password reset routes (only for non-authenticated users)
+// Password reset routes
 router.get("/forgotPassword", isNotAuthenticated, preventBackButtonCache, passwordController.getForgotPassword);
 router.post("/forgotPassword", isNotAuthenticated, passwordController.postForgotPassword);
 
@@ -50,24 +49,31 @@ router.post("/resend-signup-otp", isNotAuthenticated, signupController.resendOtp
 router.get("/resetPassword", isNotAuthenticated, preventBackButtonCache, passwordController.getResetPassword);
 router.patch("/resetPassword", isNotAuthenticated, passwordController.patchResetPassword);
 
-// Logout route (only for authenticated users)
+// Logout route
 router.get("/logout", isAuthenticated, logoutController.logout);
 
 // OAuth routes
 router.get("/auth/google", passport.authenticate("google", { scope: ["profile", "email"] }));
 router.get("/auth/google/callback", googleController.googleController);
 
-// Product routes (accessible to all)
+// Product routes
 router.get('/shopPage', shopPageController.shopPage);
 router.get('/products/:id', productDetailsController.productDetails);
 
-// Cart and Wishlist routes
-router.get('/cart', cartController.getCart);
+// Cart routes
+router.get('/cart', isAuthenticated, cartController.getCart);
+router.post('/cart/add', isAuthenticated, cartController.addToCart);
+router.post('/cart/update', isAuthenticated, cartController.updateCartItem);
+router.post('/cart/remove', isAuthenticated, cartController.removeCartItem);
+router.post('/cart/clear', isAuthenticated, cartController.clearCart);
 
+// Wishlist routes
+router.get('/wishlist', isAuthenticated, wishlistController.getWishlist);
+router.post('/wishlist/toggle', isAuthenticated, wishlistController.toggleWishlist);
+router.post('/wishlist/add-all-to-cart', isAuthenticated, wishlistController.addAllToCart);
+router.post('/wishlist/clear', isAuthenticated, wishlistController.clearWishlist);
 
-router.get('/wishlist', wishlistController.getWishlist);
-
-
+// Search route
 router.get('/search', searchProducts);
 
 module.exports = router;

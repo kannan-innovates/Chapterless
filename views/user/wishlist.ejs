@@ -6,7 +6,7 @@
     <div class="row justify-content-center">
       <div class="col-lg-8 text-center">
         <h1 class="display-5 fw-bold mb-2">Your Wishlist</h1>
-        <p class="text-muted mb-0">Stories you've saved for later</p>
+        <p class="text-muted mb-0">Explore your saved stories</p>
       </div>
     </div>
   </div>
@@ -19,218 +19,95 @@
       <!-- Wishlist Items -->
       <div class="col-lg-8">
         <!-- Empty Wishlist State -->
-        <div class="empty-wishlist text-center py-5 d-none">
+        <div class="empty-wishlist text-center py-5 <%= wishlistItems.length === 0 ? '' : 'd-none' %>">
           <div class="mb-4">
-            <i class="ri-heart-line" style="font-size: 4rem; color: #ccc"></i>
+            <i class="ri-heart-line" style="font-size: 4rem; color: #ccc;"></i>
           </div>
           <h3 class="fs-4 fw-semibold mb-3">Your wishlist is empty</h3>
-          <p class="text-muted mb-4">
-            Save items you love to find them easily later
-          </p>
-          <a href="/shopPage" class="btn btn-dark px-4 py-2">Explore Books</a>
+          <p class="text-muted mb-4">Save your favorite stories to read later</p>
+          <a href="/shopPage" class="btn btn-dark px-4 py-2">Continue Shopping</a>
         </div>
 
         <!-- Wishlist Items List -->
-        <div class="wishlist-items">
+        <div class="wishlist-items <%= wishlistItems.length === 0 ? 'd-none' : '' %>">
           <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2 class="fs-4 fw-bold">Saved Items (4)</h2>
-            <button class="btn btn-link text-dark p-0 text-decoration-none">
-              Clear Wishlist
-            </button>
-          </div>
-
-          <!-- Wishlist Item 1 -->
-          <div class="wishlist-item bg-white p-4 mb-3 rounded shadow-sm">
-            <div class="row align-items-center">
-              <div class="col-md-2 col-4 mb-3 mb-md-0">
-                <img
-                  src="/api/placeholder/150/200"
-                  alt="Book Cover"
-                  class="img-fluid rounded"
-                />
-              </div>
-              <div class="col-md-6 col-8 mb-3 mb-md-0">
-                <h3 class="fs-5 fw-semibold mb-1">
-                  The Invisible Life of Addie LaRue
-                </h3>
-                <p class="text-muted small mb-1">V.E. Schwab</p>
-                <p class="small mb-0">Hardcover, Special Edition</p>
-                <span class="stock-status in-stock">
-                  <i class="ri-checkbox-circle-line me-1"></i> In Stock (12
-                  copies available)
-                </span>
-              </div>
-              <div class="col-md-2 col-6">
-                <div class="d-flex flex-column">
-                  <span class="fw-bold mb-2">₹1,199</span>
-                  <span class="text-decoration-line-through text-muted small"
-                    >₹1,499</span
-                  >
-                </div>
-              </div>
-              <div class="col-md-2 col-6 text-end">
-                <div class="d-flex flex-column align-items-end">
-                  <button class="btn btn-dark btn-sm mb-2">Add to Cart</button>
-                  <button
-                    class="btn btn-link text-danger p-0 small text-decoration-none"
-                  >
-                    Remove
-                  </button>
-                </div>
-              </div>
+            <h2 class="fs-4 fw-bold">Wishlist (<%= totalItems %> items)</h2>
+            <div>
+              <button class="btn btn-dark me-2" id="addAllToCartBtn" <%= totalItems === 0 ? 'disabled' : '' %>>Add All to Cart</button>
+              <button class="btn btn-link text-dark p-0 text-decoration-none" id="clearWishlistBtn">Clear Wishlist</button>
             </div>
           </div>
 
-          <!-- Wishlist Item 2 -->
-          <div class="wishlist-item bg-white p-4 mb-3 rounded shadow-sm">
-            <div class="row align-items-center">
-              <div class="col-md-2 col-4 mb-3 mb-md-0">
-                <img
-                  src="/api/placeholder/150/200"
-                  alt="Book Cover"
-                  class="img-fluid rounded"
-                />
-              </div>
-              <div class="col-md-6 col-8 mb-3 mb-md-0">
-                <h3 class="fs-5 fw-semibold mb-1">Klara and the Sun</h3>
-                <p class="text-muted small mb-1">Kazuo Ishiguro</p>
-                <p class="small mb-0">Paperback</p>
-                <span class="stock-status low-stock">
-                  <i class="ri-alert-line me-1"></i> Low Stock (2 copies left)
-                </span>
-              </div>
-              <div class="col-md-2 col-6">
-                <div class="d-flex flex-column">
-                  <span class="fw-bold mb-2">₹599</span>
+          <!-- Wishlist Statistics -->
+          <div class="wishlist-stats mb-4">
+            <span class="stock-status in-stock me-2">
+              <i class="ri-checkbox-circle-line me-1"></i> In Stock: <%= inStockItems %>
+            </span>
+            <span class="stock-status low-stock me-2">
+              <i class="ri-alert-line me-1"></i> Low Stock: <%= lowStockItems %>
+            </span>
+            <span class="stock-status out-of-stock">
+              <i class="ri-close-circle-line me-1"></i> Out of Stock: <%= outOfStockItems %>
+            </span>
+          </div>
+
+          <% wishlistItems.forEach(item => { %>
+            <div class="wishlist-item bg-white p-4 mb-3 rounded shadow-sm" data-product-id="<%= item.product._id %>">
+              <div class="row align-items-center">
+                <div class="col-md-2 col-4 mb-3 mb-md-0">
+                  <img src="<%= item.product.mainImage || '/api/placeholder/150/200' %>" alt="<%= item.product.title %>" class="img-fluid rounded" />
                 </div>
-              </div>
-              <div class="col-md-2 col-6 text-end">
-                <div class="d-flex flex-column align-items-end">
-                  <button class="btn btn-dark btn-sm mb-2">Add to Cart</button>
-                  <button
-                    class="btn btn-link text-danger p-0 small text-decoration-none"
-                  >
-                    Remove
-                  </button>
+                <div class="col-md-6 col-8 mb-3 mb-md-0">
+                  <h3 class="fs-5 fw-semibold mb-1">
+                    <a href="/products/<%= item.product._id %>" class="text-dark text-decoration-none"><%= item.product.title %></a>
+                  </h3>
+                  <p class="text-muted small mb-1"><%= item.product.author %></p>
+                  <p class="small mb-0"><%= item.product.format || 'Hardcover' %></p>
+                  <span class="stock-status <%= item.product.stock > 10 ? 'in-stock' : item.product.stock > 0 ? 'low-stock' : 'out-of-stock' %>">
+                    <i class="ri-<%= item.product.stock > 10 ? 'checkbox-circle-line' : item.product.stock > 0 ? 'alert-line' : 'close-circle-line' %> me-1"></i>
+                    <%= item.product.stock > 10 ? `In Stock (${item.product.stock} copies available)` : item.product.stock > 0 ? `Low Stock (${item.product.stock} copies left)` : 'Out of Stock' %>
+                  </span>
+                </div>
+                <div class="col-md-4 col-12 mt-3 mt-md-0">
+                  <div class="d-flex flex-column align-items-start align-items-md-end justify-content-md-end gap-2">
+                    <span class="fw-bold">₹<%= item.product.salePrice.toFixed(2) %></span>
+                    <div class="item-actions d-flex gap-2">
+                      <button class="btn btn-dark btn-sm add-to-cart px-3" <%= item.product.stock === 0 ? 'disabled' : '' %>>Add to Cart</button>
+                      <button class="btn btn-outline-danger btn-sm remove-item">Remove</button>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+          <% }) %>
 
-          <!-- Wishlist Item 3 -->
-          <div class="wishlist-item bg-white p-4 mb-3 rounded shadow-sm">
-            <div class="row align-items-center">
-              <div class="col-md-2 col-4 mb-3 mb-md-0">
-                <img
-                  src="/api/placeholder/150/200"
-                  alt="Book Cover"
-                  class="img-fluid rounded"
-                />
-              </div>
-              <div class="col-md-6 col-8 mb-3 mb-md-0">
-                <h3 class="fs-5 fw-semibold mb-1">
-                  The Seven Husbands of Evelyn Hugo
-                </h3>
-                <p class="text-muted small mb-1">Taylor Jenkins Reid</p>
-                <p class="small mb-0">Hardcover</p>
-                <span class="stock-status out-of-stock">
-                  <i class="ri-close-circle-line me-1"></i> Out of Stock
-                </span>
-              </div>
-              <div class="col-md-2 col-6">
-                <div class="d-flex flex-column">
-                  <span class="fw-bold mb-2">₹849</span>
-                </div>
-              </div>
-              <div class="col-md-2 col-6 text-end">
-                <div class="d-flex flex-column align-items-end">
-                  <button class="btn btn-dark btn-sm mb-2" disabled>
-                    Add to Cart
-                  </button>
-                  <button
-                    class="btn btn-link text-danger p-0 small text-decoration-none"
-                  >
-                    Remove
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Wishlist Item 4 -->
-          <div class="wishlist-item bg-white p-4 mb-3 rounded shadow-sm">
-            <div class="row align-items-center">
-              <div class="col-md-2 col-4 mb-3 mb-md-0">
-                <img
-                  src="/api/placeholder/150/200"
-                  alt="Book Cover"
-                  class="img-fluid rounded"
-                />
-              </div>
-              <div class="col-md-6 col-8 mb-3 mb-md-0">
-                <h3 class="fs-5 fw-semibold mb-1">Project Hail Mary</h3>
-                <p class="text-muted small mb-1">Andy Weir</p>
-                <p class="small mb-0">Paperback</p>
-                <span class="stock-status in-stock">
-                  <i class="ri-checkbox-circle-line me-1"></i> In Stock (20+
-                  copies available)
-                </span>
-              </div>
-              <div class="col-md-2 col-6">
-                <div class="d-flex flex-column">
-                  <span class="fw-bold mb-2">₹749</span>
-                  <span class="text-decoration-line-through text-muted small"
-                    >₹899</span
-                  >
-                </div>
-              </div>
-              <div class="col-md-2 col-6 text-end">
-                <div class="d-flex flex-column align-items-end">
-                  <button class="btn btn-dark btn-sm mb-2">Add to Cart</button>
-                  <button
-                    class="btn btn-link text-danger p-0 small text-decoration-none"
-                  >
-                    Remove
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Pagination Section -->
-        <div class="pagination-container mt-5">
-          <nav aria-label="Wishlist pages">
-            <ul class="pagination justify-content-center">
-              <li class="page-item disabled">
-                <a class="page-link" href="" tabindex="-1" aria-disabled="true">
-                  <i class="ri-arrow-left-s-line"></i>
-                </a>
-              </li>
-              <li class="page-item active">
-                <a class="page-link" href="/wishlist?page=1">1</a>
-              </li>
-              <li class="page-item">
-                <a class="page-link" href="/wishlist?page=2">2</a>
-              </li>
-              <li class="page-item">
-                <a class="page-link" href="/wishlist?page=3">3</a>
-              </li>
-              <li class="page-item">
-                <a class="page-link" href="">
-                  <i class="ri-arrow-right-s-line"></i>
-                </a>
-              </li>
-            </ul>
-          </nav>
+          <!-- Pagination -->
+          <% if (totalPages > 1) { %>
+            <nav aria-label="Wishlist pagination" class="mt-4">
+              <ul class="pagination justify-content-center">
+                <li class="page-item <%= currentPage === 1 ? 'disabled' : '' %>">
+                  <a class="page-link" href="?page=<%= currentPage - 1 %>" aria-label="Previous">
+                    <span aria-hidden="true">&laquo;</span>
+                  </a>
+                </li>
+                <% for (let i = 1; i <= totalPages; i++) { %>
+                  <li class="page-item <%= currentPage === i ? 'active' : '' %>">
+                    <a class="page-link" href="?page=<%= i %>"><%= i %></a>
+                  </li>
+                <% } %>
+                <li class="page-item <%= currentPage === totalPages ? 'disabled' : '' %>">
+                  <a class="page-link" href="?page=<%= currentPage + 1 %>" aria-label="Next">
+                    <span aria-hidden="true">&raquo;</span>
+                  </a>
+                </li>
+              </ul>
+            </nav>
+          <% } %>
         </div>
 
         <!-- Continue Shopping -->
         <div class="mt-4">
-          <a
-            href="/shopPage"
-            class="text-dark d-flex align-items-center text-decoration-none"
-          >
+          <a href="/shopPage" class="text-dark d-flex align-items-center text-decoration-none">
             <i class="ri-arrow-left-line me-2"></i> Continue Shopping
           </a>
         </div>
@@ -238,59 +115,17 @@
 
       <!-- Wishlist Summary -->
       <div class="col-lg-4">
-        <div
-          class="wishlist-summary bg-white p-4 rounded shadow-sm"
-          id="wishlistSummary"
-        >
+        <div class="wishlist-summary bg-white p-4 rounded shadow-sm <%= wishlistItems.length === 0 ? 'd-none' : '' %>" id="wishlistSummary">
           <h2 class="fs-4 fw-bold mb-4">Wishlist Summary</h2>
-
-          <!-- Stats -->
           <div class="d-flex justify-content-between mb-3">
             <span>Total Items</span>
-            <span class="fw-semibold">4</span>
+            <span class="fw-semibold"><%= totalItems %></span>
           </div>
-
           <div class="d-flex justify-content-between mb-3">
-            <span>In Stock Items</span>
-            <span class="fw-semibold">2</span>
+            <span>Estimated Value</span>
+            <span class="fw-semibold">₹<%= wishlistItems.reduce((sum, item) => sum + item.product.salePrice, 0).toFixed(2) %></span>
           </div>
-
-          <div class="d-flex justify-content-between mb-3">
-            <span>Low Stock Items</span>
-            <span class="fw-semibold">1</span>
-          </div>
-
-          <div class="d-flex justify-content-between mb-4">
-            <span>Out of Stock Items</span>
-            <span class="fw-semibold">1</span>
-          </div>
-
-          <hr class="my-3" />
-
-          <!-- Actions -->
-          <button class="btn btn-dark w-100 py-3 fw-medium mb-3">
-            Add All Available to Cart
-          </button>
-          <button class="btn btn-outline-dark w-100 py-3 fw-medium">
-            Share Wishlist
-          </button>
-
-          <!-- Notification -->
-          <div class="mt-4 p-3 bg-light rounded">
-            <div class="d-flex align-items-start">
-              <i
-                class="ri-notification-3-line me-3 mt-1"
-                style="color: #000"
-              ></i>
-              <div>
-                <h3 class="fs-6 fw-semibold mb-2">Get notified</h3>
-                <p class="small text-muted mb-0">
-                  We'll let you know when out-of-stock items become available
-                  again.
-                </p>
-              </div>
-            </div>
-          </div>
+          <button class="btn btn-dark w-100 py-3 fw-medium" id="addAllToCartSummaryBtn" <%= totalItems === 0 ? 'disabled' : '' %>>Add All to Cart</button>
         </div>
       </div>
     </div>
@@ -302,138 +137,46 @@
   <div class="container">
     <h2 class="fs-2 fw-bold mb-4">Recently Viewed</h2>
     <div class="row g-4">
-      <!-- Book 1 -->
-      <div class="col-6 col-md-3">
-        <div class="product-card bg-white h-100">
-          <div class="product-image-container">
-            <a href="#" class="text-decoration-none">
-              <img
-                src="/api/placeholder/600/800"
-                alt="Book Cover"
-                class="product-image"
-              />
-            </a>
-          </div>
-          <div class="p-3">
-            <h3 class="fs-5 fw-semibold mb-1">
-              <a href="#" class="text-dark text-decoration-none">Circe</a>
-            </h3>
-            <p class="text-muted small mb-2">Madeline Miller</p>
-            <div class="d-flex justify-content-between align-items-center">
-              <div>
-                <span class="fw-bold">₹649</span>
-                <span class="stock-status in-stock">
-                  <i class="ri-checkbox-circle-line me-1"></i> In Stock
-                </span>
+      <% recentlyViewed.forEach(product => { %>
+        <div class="col-6 col-md-3">
+          <div class="product-card bg-white h-100">
+            <div class="product-image-container">
+              <% 
+                const now = new Date();
+                const createdAt = new Date(product.createdAt);
+                const diffDays = (now - createdAt) / (1000 * 60 * 60 * 24);
+                const isNew = diffDays <= 30;
+              %>
+              <% if (isNew) { %>
+                <span class="product-tag">New</span>
+              <% } %>
+              <a href="/products/<%= product._id %>" class="text-decoration-none">
+                <img src="<%= product.mainImage || '/api/placeholder/600/800' %>" alt="<%= product.title %>" class="product-image" />
+              </a>
+            </div>
+            <div class="p-3">
+              <h3 class="fs-5 fw-semibold mb-1">
+                <a href="/products/<%= product._id %>" class="text-dark text-decoration-none"><%= product.title %></a>
+              </h3>
+              <p class="text-muted small mb-2"><%= product.author %></p>
+              <div class="d-flex justify-content-between align-items-center">
+                <div>
+                  <span class="fw-bold">₹<%= product.salePrice %></span>
+                  <div class="mt-1">
+                    <span class="stock-status <%= product.stock > 10 ? 'in-stock' : product.stock > 0 ? 'low-stock' : 'out-of-stock' %>">
+                      <i class="ri-<%= product.stock > 10 ? 'checkbox-circle-line' : product.stock > 0 ? 'alert-line' : 'close-circle-line' %> me-1"></i>
+                      <%= product.stock > 10 ? 'In Stock' : product.stock > 0 ? 'Low Stock' : 'Out of Stock' %>
+                    </span>
+                  </div>
+                </div>
+                <button class="add-to-cart-btn" data-product-id="<%= product._id %>" <%= product.stock === 0 ? 'disabled' : '' %>>
+                  <i class="ri-add-line"></i>
+                </button>
               </div>
-              <button class="add-to-cart border-0">
-                <i class="ri-add-line"></i>
-              </button>
             </div>
           </div>
         </div>
-      </div>
-
-      <!-- Book 2 -->
-      <div class="col-6 col-md-3">
-        <div class="product-card bg-white h-100">
-          <div class="product-image-container">
-            <span class="product-tag">New</span>
-            <a href="#" class="text-decoration-none">
-              <img
-                src="/api/placeholder/600/800"
-                alt="Book Cover"
-                class="product-image"
-              />
-            </a>
-          </div>
-          <div class="p-3">
-            <h3 class="fs-5 fw-semibold mb-1">
-              <a href="#" class="text-dark text-decoration-none"
-                >The Midnight Library</a
-              >
-            </h3>
-            <p class="text-muted small mb-2">Matt Haig</p>
-            <div class="d-flex justify-content-between align-items-center">
-              <div>
-                <span class="fw-bold">₹799</span>
-                <span class="stock-status low-stock">
-                  <i class="ri-alert-line me-1"></i> Low Stock
-                </span>
-              </div>
-              <button class="add-to-cart border-0">
-                <i class="ri-add-line"></i>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Book 3 -->
-      <div class="col-6 col-md-3">
-        <div class="product-card bg-white h-100">
-          <div class="product-image-container">
-            <a href="#" class="text-decoration-none">
-              <img
-                src="/api/placeholder/600/800"
-                alt="Book Cover"
-                class="product-image"
-              />
-            </a>
-          </div>
-          <div class="p-3">
-            <h3 class="fs-5 fw-semibold mb-1">
-              <a href="#" class="text-dark text-decoration-none">Educated</a>
-            </h3>
-            <p class="text-muted small mb-2">Tara Westover</p>
-            <div class="d-flex justify-content-between align-items-center">
-              <div>
-                <span class="fw-bold">₹549</span>
-                <span class="stock-status in-stock">
-                  <i class="ri-checkbox-circle-line me-1"></i> In Stock
-                </span>
-              </div>
-              <button class="add-to-cart border-0">
-                <i class="ri-add-line"></i>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Book 4 -->
-      <div class="col-6 col-md-3">
-        <div class="product-card bg-white h-100">
-          <div class="product-image-container">
-            <a href="#" class="text-decoration-none">
-              <img
-                src="/api/placeholder/600/800"
-                alt="Book Cover"
-                class="product-image"
-              />
-            </a>
-          </div>
-          <div class="p-3">
-            <h3 class="fs-5 fw-semibold mb-1">
-              <a href="#" class="text-dark text-decoration-none"
-                >The Silent Patient</a
-              >
-            </h3>
-            <p class="text-muted small mb-2">Alex Michaelides</p>
-            <div class="d-flex justify-content-between align-items-center">
-              <div>
-                <span class="fw-bold">₹599</span>
-                <span class="stock-status in-stock">
-                  <i class="ri-checkbox-circle-line me-1"></i> In Stock
-                </span>
-              </div>
-              <button class="add-to-cart border-0">
-                <i class="ri-add-line"></i>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+      <% }) %>
     </div>
   </div>
 </section>
@@ -465,19 +208,39 @@
     border-color: #333;
   }
 
-  .btn-outline-dark {
-    color: #000;
-    border-color: #000;
+  .btn-outline-danger {
+    color: #dc3545;
+    border-color: #dc3545;
   }
 
-  .btn-outline-dark:hover {
-    background-color: #000;
+  .btn-outline-danger:hover {
+    background-color: #dc3545;
     color: #fff;
+    border-color: #dc3545;
   }
 
-  .form-control:focus {
-    box-shadow: none;
-    border-color: #000;
+  .item-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .add-to-cart, .remove-item {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    border-radius: 0.25rem;
+    transition: all 0.2s ease;
+  }
+
+  .add-to-cart {
+    min-width: 112px;
+    display: inline-block;
+    text-align: center;
+  }
+
+  .add-to-cart:disabled {
+    background-color: #adb5bd;
+    cursor: not-allowed;
   }
 
   .product-image-container {
@@ -510,30 +273,34 @@
     border-radius: 9999px;
   }
 
-  .add-to-cart {
+  .add-to-cart-btn {
     width: 2.5rem;
     height: 2.5rem;
     border-radius: 9999px;
     background-color: #000;
     color: #fff;
+    border: none;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: all 0.3s ease;
   }
 
-  .add-to-cart:hover {
+  .add-to-cart-btn:hover:not(:disabled) {
     background-color: #333;
   }
 
-  /* Stock status styles from shop page */
+  .add-to-cart-btn:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+  }
+
   .stock-status {
     display: inline-block;
-    padding: 0.25rem 0.75rem;
+    padding: 0.25rem 0.5rem;
     border-radius: 0.25rem;
-    font-size: 0.875rem;
+    font-size: 0.75rem;
     font-weight: 500;
-    margin-top: 0.5rem;
   }
 
   .in-stock {
@@ -551,306 +318,426 @@
     color: #b91c1c;
   }
 
-  /* Fix for wishlist summary position */
-  #wishlistSummary.fixed {
-    position: fixed;
-    top: 80px; /* Adjust based on your header height */
-    width: inherit;
-    max-width: inherit;
-  }
-
-  @media (max-width: 767.98px) {
-    #wishlistSummary.fixed {
-      position: static !important;
-    }
-
-    /* Make stock status more compact on mobile */
-    .stock-status {
-      padding: 0.15rem 0.5rem;
-      font-size: 0.75rem;
-    }
-
-    /* Stack buttons on mobile */
-    .wishlist-item .btn-dark {
-      margin-bottom: 0.5rem;
-    }
-  }
-  .pagination-container {
-    margin-bottom: 2rem;
+  .wishlist-stats .stock-status {
+    padding: 0.15rem 0.5rem;
+    font-size: 0.75rem;
   }
 
   .pagination .page-link {
     color: #000;
-    background-color: #fff;
-    border: 1px solid #dee2e6;
-    padding: 0.5rem 0.75rem;
+    border: none;
+    padding: 0.5rem 1rem;
     margin: 0 0.25rem;
     border-radius: 0.25rem;
-    transition: all 0.2s ease;
   }
 
   .pagination .page-item.active .page-link {
     background-color: #000;
-    border-color: #000;
     color: #fff;
   }
 
-  .pagination .page-link:hover:not(.page-item.active .page-link) {
-    background-color: #f8f9fa;
-    border-color: #dee2e6;
-    color: #000;
+  .pagination .page-link:hover {
+    background-color: #f5f5f5;
   }
 
-  .pagination .page-link:focus {
-    box-shadow: 0 0 0 0.25rem rgba(0, 0, 0, 0.1);
+  #wishlistSummary {
+    position: sticky;
+    top: 2rem;
   }
 
-  /* Responsive adjustments */
-  @media (max-width: 576px) {
-    .pagination .page-link {
-      padding: 0.4rem 0.6rem;
-      font-size: 0.9rem;
+  @media (max-width: 767.98px) {
+    .wishlist-stats .stock-status {
+      display: inline-block;
+      margin-bottom: 0.5rem;
+      margin-right: 0.5rem;
+    }
+    
+    #wishlistSummary {
+      position: static;
+      margin-top: 2rem;
+    }
+
+    .item-actions {
+      width: 100%;
+      justify-content: flex-start;
     }
   }
 </style>
 
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-  document.addEventListener("DOMContentLoaded", function () {
-    // For demo purposes - toggle empty wishlist state
-    const clearWishlistBtn = document.querySelector("button.btn-link");
-    const emptyWishlist = document.querySelector(".empty-wishlist");
-    const wishlistItems = document.querySelector(".wishlist-items");
-    const wishlistSummary = document.querySelector(".wishlist-summary");
-
-    if (clearWishlistBtn) {
-      clearWishlistBtn.addEventListener("click", function () {
-        emptyWishlist.classList.remove("d-none");
-        wishlistItems.classList.add("d-none");
-        wishlistSummary.classList.add("d-none");
-      });
-    }
-
-    // Individual item removal
-    const removeButtons = document.querySelectorAll(".btn-link.text-danger");
-    removeButtons.forEach((button) => {
-      button.addEventListener("click", function () {
-        const wishlistItem = this.closest(".wishlist-item");
-        wishlistItem.style.opacity = "0";
-        setTimeout(() => {
-          wishlistItem.remove();
-
-          // If no items left, show empty wishlist
-          if (document.querySelectorAll(".wishlist-item").length === 0) {
-            emptyWishlist.classList.remove("d-none");
-            wishlistItems.classList.add("d-none");
-            wishlistSummary.classList.add("d-none");
-          }
-
-          // Update counts
-          updateWishlistCounts();
-        }, 300);
-      });
-    });
-
-    // Add to cart functionality
-    const addToCartButtons = document.querySelectorAll(
-      ".wishlist-item .btn-dark"
-    );
-    addToCartButtons.forEach((button) => {
-      button.addEventListener("click", function () {
-        const wishlistItem = this.closest(".wishlist-item");
-
-        // Show a brief "Added to cart" message
-        const originalText = this.textContent;
-        this.textContent = "Added ✓";
-        this.disabled = true;
-
-        setTimeout(() => {
-          // Remove from wishlist
-          wishlistItem.style.opacity = "0";
-          setTimeout(() => {
-            wishlistItem.remove();
-
-            // If no items left, show empty wishlist
-            if (document.querySelectorAll(".wishlist-item").length === 0) {
-              emptyWishlist.classList.remove("d-none");
-              wishlistItems.classList.add("d-none");
-              wishlistSummary.classList.add("d-none");
-            }
-
-            // Update counts
-            updateWishlistCounts();
-          }, 300);
-        }, 1000);
-      });
-    });
-
-    // Add all to cart button
-    const addAllButton = document.querySelector("#wishlistSummary .btn-dark");
-    if (addAllButton) {
-      addAllButton.addEventListener("click", function () {
-        const availableItems = document.querySelectorAll(
-          ".wishlist-item:not(:has(.out-of-stock))"
-        );
-
-        // Show a brief "Added to cart" message
-        const originalText = this.textContent;
-        this.textContent = "Added All Available ✓";
-        this.disabled = true;
-
-        // Remove all available items
-        setTimeout(() => {
-          availableItems.forEach((item) => {
-            item.style.opacity = "0";
+  document.addEventListener('DOMContentLoaded', function () {
+  const addAllToCartBtn = document.querySelector('#addAllToCartBtn');
+  const addAllToCartSummaryBtn = document.querySelector('#addAllToCartSummaryBtn');
+  const clearWishlistBtn = document.querySelector('#clearWishlistBtn');
+  const emptyWishlist = document.querySelector('.empty-wishlist');
+  const wishlistItemsContainer = document.querySelector('.wishlist-items');
+  const wishlistSummary = document.querySelector('#wishlistSummary');
+  const cartCountElement = document.querySelector('.cart-count');
+  const wishlistCountElement = document.querySelector('.wishlist-count');
+  
+  // Add all to cart
+  [addAllToCartBtn, addAllToCartSummaryBtn].forEach(btn => {
+    if (btn) {
+      btn.addEventListener('click', async function () {
+        try {
+          const response = await fetch('/wishlist/add-all-to-cart', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
           });
+          const result = await response.json();
 
-          setTimeout(() => {
-            availableItems.forEach((item) => {
-              item.remove();
+          if (result.success) {
+            wishlistItemsContainer.innerHTML = '';
+            emptyWishlist.classList.remove('d-none');
+            wishlistItemsContainer.classList.add('d-none');
+            wishlistSummary.classList.add('d-none');
+            cartCountElement.textContent = result.cartCount;
+            cartCountElement.dataset.count = result.cartCount;
+            wishlistCountElement.textContent = result.wishlistCount;
+            wishlistCountElement.dataset.count = result.wishlistCount;
+
+            let message = result.message;
+            if (result.warnings && result.warnings.length > 0) {
+              message += '<br>' + result.warnings.join('<br>');
+            }
+
+            Swal.fire({
+              toast: true,
+              position: 'top-end',
+              icon: 'success',
+              html: message,
+              showConfirmButton: false,
+              timer: 3000
             });
-
-            // If no items left, show empty wishlist
-            if (document.querySelectorAll(".wishlist-item").length === 0) {
-              emptyWishlist.classList.remove("d-none");
-              wishlistItems.classList.add("d-none");
-              wishlistSummary.classList.add("d-none");
-            } else {
-              // Update counts
-              updateWishlistCounts();
-
-              // Reset button
-              this.textContent = originalText;
-              this.disabled = false;
-            }
-          }, 300);
-        }, 1000);
-      });
-    }
-
-    // Function to update wishlist counts
-    function updateWishlistCounts() {
-      const totalItems = document.querySelectorAll(".wishlist-item").length;
-      const inStockItems = document.querySelectorAll(
-        ".wishlist-item .in-stock"
-      ).length;
-      const lowStockItems = document.querySelectorAll(
-        ".wishlist-item .low-stock"
-      ).length;
-      const outOfStockItems = document.querySelectorAll(
-        ".wishlist-item .out-of-stock"
-      ).length;
-
-      // Update header count
-      const headerCount = document.querySelector(".wishlist-items h2");
-      if (headerCount) {
-        headerCount.textContent = `Saved Items (${totalItems})`;
-      }
-
-      // Update summary counts
-      const summaryCountElements = document.querySelectorAll(
-        "#wishlistSummary .d-flex .fw-semibold"
-      );
-      if (summaryCountElements.length >= 4) {
-        summaryCountElements[0].textContent = totalItems;
-        summaryCountElements[1].textContent = inStockItems;
-        summaryCountElements[2].textContent = lowStockItems;
-        summaryCountElements[3].textContent = outOfStockItems;
-      }
-    }
-
-    // Fix for wishlist summary position when scrolling
-    const wishlistSummaryElement = document.getElementById("wishlistSummary");
-    if (wishlistSummaryElement) {
-      const wishlistSummaryParent = wishlistSummaryElement.parentElement;
-      const wishlistSummaryWidth = wishlistSummaryElement.offsetWidth;
-      const headerHeight = document.querySelector("header")
-        ? document.querySelector("header").offsetHeight
-        : 0;
-
-      // Variables to store original position
-      let wishlistSummaryOriginalTop =
-        wishlistSummaryElement.getBoundingClientRect().top + window.pageYOffset;
-      let wishlistSummaryOriginalBottom =
-        wishlistSummaryParent.getBoundingClientRect().bottom +
-        window.pageYOffset;
-
-      function handleScroll() {
-        // Only apply sticky behavior on desktop
-        if (window.innerWidth >= 992) {
-          const scrollY = window.pageYOffset;
-          const wishlistSummaryHeight = wishlistSummaryElement.offsetHeight;
-
-          // Recalculate parent bottom position as it might change
-          wishlistSummaryOriginalBottom =
-            wishlistSummaryParent.getBoundingClientRect().bottom +
-            window.pageYOffset;
-
-          // If we've scrolled past the original position of the summary
-          if (scrollY > wishlistSummaryOriginalTop - headerHeight - 20) {
-            // Check if the summary would go beyond its container
-            if (
-              scrollY + headerHeight + wishlistSummaryHeight + 20 <
-              wishlistSummaryOriginalBottom
-            ) {
-              wishlistSummaryElement.classList.add("fixed");
-              wishlistSummaryElement.style.width = wishlistSummaryWidth + "px";
-              wishlistSummaryElement.style.top = headerHeight + 20 + "px"; // Add some padding
-            } else {
-              // Allow the summary to scroll normally at the bottom of its container
-              wishlistSummaryElement.classList.remove("fixed");
-              wishlistSummaryElement.style.width = "";
-              wishlistSummaryElement.style.top = "";
-            }
           } else {
-            // Reset to original position
-            wishlistSummaryElement.classList.remove("fixed");
-            wishlistSummaryElement.style.width = "";
-            wishlistSummaryElement.style.top = "";
+            Swal.fire({
+              toast: true,
+              position: 'top-end',
+              icon: 'error',
+              title: result.message,
+              showConfirmButton: false,
+              timer: 1500
+            });
           }
+        } catch (error) {
+          console.error('Error adding all to cart:', error);
+          Swal.fire({
+            toast: true,
+            position: 'top-end',
+            icon: 'error',
+            title: 'Error adding items to cart',
+            showConfirmButton: false,
+            timer: 1500
+          });
         }
-      }
-
-      // Initial calculation
-      window.addEventListener("load", function () {
-        wishlistSummaryOriginalTop =
-          wishlistSummaryElement.getBoundingClientRect().top +
-          window.pageYOffset;
-        handleScroll();
       });
+    }
+  });
 
-      // Handle scroll events
-      window.addEventListener("scroll", handleScroll);
+  // Clear wishlist
+  if (clearWishlistBtn) {
+    clearWishlistBtn.addEventListener('click', async function () {
+      try {
+        const response = await fetch('/wishlist/clear', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        const result = await response.json();
 
-      // Handle resize events (recalculate dimensions)
-      window.addEventListener("resize", function () {
-        if (window.innerWidth < 992) {
-          wishlistSummaryElement.classList.remove("fixed");
-          wishlistSummaryElement.style.width = "";
-          wishlistSummaryElement.style.top = "";
+        if (result.success) {
+          emptyWishlist.classList.remove('d-none');
+          wishlistItemsContainer.classList.add('d-none');
+          wishlistSummary.classList.add('d-none');
+          wishlistCountElement.textContent = result.wishlistCount;
+          wishlistCountElement.dataset.count = result.wishlistCount;
+
+          Swal.fire({
+            toast: true,
+            position: 'top-end',
+            icon: 'success',
+            title: result.message,
+            showConfirmButton: false,
+            timer: 1500
+          });
         } else {
-          wishlistSummaryOriginalTop =
-            wishlistSummaryElement.getBoundingClientRect().top +
-            window.pageYOffset;
-          wishlistSummaryWidth = wishlistSummaryParent.offsetWidth;
-          handleScroll();
+          Swal.fire({
+            toast: true,
+            position: 'top-end',
+            icon: 'error',
+            title: result.message,
+            showConfirmButton: false,
+            timer: 1500
+          });
+        }
+      } catch (error) {
+        console.error('Error clearing wishlist:', error);
+        Swal.fire({
+          toast: true,
+          position: 'top-end',
+          icon: 'error',
+          title: 'Error clearing wishlist',
+          showConfirmButton: false,
+          timer: 1500
+        });
+      }
+    });
+  }
+
+  // Individual item actions
+  document.querySelectorAll('.wishlist-item').forEach(item => {
+    const productId = item.dataset.productId;
+    const addToCartBtn = item.querySelector('.add-to-cart');
+    const removeBtn = item.querySelector('.remove-item');
+
+    // Add to cart
+    if (addToCartBtn) {
+      addToCartBtn.addEventListener('click', async function () {
+        try {
+          const response = await fetch('/cart/add', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ productId, quantity: 1 })
+          });
+          const result = await response.json();
+
+          if (result.success) {
+            cartCountElement.textContent = result.cartCount;
+            cartCountElement.dataset.count = result.cartCount;
+
+            Swal.fire({
+              toast: true,
+              position: 'top-end',
+              icon: 'success',
+              title: result.message,
+              showConfirmButton: false,
+              timer: 1500
+            });
+          } else {
+            Swal.fire({
+              toast: true,
+              position: 'top-end',
+              icon: 'error',
+              title: result.message,
+              showConfirmButton: false,
+              timer: 1500
+            });
+          }
+        } catch (error) {
+          console.error('Error adding to cart:', error);
+          Swal.fire({
+            toast: true,
+            position: 'top-end',
+            icon: 'error',
+            title: 'Error adding to cart',
+            showConfirmButton: false,
+            timer: 1500
+          });
         }
       });
     }
 
-    // Add to cart buttons in Recently Viewed section
-    const recentlyViewedAddButtons = document.querySelectorAll(
-      ".product-card .add-to-cart"
-    );
-    recentlyViewedAddButtons.forEach((button) => {
-      button.addEventListener("click", function () {
-        // Visual feedback
-        const originalColor = this.style.backgroundColor;
-        this.style.backgroundColor = "#047857";
+    // Remove from wishlist
+    if (removeBtn) {
+      removeBtn.addEventListener('click', async function () {
+        try {
+          // Get price before removing item from DOM
+          const priceElement = item.querySelector('.fw-bold');
+          const priceText = priceElement ? priceElement.textContent.trim() : '₹0';
+          const priceValue = parseFloat(priceText.replace('₹', '')) || 0;
+          
+          const response = await fetch('/wishlist/toggle', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ productId })
+          });
+          const result = await response.json();
 
-        setTimeout(() => {
-          this.style.backgroundColor = originalColor;
-        }, 500);
+          if (result.success) {
+            // Remove item with animation
+            item.style.opacity = '0';
+            
+            setTimeout(() => {
+              // Remove from DOM
+              item.remove();
+              
+              // Update wishlist count in header
+              if (wishlistCountElement) {
+                wishlistCountElement.textContent = result.wishlistCount;
+                wishlistCountElement.dataset.count = result.wishlistCount;
+              }
+
+              const remainingItems = document.querySelectorAll('.wishlist-item').length;
+              
+              // Toggle empty state if needed
+              if (remainingItems === 0) {
+                if (emptyWishlist) emptyWishlist.classList.remove('d-none');
+                if (wishlistItemsContainer) wishlistItemsContainer.classList.add('d-none');
+                if (wishlistSummary) wishlistSummary.classList.add('d-none');
+              } else {
+                // Calculate new total and update wishlist title
+                const titleElement = document.querySelector('.wishlist-items h2');
+                if (titleElement) {
+                  titleElement.textContent = `Wishlist (${remainingItems} items)`;
+                }
+                
+                // Update wishlist summary
+                updateWishlistSummaryDirectly();
+              }
+
+              Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: 'success',
+                title: result.message,
+                showConfirmButton: false,
+                timer: 1500
+              });
+            }, 300);
+          } else {
+            Swal.fire({
+              toast: true,
+              position: 'top-end',
+              icon: 'error',
+              title: result.message,
+              showConfirmButton: false,
+              timer: 1500
+            });
+          }
+        } catch (error) {
+          console.error('Error removing from wishlist:', error);
+          Swal.fire({
+            toast: true,
+            position: 'top-end',
+            icon: 'error',
+            title: 'Error removing item',
+            showConfirmButton: false,
+            timer: 1500
+          });
+        }
       });
+    }
+  });
+
+  // Add to cart for recently viewed products
+  document.querySelectorAll('.add-to-cart-btn').forEach(button => {
+    button.addEventListener('click', async function () {
+      const productId = this.dataset.productId;
+
+      try {
+        const response = await fetch('/cart/add', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ productId, quantity: 1 })
+        });
+        const result = await response.json();
+
+        if (result.success) {
+          cartCountElement.textContent = result.cartCount;
+          cartCountElement.dataset.count = result.cartCount;
+
+          Swal.fire({
+            toast: true,
+            position: 'top-end',
+            icon: 'success',
+            title: result.message,
+            showConfirmButton: false,
+            timer: 1500
+          });
+        } else {
+          Swal.fire({
+            toast: true,
+            position: 'top-end',
+            icon: 'error',
+            title: result.message,
+            showConfirmButton: false,
+            timer: 1500
+          });
+        }
+      } catch (error) {
+        console.error('Error adding to cart:', error);
+        Swal.fire({
+          toast: true,
+          position: 'top-end',
+          icon: 'error',
+          title: 'Error adding to cart',
+          showConfirmButton: false,
+          timer: 1500
+        });
+      }
     });
   });
+
+  // Direct approach to update the wishlist summary
+  // The specific function that needs fixing
+function updateWishlistSummaryDirectly() {
+  try {
+    if (!wishlistSummary) return;
+    
+    // Get all current wishlist items
+    const items = document.querySelectorAll('.wishlist-item');
+    const itemCount = items.length;
+    
+    // Calculate new total value
+    let totalValue = 0;
+    items.forEach(item => {
+      const priceEl = item.querySelector('.fw-bold');
+      if (priceEl) {
+        const priceText = priceEl.textContent.trim();
+        const price = parseFloat(priceText.replace('₹', '')) || 0;
+        totalValue += price;
+      }
+    });
+    
+    // First, let's log what we're finding to debug
+    console.log('Wishlist summary elements:', {
+      totalItemsEl: wishlistSummary.querySelector('.d-flex:nth-child(1)'),
+      valueEl: wishlistSummary.querySelector('.d-flex:nth-child(2)') 
+    });
+    
+    // Update title count
+    const titleElement = document.querySelector('.wishlist-items h2');
+    if (titleElement) {
+      titleElement.textContent = `Wishlist (${itemCount} items)`;
+    }
+    
+    // Get the specific elements by their content rather than position
+    // This is more reliable than using nth-child
+    const summaryDivs = wishlistSummary.querySelectorAll('.d-flex');
+    let totalItemsEl, valueEl;
+    
+    // Find the right elements based on their text content
+    summaryDivs.forEach(div => {
+      const label = div.querySelector('span:first-child');
+      if (label && label.textContent.includes('Total Items')) {
+        totalItemsEl = div.querySelector('.fw-semibold');
+      } else if (label && label.textContent.includes('Estimated Value')) {
+        valueEl = div.querySelector('.fw-semibold');
+      }
+    });
+    
+    // Update the elements if found
+    if (totalItemsEl) {
+      totalItemsEl.textContent = itemCount;
+      console.log('Updated total items:', itemCount);
+    } else {
+      console.error('Could not find total items element');
+    }
+    
+    if (valueEl) {
+      valueEl.textContent = `₹${totalValue.toFixed(2)}`;
+      console.log('Updated estimated value:', totalValue.toFixed(2));
+    } else {
+      console.error('Could not find estimated value element');
+    }
+    
+    // Update add all buttons state
+    if (addAllToCartBtn) addAllToCartBtn.disabled = itemCount === 0;
+    if (addAllToCartSummaryBtn) addAllToCartSummaryBtn.disabled = itemCount === 0;
+    
+  } catch (error) {
+    console.error('Error updating wishlist summary:', error);
+  }
+}
+});
 </script>

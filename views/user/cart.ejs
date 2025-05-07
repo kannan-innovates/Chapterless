@@ -19,7 +19,7 @@
       <!-- Cart Items -->
       <div class="col-lg-8">
         <!-- Empty Cart State -->
-        <div class="empty-cart text-center py-5 d-none">
+        <div class="empty-cart text-center py-5 <%= cartItems.length === 0 ? '' : 'd-none' %>">
           <div class="mb-4">
             <i class="ri-shopping-cart-line" style="font-size: 4rem; color: #ccc;"></i>
           </div>
@@ -29,101 +29,43 @@
         </div>
 
         <!-- Cart Items List -->
-        <div class="cart-items">
+        <div class="cart-items <%= cartItems.length === 0 ? 'd-none' : '' %>">
           <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2 class="fs-4 fw-bold">Items (3)</h2>
-            <button class="btn btn-link text-dark p-0 text-decoration-none">Clear Cart</button>
+            <h2 class="fs-4 fw-bold">Items (<%= cartItems.reduce((sum, item) => sum + item.quantity, 0) %>)</h2>
+            <button class="btn btn-link text-dark p-0 text-decoration-none" id="clearCartBtn">Clear Cart</button>
           </div>
 
-          <!-- Cart Item 1 -->
-          <div class="cart-item bg-white p-4 mb-3 rounded shadow-sm">
-            <div class="row align-items-center">
-              <div class="col-md-2 col-4 mb-3 mb-md-0">
-                <img src="/api/placeholder/150/200" alt="Book Cover" class="img-fluid rounded" />
-              </div>
-              <div class="col-md-6 col-8 mb-3 mb-md-0">
-                <h3 class="fs-5 fw-semibold mb-1">The Silent Echo</h3>
-                <p class="text-muted small mb-1">Elena Ferrante</p>
-                <p class="small mb-0">Hardcover</p>
-                <span class="stock-status in-stock">
-                  <i class="ri-checkbox-circle-line me-1"></i> In Stock (15 copies available)
-                </span>
-              </div>
-              <div class="col-md-2 col-6 text-md-center">
-                <div class="quantity-selector d-flex align-items-center">
-                  <button class="btn btn-sm btn-outline-dark quantity-btn">-</button>
-                  <input type="number" class="form-control form-control-sm mx-2 text-center" value="1" min="1" max="99" style="width: 50px;" />
-                  <button class="btn btn-sm btn-outline-dark quantity-btn">+</button>
+          <% cartItems.forEach(item => { %>
+            <div class="cart-item bg-white p-4 mb-3 rounded shadow-sm" data-product-id="<%= item.product._id %>">
+              <div class="row align-items-center">
+                <div class="col-md-2 col-4 mb-3 mb-md-0">
+                  <img src="<%= item.product.mainImage || '/api/placeholder/150/200' %>" alt="<%= item.product.title %>" class="img-fluid rounded" />
                 </div>
-              </div>
-              <div class="col-md-2 col-6 text-end">
-                <div class="d-flex flex-column align-items-end">
-                  <span class="fw-bold mb-2">₹899</span>
-                  <button class="btn btn-link text-danger p-0 small text-decoration-none">Remove</button>
+                <div class="col-md-6 col-8 mb-3 mb-md-0">
+                  <h3 class="fs-5 fw-semibold mb-1"><%= item.product.title %></h3>
+                  <p class="text-muted small mb-1"><%= item.product.author %></p>
+                  <p class="small mb-0"><%= item.product.format || 'Hardcover' %></p>
+                  <span class="stock-status <%= item.product.stock > 10 ? 'in-stock' : item.product.stock > 0 ? 'low-stock' : 'out-of-stock' %>">
+                    <i class="ri-<%= item.product.stock > 10 ? 'checkbox-circle-line' : item.product.stock > 0 ? 'alert-line' : 'close-circle-line' %> me-1"></i>
+                    <%= item.product.stock > 10 ? `In Stock (${item.product.stock} copies available)` : item.product.stock > 0 ? `Low Stock (${item.product.stock} copies left)` : 'Out of Stock' %>
+                  </span>
+                </div>
+                <div class="col-md-2 col-6 text-md-center">
+                  <div class="quantity-selector d-flex align-items-center">
+                    <button class="btn btn-sm btn-outline-dark quantity-btn">-</button>
+                    <input type="number" class="form-control form-control-sm mx-2 text-center quantity-input" value="<%= item.quantity %>" min="1" max="<%= item.product.stock %>" style="width: 50px;" />
+                    <button class="btn btn-sm btn-outline-dark quantity-btn">+</button>
+                  </div>
+                </div>
+                <div class="col-md-2 col-6 text-end">
+                  <div class="d-flex flex-column align-items-end">
+                    <span class="fw-bold mb-2">₹<%= (item.quantity * item.priceAtAddition).toFixed(2) %></span>
+                    <button class="btn btn-link text-danger p-0 small text-decoration-none remove-item">Remove</button>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-
-          <!-- Cart Item 2 -->
-          <div class="cart-item bg-white p-4 mb-3 rounded shadow-sm">
-            <div class="row align-items-center">
-              <div class="col-md-2 col-4 mb-3 mb-md-0">
-                <img src="/api/placeholder/150/200" alt="Book Cover" class="img-fluid rounded" />
-              </div>
-              <div class="col-md-6 col-8 mb-3 mb-md-0">
-                <h3 class="fs-5 fw-semibold mb-1">Fragments of Time</h3>
-                <p class="text-muted small mb-1">Haruki Murakami</p>
-                <p class="small mb-0">Paperback</p>
-                <span class="stock-status in-stock">
-                  <i class="ri-checkbox-circle-line me-1"></i> In Stock (8 copies available)
-                </span>
-              </div>
-              <div class="col-md-2 col-6 text-md-center">
-                <div class="quantity-selector d-flex align-items-center">
-                  <button class="btn btn-sm btn-outline-dark quantity-btn">-</button>
-                  <input type="number" class="form-control form-control-sm mx-2 text-center" value="1" min="1" max="99" style="width: 50px;" />
-                  <button class="btn btn-sm btn-outline-dark quantity-btn">+</button>
-                </div>
-              </div>
-              <div class="col-md-2 col-6 text-end">
-                <div class="d-flex flex-column align-items-end">
-                  <span class="fw-bold mb-2">₹649</span>
-                  <button class="btn btn-link text-danger p-0 small text-decoration-none">Remove</button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Cart Item 3 -->
-          <div class="cart-item bg-white p-4 mb-3 rounded shadow-sm">
-            <div class="row align-items-center">
-              <div class="col-md-2 col-4 mb-3 mb-md-0">
-                <img src="/api/placeholder/150/200" alt="Book Cover" class="img-fluid rounded" />
-              </div>
-              <div class="col-md-6 col-8 mb-3 mb-md-0">
-                <h3 class="fs-5 fw-semibold mb-1">The Midnight Library</h3>
-                <p class="text-muted small mb-1">Matt Haig</p>
-                <p class="small mb-0">Hardcover, Limited Edition</p>
-                <span class="stock-status low-stock">
-                  <i class="ri-alert-line me-1"></i> Low Stock (3 copies left)
-                </span>
-              </div>
-              <div class="col-md-2 col-6 text-md-center">
-                <div class="quantity-selector d-flex align-items-center">
-                  <button class="btn btn-sm btn-outline-dark quantity-btn">-</button>
-                  <input type="number" class="form-control form-control-sm mx-2 text-center" value="1" min="1" max="99" style="width: 50px;" />
-                  <button class="btn btn-sm btn-outline-dark quantity-btn">+</button>
-                </div>
-              </div>
-              <div class="col-md-2 col-6 text-end">
-                <div class="d-flex flex-column align-items-end">
-                  <span class="fw-bold mb-2">₹1,299</span>
-                  <button class="btn btn-link text-danger p-0 small text-decoration-none">Remove</button>
-                </div>
-              </div>
-            </div>
-          </div>
+          <% }) %>
         </div>
 
         <!-- Continue Shopping -->
@@ -136,13 +78,13 @@
 
       <!-- Order Summary -->
       <div class="col-lg-4">
-        <div class="order-summary bg-white p-4 rounded shadow-sm" id="orderSummary">
+        <div class="order-summary bg-white p-4 rounded shadow-sm <%= cartItems.length === 0 ? 'd-none' : '' %>" id="orderSummary">
           <h2 class="fs-4 fw-bold mb-4">Order Summary</h2>
           
           <!-- Subtotal -->
           <div class="d-flex justify-content-between mb-3">
-            <span>Subtotal (3 items)</span>
-            <span class="fw-semibold">₹2,847</span>
+            <span>Subtotal (<%= cartItems.reduce((sum, item) => sum + item.quantity, 0) %> items)</span>
+            <span class="fw-semibold">₹<%= totalAmount.toFixed(2) %></span>
           </div>
           
           <!-- Shipping -->
@@ -154,7 +96,7 @@
           <!-- Discount -->
           <div class="d-flex justify-content-between mb-3 text-success">
             <span>Discount</span>
-            <!-- <span class="fw-semibold">-₹150</span> -->
+            <!-- Placeholder for discount -->
           </div>
           
           <!-- Promo Code -->
@@ -163,9 +105,7 @@
               <input type="text" class="form-control" placeholder="Enter promo code" aria-label="Promo code">
               <button class="btn btn-dark" type="button">Apply</button>
             </div>
-            <!-- <div class="applied-promo text-success small">
-              <i class="ri-checkbox-circle-line me-1"></i> "NEWREADER" applied successfully
-            </div> -->
+            <!-- Placeholder for applied promo -->
           </div>
           
           <hr class="my-3">
@@ -173,7 +113,7 @@
           <!-- Total -->
           <div class="d-flex justify-content-between align-items-center mb-4">
             <span class="fs-5 fw-bold">Total</span>
-            <span class="fs-5 fw-bold">₹2,796</span>
+            <span class="fs-5 fw-bold">₹<%= (totalAmount + 99).toFixed(2) %></span>
           </div>
           
           <!-- Checkout Button -->
@@ -200,118 +140,44 @@
   <div class="container">
     <h2 class="fs-2 fw-bold mb-4">You May Also Like</h2>
     <div class="row g-4">
-      <!-- Recommendation 1 -->
-      <div class="col-6 col-md-3">
-        <div class="product-card bg-white h-100">
-          <div class="product-image-container">
-            <a href="#" class="text-decoration-none">
-              <img src="/api/placeholder/600/800" alt="Book Cover" class="product-image" />
-            </a>
-          </div>
-          <div class="p-3">
-            <h3 class="fs-5 fw-semibold mb-1">
-              <a href="#" class="text-dark text-decoration-none">The Alchemist</a>
-            </h3>
-            <p class="text-muted small mb-2">Paulo Coelho</p>
-            <div class="d-flex justify-content-between align-items-center">
-              <div>
-                <span class="fw-bold">₹499</span>
-                <span class="stock-status in-stock">
-                  <i class="ri-checkbox-circle-line me-1"></i> In Stock
-                </span>
+      <% relatedProducts.forEach(product => { %>
+        <div class="col-6 col-md-3">
+          <div class="product-card bg-white h-100">
+            <div class="product-image-container">
+              <% 
+                const now = new Date();
+                const createdAt = new Date(product.createdAt);
+                const diffDays = (now - createdAt) / (1000 * 60 * 60 * 24);
+                const isNew = diffDays <= 30;
+              %>
+              <% if (isNew) { %>
+                <span class="product-tag">New</span>
+              <% } %>
+              <a href="/products/<%= product._id %>" class="text-decoration-none">
+                <img src="<%= product.mainImage || '/api/placeholder/600/800' %>" alt="<%= product.title %>" class="product-image" />
+              </a>
+            </div>
+            <div class="p-3">
+              <h3 class="fs-5 fw-semibold mb-1">
+                <a href="/products/<%= product._id %>" class="text-dark text-decoration-none"><%= product.title %></a>
+              </h3>
+              <p class="text-muted small mb-2"><%= product.author %></p>
+              <div class="d-flex justify-content-between align-items-center">
+                <div>
+                  <span class="fw-bold">₹<%= product.salePrice %></span>
+                  <span class="stock-status <%= product.stock > 10 ? 'in-stock' : product.stock > 0 ? 'low-stock' : 'out-of-stock' %>">
+                    <i class="ri-<%= product.stock > 10 ? 'checkbox-circle-line' : product.stock > 0 ? 'alert-line' : 'close-circle-line' %> me-1"></i>
+                    <%= product.stock > 10 ? 'In Stock' : product.stock > 0 ? 'Low Stock' : 'Out of Stock' %>
+                  </span>
+                </div>
+                <button class="add-to-cart border-0" data-product-id="<%= product._id %>">
+                  <i class="ri-add-line"></i>
+                </button>
               </div>
-              <button class="add-to-cart border-0">
-                <i class="ri-add-line"></i>
-              </button>
             </div>
           </div>
         </div>
-      </div>
-      
-      <!-- Recommendation 2 -->
-      <div class="col-6 col-md-3">
-        <div class="product-card bg-white h-100">
-          <div class="product-image-container">
-            <span class="product-tag">New</span>
-            <a href="#" class="text-decoration-none">
-              <img src="/api/placeholder/600/800" alt="Book Cover" class="product-image" />
-            </a>
-          </div>
-          <div class="p-3">
-            <h3 class="fs-5 fw-semibold mb-1">
-              <a href="#" class="text-dark text-decoration-none">Norwegian Wood</a>
-            </h3>
-            <p class="text-muted small mb-2">Haruki Murakami</p>
-            <div class="d-flex justify-content-between align-items-center">
-              <div>
-                <span class="fw-bold">₹599</span>
-                <span class="stock-status in-stock">
-                  <i class="ri-checkbox-circle-line me-1"></i> In Stock
-                </span>
-              </div>
-              <button class="add-to-cart border-0">
-                <i class="ri-add-line"></i>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <!-- Recommendation 3 -->
-      <div class="col-6 col-md-3">
-        <div class="product-card bg-white h-100">
-          <div class="product-image-container">
-            <a href="#" class="text-decoration-none">
-              <img src="/api/placeholder/600/800" alt="Book Cover" class="product-image" />
-            </a>
-          </div>
-          <div class="p-3">
-            <h3 class="fs-5 fw-semibold mb-1">
-              <a href="#" class="text-dark text-decoration-none">Normal People</a>
-            </h3>
-            <p class="text-muted small mb-2">Sally Rooney</p>
-            <div class="d-flex justify-content-between align-items-center">
-              <div>
-                <span class="fw-bold">₹549</span>
-                <span class="stock-status out-of-stock">
-                  <i class="ri-close-circle-line me-1"></i> Out of Stock
-                </span>
-              </div>
-              <button class="add-to-cart border-0" disabled style="background-color: #ccc;">
-                <i class="ri-add-line"></i>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <!-- Recommendation 4 -->
-      <div class="col-6 col-md-3">
-        <div class="product-card bg-white h-100">
-          <div class="product-image-container">
-            <a href="#" class="text-decoration-none">
-              <img src="/api/placeholder/600/800" alt="Book Cover" class="product-image" />
-            </a>
-          </div>
-          <div class="p-3">
-            <h3 class="fs-5 fw-semibold mb-1">
-              <a href="#" class="text-dark text-decoration-none">The Song of Achilles</a>
-            </h3>
-            <p class="text-muted small mb-2">Madeline Miller</p>
-            <div class="d-flex justify-content-between align-items-center">
-              <div>
-                <span class="fw-bold">₹679</span>
-                <span class="stock-status low-stock">
-                  <i class="ri-alert-line me-1"></i> Low Stock
-                </span>
-              </div>
-              <button class="add-to-cart border-0">
-                <i class="ri-add-line"></i>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+      <% }) %>
     </div>
   </div>
 </section>
@@ -421,7 +287,6 @@
     color: #6b7280;
   }
   
-  /* Stock status styles from shop page */
   .stock-status {
     display: inline-block;
     padding: 0.25rem 0.75rem;
@@ -446,10 +311,9 @@
     color: #b91c1c;
   }
   
-  /* Fix for order summary position */
   #orderSummary.fixed {
     position: fixed;
-    top: 80px; /* Adjust based on your header height */
+    top: 80px;
     width: inherit;
     max-width: inherit;
   }
@@ -460,10 +324,25 @@
     }
     
     #orderSummary.fixed {
-      position: static !important;
-    }
+  position: fixed;
+  top: 80px; /* Adjust based on your header height */
+  z-index: 100;
+  transition: all 0.2s ease;
+}
+
+/* Add some bottom padding to the parent container to prevent content jump */
+.col-lg-4 {
+  position: relative;
+}
+
+/* For better mobile experience */
+@media (max-width: 991.98px) {
+  #orderSummary.fixed {
+    position: static !important;
+    width: 100% !important;
+  }
+}
     
-    /* Make stock status more compact on mobile */
     .stock-status {
       padding: 0.15rem 0.5rem;
       font-size: 0.75rem;
@@ -471,128 +350,513 @@
   }
 </style>
 
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-  // For demo purposes - toggle empty cart state
-  document.addEventListener('DOMContentLoaded', function() {
-    const clearCartBtn = document.querySelector('button.btn-link');
-    const emptyCart = document.querySelector('.empty-cart');
-    const cartItems = document.querySelector('.cart-items');
-    const orderSummary = document.querySelector('.order-summary');
-    
-    if (clearCartBtn) {
-      clearCartBtn.addEventListener('click', function() {
-        emptyCart.classList.remove('d-none');
-        cartItems.classList.add('d-none');
-        orderSummary.classList.add('d-none');
-      });
-    }
-    
-    // Quantity buttons functionality
-    const minusBtns = document.querySelectorAll('.quantity-btn:first-child');
-    const plusBtns = document.querySelectorAll('.quantity-btn:last-child');
-    
-    minusBtns.forEach(btn => {
-      btn.addEventListener('click', function() {
-        const input = this.nextElementSibling;
-        let value = parseInt(input.value);
-        if (value > 1) {
-          input.value = value - 1;
-        }
-      });
-    });
-    
-    plusBtns.forEach(btn => {
-      btn.addEventListener('click', function() {
-        const input = this.previousElementSibling;
-        let value = parseInt(input.value);
-        if (value < 99) {
-          input.value = value + 1;
-        }
-      });
-    });
-    
-    // Individual item removal
-    const removeButtons = document.querySelectorAll('.btn-link.text-danger');
-    removeButtons.forEach(button => {
-      button.addEventListener('click', function() {
-        const cartItem = this.closest('.cart-item');
-        cartItem.style.opacity = '0';
-        setTimeout(() => {
-          cartItem.remove();
-          
-          // If no items left, show empty cart
-          if (document.querySelectorAll('.cart-item').length === 0) {
-            emptyCart.classList.remove('d-none');
-            cartItems.classList.add('d-none');
-            orderSummary.classList.add('d-none');
-          }
-        }, 300);
-      });
-    });
-    
-    // Fix for order summary overlapping header when scrolling
-    const orderSummaryElement = document.getElementById('orderSummary');
-    const orderSummaryParent = orderSummaryElement.parentElement;
-    const orderSummaryWidth = orderSummaryElement.offsetWidth;
-    const orderSummaryRect = orderSummaryElement.getBoundingClientRect();
-    const headerHeight = document.querySelector('header') ? document.querySelector('header').offsetHeight : 0;
-    
-    // Variables to store original position
-    let orderSummaryOriginalTop = orderSummaryElement.getBoundingClientRect().top + window.pageYOffset;
-    let orderSummaryOriginalBottom = orderSummaryParent.getBoundingClientRect().bottom + window.pageYOffset;
-    
-    function handleScroll() {
-      // Only apply sticky behavior on desktop
-      if (window.innerWidth >= 992) {
-        const scrollY = window.pageYOffset;
-        const viewportHeight = window.innerHeight;
-        const orderSummaryHeight = orderSummaryElement.offsetHeight;
-        
-        // Recalculate parent bottom position as it might change
-        orderSummaryOriginalBottom = orderSummaryParent.getBoundingClientRect().bottom + window.pageYOffset;
-        
-        // If we've scrolled past the original position of the summary
-        if (scrollY > orderSummaryOriginalTop - headerHeight - 20) {
-          // Check if the summary would go beyond its container
-          if (scrollY + headerHeight + orderSummaryHeight + 20 < orderSummaryOriginalBottom) {
-            orderSummaryElement.classList.add('fixed');
-            orderSummaryElement.style.width = orderSummaryWidth + 'px';
-            orderSummaryElement.style.top = (headerHeight + 20) + 'px'; // Add some padding
-          } else {
-            // Allow the summary to scroll normally at the bottom of its container
-            orderSummaryElement.classList.remove('fixed');
-            orderSummaryElement.style.width = '';
-            orderSummaryElement.style.top = '';
-          }
-        } else {
-          // Reset to original position
-          orderSummaryElement.classList.remove('fixed');
-          orderSummaryElement.style.width = '';
-          orderSummaryElement.style.top = '';
-        }
-      }
-    }
-    
-    // Initial calculation
-    window.addEventListener('load', function() {
-      orderSummaryOriginalTop = orderSummaryElement.getBoundingClientRect().top + window.pageYOffset;
-      handleScroll();
-    });
-    
-    // Handle scroll events
-    window.addEventListener('scroll', handleScroll);
-    
-    // Handle resize events (recalculate dimensions)
-    window.addEventListener('resize', function() {
-      if (window.innerWidth < 992) {
-        orderSummaryElement.classList.remove('fixed');
-        orderSummaryElement.style.width = '';
-        orderSummaryElement.style.top = '';
-      } else {
-        orderSummaryOriginalTop = orderSummaryElement.getBoundingClientRect().top + window.pageYOffset;
-        orderSummaryWidth = orderSummaryParent.offsetWidth;
-        handleScroll();
-      }
+document.addEventListener('DOMContentLoaded', function () {
+  // DOM Elements
+  const clearCartBtn = document.querySelector('#clearCartBtn');
+  const emptyCart = document.querySelector('.empty-cart');
+  const cartItemsContainer = document.querySelector('.cart-items');
+  const orderSummary = document.querySelector('#orderSummary');
+  const cartCountElement = document.querySelector('.cart-count');
+  
+  // Store initial values for all quantity inputs
+  document.querySelectorAll('.quantity-input').forEach(input => {
+    input.dataset.previousValue = input.value;
+  });
+
+  // Clear cart
+  if (clearCartBtn) {
+    clearCartBtn.addEventListener('click', clearCart);
+  }
+
+  // Set up event listeners for all cart items
+  setupCartItemHandlers();
+
+  // Add to cart for related products
+  document.querySelectorAll('.add-to-cart').forEach(button => {
+    button.addEventListener('click', function() {
+      addToCart(this.dataset.productId);
     });
   });
+
+  // Fixed order summary on scroll
+  window.addEventListener('scroll', handleOrderSummaryPosition);
+
+  // Main Functions
+  // =============
+
+  async function clearCart() {
+    try {
+      const response = await fetch('/cart/clear', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin'
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Server responded with ${response.status}: ${response.statusText}`);
+      }
+      
+      const result = await response.json();
+
+      if (result.success) {
+        emptyCart.classList.remove('d-none');
+        cartItemsContainer.classList.add('d-none');
+        orderSummary.classList.add('d-none');
+        updateCartCount(result.cartCount);
+
+        showNotification('success', result.message);
+      } else {
+        showNotification('error', result.message || 'Failed to clear cart');
+      }
+    } catch (error) {
+      console.error('Clear cart error:', error);
+      showNotification('error', 'Error clearing cart');
+    }
+  }
+
+  function setupCartItemHandlers() {
+    const cartItems = document.querySelectorAll('.cart-item');
+    
+    cartItems.forEach(item => {
+      const productId = item.dataset.productId;
+      const minusBtn = item.querySelector('.quantity-btn:first-child');
+      const plusBtn = item.querySelector('.quantity-btn:last-child');
+      const quantityInput = item.querySelector('.quantity-input');
+      const removeBtn = item.querySelector('.remove-item');
+
+      if (!quantityInput) {
+        return;
+      }
+
+      // Preserve initial values
+      quantityInput.dataset.previousValue = quantityInput.value;
+      
+      // Debounce timer to prevent rapid-fire requests
+      let updateTimeout;
+
+      minusBtn && minusBtn.addEventListener('click', function() {
+        let value = parseInt(quantityInput.value);
+        if (value > 1) {
+          quantityInput.value = value - 1;
+          clearTimeout(updateTimeout);
+          updateTimeout = setTimeout(() => {
+            updateCartItem(productId, parseInt(quantityInput.value), item);
+          }, 300);
+        }
+      });
+
+      plusBtn && plusBtn.addEventListener('click', function() {
+        let value = parseInt(quantityInput.value);
+        const maxValue = parseInt(quantityInput.getAttribute('max') || '999');
+        
+        if (value < maxValue) {
+          quantityInput.value = value + 1;
+          clearTimeout(updateTimeout);
+          updateTimeout = setTimeout(() => {
+            updateCartItem(productId, parseInt(quantityInput.value), item);
+          }, 300);
+        }
+      });
+
+      quantityInput && quantityInput.addEventListener('change', function() {
+        let value = parseInt(this.value);
+        const maxValue = parseInt(this.getAttribute('max') || '999');
+        
+        // Validate input
+        if (isNaN(value) || value < 1) {
+          value = 1;
+        } else if (value > maxValue) {
+          value = maxValue;
+        }
+        
+        this.value = value;
+        clearTimeout(updateTimeout);
+        updateTimeout = setTimeout(() => {
+          updateCartItem(productId, value, item);
+        }, 300);
+      });
+
+      removeBtn && removeBtn.addEventListener('click', function() {
+        removeCartItem(productId, item);
+      });
+    });
+  }
+
+  async function updateCartItem(productId, quantity, item) {
+    try {
+      // Visual feedback that update is in progress
+      item.classList.add('updating');
+      
+      // Store current value for rollback if needed
+      const quantityInput = item.querySelector('.quantity-input');
+      const previousValue = quantityInput.dataset.previousValue;
+      
+      const response = await fetch('/cart/update', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'same-origin',
+        body: JSON.stringify({ 
+          productId: productId, 
+          quantity: quantity 
+        })
+      });
+      
+      // Check HTTP status
+      if (!response.ok) {
+        throw new Error(`Server responded with ${response.status}: ${response.statusText}`);
+      }
+      
+      // Parse response
+      const result = await response.json();
+
+      if (result.success) {
+        // Update was successful
+        quantityInput.dataset.previousValue = quantity;
+        
+        // Update price display for this item
+        const priceElement = item.querySelector('.fw-bold');
+        if (priceElement) {
+          priceElement.textContent = `₹${result.itemTotal.toFixed(2)}`;
+        }
+        
+        // Update all summary elements using the server's total
+        if (typeof result.totalAmount === 'number') {
+          updateOrderSummaryDOM(result.totalAmount, result.cartCount);
+        }
+        
+        // Update cart count if provided
+        if (result.cartCount !== undefined) {
+          updateCartCount(result.cartCount);
+        } else {
+          // Recalculate from visible items if server didn't provide count
+          recalculateCartCount();
+        }
+
+        showNotification('success', result.message || 'Cart updated successfully');
+      } else {
+        // Server returned success:false
+        console.error('Update failed:', result.message);
+        
+        // Revert to previous value
+        quantityInput.value = previousValue;
+        
+        showNotification('error', result.message || 'Failed to update cart');
+      }
+    } catch (error) {
+      console.error('Cart update error:', error);
+      
+      // Revert to previous value on exception
+      const quantityInput = item.querySelector('.quantity-input');
+      quantityInput.value = quantityInput.dataset.previousValue;
+      
+      showNotification('error', 'Error communicating with server');
+    } finally {
+      // Remove updating class regardless of outcome
+      item.classList.remove('updating');
+    }
+  }
+
+  async function removeCartItem(productId, item) {
+    try {
+      // Visual feedback
+      item.style.opacity = '0.5';
+      
+      const response = await fetch('/cart/remove', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'same-origin',
+        body: JSON.stringify({ productId })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Server responded with ${response.status}: ${response.statusText}`);
+      }
+      
+      const result = await response.json();
+
+      if (result.success) {
+        // Fade out and remove
+        item.style.opacity = '0';
+        setTimeout(() => {
+          item.remove();
+          
+          // Update order summary with server-provided total
+          if (typeof result.totalAmount === 'number') {
+            updateOrderSummaryDOM(result.totalAmount, result.cartCount);
+          }
+          
+          // Update cart count
+          updateCartCount(result.cartCount);
+
+          // Check if cart is now empty
+          if (document.querySelectorAll('.cart-item').length === 0) {
+            emptyCart.classList.remove('d-none');
+            cartItemsContainer.classList.add('d-none');
+            orderSummary.classList.add('d-none');
+          }
+
+          showNotification('success', result.message || 'Item removed from cart');
+        }, 300);
+      } else {
+        // Restore opacity
+        item.style.opacity = '1';
+        showNotification('error', result.message || 'Failed to remove item');
+      }
+    } catch (error) {
+      console.error('Remove item error:', error);
+      // Restore opacity
+      item.style.opacity = '1';
+      showNotification('error', 'Error removing item');
+    }
+  }
+
+  async function addToCart(productId) {
+    try {
+      const response = await fetch('/cart/add', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'same-origin',
+        body: JSON.stringify({ productId, quantity: 1 })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Server responded with ${response.status}: ${response.statusText}`);
+      }
+      
+      const result = await response.json();
+
+      if (result.success) {
+        updateCartCount(result.cartCount);
+        showNotification('success', result.message || 'Item added to cart');
+      } else {
+        showNotification('error', result.message || 'Failed to add item to cart');
+      }
+    } catch (error) {
+      console.error('Add to cart error:', error);
+      showNotification('error', 'Error adding to cart');
+    }
+  }
+
+  // Helper Functions
+  // ===============
+
+  function updateCartCount(count) {
+    if (cartCountElement) {
+      cartCountElement.textContent = count;
+      cartCountElement.dataset.count = count;
+    }
+  }
+
+  function recalculateCartCount() {
+    if (cartCountElement) {
+      const count = Array.from(document.querySelectorAll('.cart-item'))
+        .reduce((sum, item) => {
+          const input = item.querySelector('.quantity-input');
+          return sum + (input ? parseInt(input.value) : 0);
+        }, 0);
+      
+      cartCountElement.textContent = count;
+      cartCountElement.dataset.count = count;
+    }
+  }
+
+  // Direct DOM manipulation for order summary updates
+  function updateOrderSummaryDOM(totalAmount, cartCount) {
+    // Find the subtotal element - capture and try multiple selectors
+    const subtotalElement = findElement([
+      '#orderSummary .d-flex:first-child .fw-semibold',
+      '#orderSummary .d-flex:nth-child(1) .fw-semibold',
+      '#orderSummary .d-flex .fw-semibold'
+    ]);
+    
+    if (subtotalElement) {
+      subtotalElement.textContent = `₹${totalAmount.toFixed(2)}`;
+    }
+    
+    // Find the total element - try multiple selectors
+    const totalElement = findElement([
+      '#orderSummary .d-flex:last-of-type .fs-5.fw-bold:last-child', 
+      '#orderSummary .d-flex:nth-child(5) .fs-5.fw-bold',
+      '#orderSummary .fs-5.fw-bold:last-child'
+    ]);
+    
+    if (totalElement) {
+      const shippingCost = 99;
+      totalElement.textContent = `₹${(totalAmount + shippingCost).toFixed(2)}`;
+    }
+    
+    // Update item counts in the text
+    if (cartCount !== undefined) {
+      const itemCountElement = findElement([
+        '#orderSummary .d-flex:first-child span:first-child',
+        '#orderSummary .d-flex:nth-child(1) span:first-child'
+      ]);
+      
+      if (itemCountElement) {
+        itemCountElement.textContent = `Subtotal (${cartCount} items)`;
+      }
+      
+      // Update cart items header
+      const cartItemsHeader = document.querySelector('.cart-items h2');
+      if (cartItemsHeader) {
+        cartItemsHeader.textContent = `Items (${cartCount})`;
+      }
+    }
+    
+    // Last resort: force rebuild of entire order summary
+    if (!subtotalElement || !totalElement) {
+      rebuildOrderSummary(totalAmount, cartCount);
+    }
+    
+    // Force browser reflow if needed
+    orderSummary.style.display = 'none';
+    orderSummary.offsetHeight; // Force reflow
+    orderSummary.style.display = '';
+  }
+  
+  // Helper function to find an element using multiple selectors
+  function findElement(selectors) {
+    for (const selector of selectors) {
+      const element = document.querySelector(selector);
+      if (element) {
+        return element;
+      }
+    }
+    return null;
+  }
+  
+  // Last resort: completely rebuild the order summary
+  function rebuildOrderSummary(totalAmount, cartCount) {
+    const shippingCost = 99;
+    
+    // Only proceed if the order summary element exists
+    if (!orderSummary) {
+      return;
+    }
+    
+    // Create HTML for the entire summary
+    const summaryHTML = `
+      <h2 class="fs-4 fw-bold mb-4">Order Summary</h2>
+      
+      <!-- Subtotal -->
+      <div class="d-flex justify-content-between mb-3">
+        <span>Subtotal (${cartCount || 0} items)</span>
+        <span class="fw-semibold">₹${totalAmount.toFixed(2)}</span>
+      </div>
+      
+      <!-- Shipping -->
+      <div class="d-flex justify-content-between mb-3">
+        <span>Shipping</span>
+        <span class="fw-semibold">₹99</span>
+      </div>
+      
+      <!-- Discount -->
+      <div class="d-flex justify-content-between mb-3 text-success">
+        <span>Discount</span>
+        <!-- Placeholder for discount -->
+      </div>
+      
+      <!-- Promo Code -->
+      <div class="promo-code mb-4">
+        <div class="input-group mb-2">
+          <input type="text" class="form-control" placeholder="Enter promo code" aria-label="Promo code">
+          <button class="btn btn-dark" type="button">Apply</button>
+        </div>
+        <!-- Placeholder for applied promo -->
+      </div>
+      
+      <hr class="my-3">
+      
+      <!-- Total -->
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <span class="fs-5 fw-bold">Total</span>
+        <span class="fs-5 fw-bold">₹${(totalAmount + shippingCost).toFixed(2)}</span>
+      </div>
+      
+      <!-- Checkout Button -->
+      <button class="btn btn-dark w-100 py-3 fw-medium">Proceed to Checkout</button>
+      
+      <!-- Payment Methods -->
+      <div class="payment-methods mt-3 text-center">
+        <p class="text-muted small mb-2">We accept</p>
+        <div class="d-flex justify-content-center gap-2">
+          <div class="payment-icon"><i class="ri-visa-line"></i></div>
+          <div class="payment-icon"><i class="ri-mastercard-line"></i></div>
+          <div class="payment-icon"><i class="ri-paypal-line"></i></div>
+          <div class="payment-icon"><i class="ri-apple-line"></i></div>
+        </div>
+      </div>
+    `;
+    
+    // Replace the content
+    orderSummary.innerHTML = summaryHTML;
+  }
+
+  function handleOrderSummaryPosition() {
+    if (!orderSummary) return;
+    
+    const parentContainer = orderSummary.closest('.col-lg-4');
+    if (!parentContainer) return;
+    
+    const parentRect = parentContainer.getBoundingClientRect();
+    const summaryHeight = orderSummary.offsetHeight;
+    const windowHeight = window.innerHeight;
+    
+    if (window.innerWidth >= 992) {
+      if (parentRect.top < 80 && parentRect.bottom > (summaryHeight + 80)) {
+        orderSummary.classList.add('fixed');
+        orderSummary.style.width = parentRect.width + 'px';
+        orderSummary.style.maxHeight = (windowHeight - 100) + 'px';
+        orderSummary.style.overflowY = summaryHeight > (windowHeight - 100) ? 'auto' : 'visible';
+      } else {
+        orderSummary.classList.remove('fixed');
+        orderSummary.style.width = '';
+        orderSummary.style.maxHeight = '';
+        orderSummary.style.overflowY = '';
+      }
+    } else {
+      orderSummary.classList.remove('fixed');
+      orderSummary.style.width = '';
+      orderSummary.style.maxHeight = '';
+      orderSummary.style.overflowY = '';
+    }
+  }
+
+  function showNotification(type, message) {
+    Swal.fire({
+      toast: true,
+      position: 'top-end',
+      icon: type,
+      title: message,
+      showConfirmButton: false,
+      timer: 3000
+    });
+  }
+});
+
+// Add this CSS to provide visual feedback for cart updates
+document.head.insertAdjacentHTML('beforeend', `
+  <style>
+    .cart-item.updating {
+      opacity: 0.7;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+    }
+    
+    .quantity-input:disabled {
+      background-color: #f8f9fa;
+    }
+  </style>
+`);
 </script>

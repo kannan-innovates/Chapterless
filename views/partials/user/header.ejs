@@ -21,7 +21,6 @@
     <link rel="stylesheet" href="/styles/user/landinPageStyle.css" />
     <link rel="stylesheet" href="/styles/user/productDetails.css" />
     <style>
-      /* Existing styles */
       .dropdown-menu {
         border-radius: 15px;
         padding: 10px 0;
@@ -46,8 +45,6 @@
       .user-dropdown {
         position: relative;
       }
-
-      /* Search-specific styles */
       .search-input {
         position: relative;
       }
@@ -113,7 +110,6 @@
         color: #6b7280;
         font-size: 0.9rem;
       }
-      /* Mobile search input */
       .mobile-search {
         display: none;
         width: 100%;
@@ -130,8 +126,6 @@
           width: 100%;
         }
       }
-
-      /* New styles for the header icons */
       .header-icons {
         display: flex;
         align-items: center;
@@ -173,10 +167,7 @@
     </style>
   </head>
   <body class="paper-texture">
-    <!-- Navigation starts -->
-    <nav
-      class="navbar navbar-expand-lg navbar-light bg-white shadow-sm sticky-top"
-    >
+    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm sticky-top">
       <div class="container py-2">
         <a class="navbar-brand" href="/">
           <img src="/assets/harryPotter.jpeg" alt="Chapterless Logo" />
@@ -212,7 +203,6 @@
             </li>
           </ul>
           <div class="d-flex align-items-center flex-column flex-lg-row">
-            <!-- Mobile search input -->
             <div class="mobile-search">
               <div class="search-input">
                 <input
@@ -227,7 +217,6 @@
                 <div class="search-results" id="mobileSearchResults"></div>
               </div>
             </div>
-            <!-- Desktop search input -->
             <div class="search-input d-none d-lg-block me-3">
               <input
                 type="text"
@@ -240,28 +229,23 @@
               </div>
               <div class="search-results" id="desktopSearchResults"></div>
             </div>
-
-            <!-- Header Icons Section -->
             <div class="header-icons">
-              <% if (!user) { %>
-              <!-- For non-authenticated users -->
-              <a href="/wishlist" class="icon-btn" title="Wishlist">
+              <% if (!locals.isAuthenticated) { %>
+              <a href="/login" class="icon-btn" title="Wishlist">
                 <i class="ri-heart-line fs-5"></i>
+                <span class="count wishlist-count">0</span>
               </a>
               <a href="/login" class="icon-btn" title="Login">
                 <i class="ri-user-line fs-5"></i>
               </a>
-              <a href="/cart" class="icon-btn cart-link" title="Cart">
+              <a href="/login" class="icon-btn cart-link" title="Cart">
                 <i class="ri-shopping-bag-line fs-5"></i>
                 <span class="count cart-count">0</span>
               </a>
               <% } else { %>
-              <!-- For authenticated users -->
               <a href="/wishlist" class="icon-btn" title="Wishlist">
                 <i class="ri-heart-line fs-5"></i>
-                <span class="count wishlist-count"
-                  ><%= user.wishlist ? user.wishlist.length : 0 %></span
-                >
+                <span class="count wishlist-count" data-count="<%= locals.wishlistCount || 0 %>"><%= locals.wishlistCount || 0 %></span>
               </a>
               <div class="dropdown user-dropdown">
                 <a
@@ -294,9 +278,7 @@
               </div>
               <a href="/cart" class="icon-btn cart-link" title="Cart">
                 <i class="ri-shopping-bag-line fs-5"></i>
-                <span class="count cart-count"
-                  ><%= user.cart ? user.cart.length : 0 %></span
-                >
+                <span class="count cart-count" data-count="<%= locals.cartCount || 0 %>"><%= locals.cartCount || 0 %></span>
               </a>
               <% } %>
             </div>
@@ -304,19 +286,35 @@
         </div>
       </div>
     </nav>
-    <!-- Navigation Ends -->
-
-    <!-- Include Bootstrap JS for dropdown functionality -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-      // Search functionality
       document.addEventListener("DOMContentLoaded", function () {
         const searchFields = document.querySelectorAll(".search-field");
         const desktopResults = document.getElementById("desktopSearchResults");
         const mobileResults = document.getElementById("mobileSearchResults");
+        const wishlistCountElement = document.querySelector('.wishlist-count');
+        const cartCountElement = document.querySelector('.cart-count');
         let debounceTimeout;
 
-        // Debounce function to limit API calls
+        // Fetch counts on page load
+        async function fetchCounts() {
+          try {
+            const response = await fetch('/counts');
+            if (!response.ok) throw new Error('Failed to fetch counts');
+            const { cartCount, wishlistCount } = await response.json();
+            cartCountElement.textContent = cartCount;
+            cartCountElement.dataset.count = cartCount;
+            wishlistCountElement.textContent = wishlistCount;
+            wishlistCountElement.dataset.count = wishlistCount;
+          } catch (error) {
+            console.error('Error fetching counts:', error);
+          }
+        }
+
+        if (wishlistCountElement && cartCountElement) {
+          fetchCounts();
+        }
+
         function debounce(func, wait) {
           return function (...args) {
             clearTimeout(debounceTimeout);
@@ -324,12 +322,9 @@
           };
         }
 
-        // Fetch search results
         async function fetchSearchResults(query) {
           try {
-            const response = await fetch(
-              `/search?q=${encodeURIComponent(query)}`
-            );
+            const response = await fetch(`/search?q=${encodeURIComponent(query)}`);
             if (!response.ok) throw new Error("Network response was not ok");
             const products = await response.json();
             return products;
@@ -339,12 +334,10 @@
           }
         }
 
-        // Render search results
         function renderSearchResults(products, resultsContainer) {
           resultsContainer.innerHTML = "";
           if (products.length === 0) {
-            resultsContainer.innerHTML =
-              '<div class="no-results">No products found.</div>';
+            resultsContainer.innerHTML = '<div class="no-results">No products found.</div>';
             resultsContainer.classList.add("show");
             return;
           }
@@ -354,9 +347,7 @@
             item.href = `/products/${product._id}`;
             item.classList.add("search-result-item");
             item.innerHTML = `
-              <img src="${
-                product.mainImage || "/api/placeholder/500/600"
-              }" alt="${product.title}" />
+              <img src="${product.mainImage || "/api/placeholder/500/600"}" alt="${product.title}" />
               <div>
                 <div class="title">${product.title}</div>
                 <div class="author">${product.author}</div>
@@ -367,42 +358,30 @@
           resultsContainer.classList.add("show");
         }
 
-        // Handle input events
         searchFields.forEach((field) => {
-          field.addEventListener(
-            "input",
-            debounce(async function () {
-              const query = this.value.trim();
-              const resultsContainer = this.closest(".mobile-search")
-                ? mobileResults
-                : desktopResults;
+          field.addEventListener("input", debounce(async function () {
+            const query = this.value.trim();
+            const resultsContainer = this.closest(".mobile-search") ? mobileResults : desktopResults;
 
-              if (query.length < 2) {
-                resultsContainer.classList.remove("show");
-                resultsContainer.innerHTML = "";
-                return;
-              }
+            if (query.length < 2) {
+              resultsContainer.classList.remove("show");
+              resultsContainer.innerHTML = "";
+              return;
+            }
 
-              const products = await fetchSearchResults(query);
-              renderSearchResults(products, resultsContainer);
-            }, 300)
-          );
+            const products = await fetchSearchResults(query);
+            renderSearchResults(products, resultsContainer);
+          }, 300));
 
-          // Show/hide results on focus/blur
           field.addEventListener("focus", function () {
-            const resultsContainer = this.closest(".mobile-search")
-              ? mobileResults
-              : desktopResults;
+            const resultsContainer = this.closest(".mobile-search") ? mobileResults : desktopResults;
             if (resultsContainer.innerHTML) {
               resultsContainer.classList.add("show");
             }
           });
 
           field.addEventListener("blur", function (e) {
-            const resultsContainer = this.closest(".mobile-search")
-              ? mobileResults
-              : desktopResults;
-            // Delay hiding to allow clicking on results
+            const resultsContainer = this.closest(".mobile-search") ? mobileResults : desktopResults;
             setTimeout(() => {
               if (!resultsContainer.contains(e.relatedTarget)) {
                 resultsContainer.classList.remove("show");
@@ -411,10 +390,9 @@
           });
         });
 
-        // Keep results visible when interacting with them
         [desktopResults, mobileResults].forEach((container) => {
           container.addEventListener("mousedown", function (e) {
-            e.preventDefault(); // Prevent blur from hiding results
+            e.preventDefault();
           });
         });
       });
