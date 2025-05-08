@@ -24,7 +24,9 @@ const { searchProducts } = require('../../controllers/userController/searchContr
 
 const profileController = require('../../controllers/userController/profile-controller');
 
-const addressController = require('../../controllers/userController/address-controller')
+const addressController = require('../../controllers/userController/address-controller');
+
+const checkoutController = require('../../controllers/userController/checkout-controller')
 
 // Public routes
 router.get("/", userController.loadHomePage);
@@ -95,5 +97,7 @@ router.post('/address', isAuthenticated, addressController.addAddress);
 router.put('/address/:id', isAuthenticated, addressController.updateAddress);
 router.delete('/address/:id', isAuthenticated, addressController.deleteAddress);
 router.patch('/address/:id/default', isAuthenticated, addressController.setDefaultAddress);
+
+router.get('/checkout',checkoutController.getCheckout)
 
 module.exports = router;
