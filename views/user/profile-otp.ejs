@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OTP Verification</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Add SweetAlert2 CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         :root {
             --primary-color: #3E4684;
@@ -152,7 +154,6 @@
             font-size: 14px;
         }
         
-        /* Animation for invalid OTP */
         @keyframes shake {
             0%, 100% { transform: translateX(0); }
             10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
@@ -163,7 +164,6 @@
             animation: shake 0.5s ease-in-out;
         }
         
-        /* Animation for successful OTP */
         .success-animation {
             position: relative;
             width: 80px;
@@ -215,7 +215,6 @@
             100% { box-shadow: inset 0px 0px 0px 30px var(--accent-color); }
         }
         
-        /* Loading spinner for the verify button */
         .spinner-border-sm {
             width: 1rem;
             height: 1rem;
@@ -227,7 +226,7 @@
                 border-radius: 0;
                 box-shadow: none;
                 height: 100vh;
-                display: flex;
+                display亲自flex;
                 flex-direction: column;
             }
             
@@ -298,12 +297,24 @@
             let timeLeft = 30;
             let timer;
             
+            // Toast configuration
+            const Toast = Swal.mixin({
+                toast: true,
+                position: "bottom-end",
+                showConfirmButton: false,
+                timer: 3000,
+                timerProgressBar: true,
+                didOpen: (toast) => {
+                    toast.addEventListener("mouseenter", Swal.stopTimer);
+                    toast.addEventListener("mouseleave", Swal.resumeTimer);
+                },
+            });
+
             // Start timer on page load
             startTimer();
             
             // Function to start the timer
             function startTimer() {
-                // Clear any existing timer
                 if (timer) {
                     clearInterval(timer);
                 }
@@ -326,7 +337,6 @@
             // Navigate between inputs and only allow numbers
             otpInputs.forEach((input, index) => {
                 input.addEventListener('keydown', (e) => {
-                    // Allow only numbers, backspace, arrow keys, tab
                     if (
                         !(
                             (e.key >= '0' && e.key <= '9') ||
@@ -342,44 +352,28 @@
                 });
                 
                 input.addEventListener('input', (e) => {
-                    // Clear error message when user starts typing
                     otpError.textContent = '';
-                    
-                    // Remove any non-numeric characters
                     input.value = input.value.replace(/[^0-9]/g, '');
-                    
-                    // Move to next input if current one is filled
                     if (input.value.length === 1 && index < otpInputs.length - 1) {
                         otpInputs[index + 1].focus();
                     }
-                    
-                    // Check if all inputs are filled to enable submit button
                     checkInputsCompletion();
                 });
                 
-                // Handle backspace - move to previous input field if current is empty
                 input.addEventListener('keydown', (e) => {
                     if (e.key === 'Backspace' && input.value === '' && index > 0) {
                         otpInputs[index - 1].focus();
                     }
                 });
                 
-                // Handle paste event (allow pasting 6-digit code)
                 input.addEventListener('paste', (e) => {
                     e.preventDefault();
-                    
                     const pasteData = e.clipboardData.getData('text').trim();
-                    
-                    // Check if pasted text is 6 digits
                     if (/^\d{6}$/.test(pasteData)) {
-                        // Distribute to inputs
                         for (let i = 0; i < otpInputs.length; i++) {
                             otpInputs[i].value = pasteData[i] || '';
                         }
-                        
-                        // Focus the last input
                         otpInputs[otpInputs.length - 1].focus();
-                        
                         checkInputsCompletion();
                     }
                 });
@@ -393,8 +387,6 @@
                         isComplete = false;
                     }
                 });
-                
-                // Enable/disable verify button based on completion
                 verifyBtn.disabled = !isComplete;
             }
             
@@ -402,38 +394,51 @@
             otpForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 
-                // Get OTP value
                 let otpValue = '';
                 otpInputs.forEach(input => {
                     otpValue += input.value;
                 });
                 
-                // Validate OTP format
                 if (!/^\d{6}$/.test(otpValue)) {
                     showError('Please enter a valid 6-digit code');
                     return;
                 }
                 
-                // Show loading state
                 verifyBtn.disabled = true;
                 verifyBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Verifying...';
                 
-                // Simulate API call with timeout (replace with actual API call)
-                setTimeout(() => {
-                    // For demo purposes, let's consider 123456 as a valid OTP
-                    if (otpValue === '123456') {
-                        // Successful verification
+                try {
+                    const response = await fetch('/verify-email-otp', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ otp: otpValue }),
+                    });
+                    const result = await response.json();
+                    
+                    verifyBtn.disabled = false;
+                    verifyBtn.textContent = 'Verify';
+                    
+                    if (result.success) {
                         handleSuccessfulVerification();
                     } else {
-                        // Failed verification
-                        handleFailedVerification();
+                        handleFailedVerification(result.message);
                     }
-                }, 1500);
+                } catch (error) {
+                    console.error('OTP verification error:', error);
+                    verifyBtn.disabled = false;
+                    verifyBtn.textContent = 'Verify';
+                    showError('Server error. Please try again.');
+                    otpInputsContainer.classList.add('shake');
+                    setTimeout(() => {
+                        otpInputsContainer.classList.remove('shake');
+                    }, 500);
+                }
             });
             
             // Handle successful verification
             function handleSuccessfulVerification() {
-                // Clear form and show success animation
                 otpForm.innerHTML = `
                     <div class="success-animation">
                         <svg class="checkmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">
@@ -447,37 +452,28 @@
                     </div>
                 `;
                 
-                // Redirect after a delay (replace with your redirect URL)
+                Toast.fire({
+                    icon: 'success',
+                    title: 'Email updated successfully',
+                });
+                
                 setTimeout(() => {
-                    window.location.href = '/dashboard';
+                    window.location.href = '/profile';
                 }, 2000);
             }
             
             // Handle failed verification
-            function handleFailedVerification() {
-                // Reset button state
-                verifyBtn.disabled = false;
-                verifyBtn.textContent = 'Verify';
-                
-                // Show error and apply shake animation
-                showError('Invalid verification code. Please try again.');
+            function handleFailedVerification(message) {
+                showError(message || 'Invalid verification code. Please try again.');
                 otpInputsContainer.classList.add('shake');
-                
-                // Remove shake animation after it completes
                 setTimeout(() => {
                     otpInputsContainer.classList.remove('shake');
                 }, 500);
-                
-                // Clear all inputs for retry
                 otpInputs.forEach(input => {
                     input.value = '';
                     input.classList.add('is-invalid');
                 });
-                
-                // Focus first input
                 otpInputs[0].focus();
-                
-                // Remove invalid class after a delay
                 setTimeout(() => {
                     otpInputs.forEach(input => {
                         input.classList.remove('is-invalid');
@@ -491,42 +487,49 @@
             }
             
             // Resend OTP button
-            resendBtn.addEventListener('click', () => {
-                // Show temporary message
+            resendBtn.addEventListener('click', async () => {
                 resendBtn.textContent = 'Sending...';
                 resendBtn.disabled = true;
                 
-                // Simulate sending new OTP
-                setTimeout(() => {
-                    // Reset inputs
-                    otpInputs.forEach(input => {
-                        input.value = '';
-                        input.classList.remove('is-invalid');
+                try {
+                    const response = await fetch('/resend-email-otp', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
                     });
+                    const result = await response.json();
                     
-                    // Focus first input
-                    otpInputs[0].focus();
-                    
-                    // Reset error message
-                    otpError.textContent = '';
-                    
-                    // Show success message
-                    const successMessage = document.createElement('div');
-                    successMessage.className = 'alert alert-success mt-3 text-center';
-                    successMessage.textContent = 'New verification code sent!';
-                    otpForm.insertBefore(successMessage, otpInputsContainer);
-                    
-                    // Remove success message after a delay
-                    setTimeout(() => {
-                        successMessage.remove();
-                    }, 3000);
-                    
-                    // Reset button text
                     resendBtn.textContent = 'Resend OTP';
                     
-                    // Restart timer
-                    startTimer();
-                }, 1500);
+                    if (result.success) {
+                        Toast.fire({
+                            icon: 'success',
+                            title: 'New OTP sent to your email',
+                        });
+                        otpInputs.forEach(input => {
+                            input.value = '';
+                            input.classList.remove('is-invalid');
+                        });
+                        otpInputs[0].focus();
+                        otpError.textContent = '';
+                        startTimer();
+                    } else {
+                        Toast.fire({
+                            icon: 'error',
+                            title: result.message || 'Failed to resend OTP',
+                        });
+                        resendBtn.disabled = false;
+                    }
+                } catch (error) {
+                    console.error('Resend OTP error:', error);
+                    resendBtn.textContent = 'Resend OTP';
+                    resendBtn.disabled = false;
+                    Toast.fire({
+                        icon: 'error',
+                        title: 'Server error. Please try again.',
+                    });
+                }
             });
         });
     </script>

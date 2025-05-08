@@ -113,9 +113,7 @@
                     readonly
                   />
                 </div>
-                <small class="text-muted"
-                  >Email cannot be edited directly</small
-                >
+                <small class="text-muted">Email cannot be edited directly</small>
               </div>
 
               <div class="col-md-6 mb-3">
@@ -241,6 +239,8 @@
   rel="stylesheet"
   href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css"
 />
+<!-- Add SweetAlert2 CDN -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <style>
   /* Custom styling */
@@ -348,14 +348,21 @@
 
 <script>
   // Validation helper functions
-  function setInvalid(element) {
+  function setInvalid(element, errorElement, message) {
     element.classList.add("is-invalid");
     element.classList.remove("is-valid");
+    errorElement.textContent = message;
   }
 
-  function setValid(element) {
+  function setValid(element, errorElement) {
     element.classList.add("is-valid");
     element.classList.remove("is-invalid");
+    errorElement.textContent = "";
+  }
+
+  function clearValidation(element, errorElement) {
+    element.classList.remove("is-invalid", "is-valid");
+    errorElement.textContent = "";
   }
 
   // Email validation function
@@ -363,7 +370,6 @@
     const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     if (!emailRegex.test(email)) return false;
 
-    // Check for disposable email domains
     const disposableDomains = [
       "mailinator.com",
       "tempmail.com",
@@ -381,7 +387,7 @@
     const trimmedName = fullName.trim();
     if (trimmedName.length < 3) return false;
 
-    const nameWords = trimmedName.split(" ").filter((word) => word.length > 0);
+    const nameWords = trimmedName.split(/\s+/).filter((word) => word.length > 0);
     if (nameWords.length < 2) return false;
 
     return /^[A-Za-z\s'-]+$/.test(trimmedName);
@@ -389,18 +395,14 @@
 
   // Phone Number validation
   function validatePhoneNumber(phoneNumber) {
-    // Remove any non-digit characters
+    if (!phoneNumber) return true; // Phone is optional
     const cleanPhone = phoneNumber.replace(/\D/g, "");
-
-    // Check length (10 digits standard or 11-15 with country code)
     if (
       cleanPhone.length !== 10 &&
       (cleanPhone.length < 11 || cleanPhone.length > 15)
     ) {
       return false;
     }
-
-    // Check for obviously fake patterns
     if (
       /^(.)\1+$/.test(cleanPhone) ||
       /^0{10}$/.test(cleanPhone) ||
@@ -408,301 +410,273 @@
     ) {
       return false;
     }
-
     return true;
   }
+
+  // Toast configuration
+  const Toast = Swal.mixin({
+    toast: true,
+    position: "bottom-end",
+    showConfirmButton: false,
+    timer: 3000,
+    timerProgressBar: true,
+    didOpen: (toast) => {
+      toast.addEventListener("mouseenter", Swal.stopTimer);
+      toast.addEventListener("mouseleave", Swal.resumeTimer);
+    },
+  });
 
   // Profile Image Upload
   document
     .getElementById("profileImageUpload")
-    .addEventListener("change", function (event) {
+    .addEventListener("change", async function (event) {
       const file = event.target.files[0];
-      if (file) {
-        // Validate file is image
-        if (!file.type.startsWith("image/")) {
-          alert("Please select an image file");
-          return;
+      if (!file) return;
+
+      if (!file.type.startsWith("image/")) {
+        Toast.fire({
+          icon: "error",
+          title: "Please select an image file",
+        });
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("profileImage", file);
+
+      try {
+        const response = await fetch("/profile/image", {
+          method: "POST",
+          body: formData,
+        });
+        const result = await response.json();
+
+        if (result.success) {
+          document.getElementById("profileImage").src = result.profileImage;
+          Toast.fire({
+            icon: "success",
+            title: "Profile image uploaded successfully",
+          });
+        } else {
+          Toast.fire({
+            icon: "error",
+            title: result.message || "Failed to upload image",
+          });
         }
-
-        const reader = new FileReader();
-        reader.onload = function (e) {
-          // Display the image preview
-          document.getElementById("profileImage").src = e.target.result;
-
-          // Here you would typically upload the image to server
-          // For demonstration, we're just showing a success message
-          // In a real implementation, add AJAX to upload file to server
-          setTimeout(() => {
-            const toast = document.createElement("div");
-            toast.className = "position-fixed bottom-0 end-0 p-3";
-            toast.style.zIndex = "11";
-            toast.innerHTML = `
-            <div class="toast show" role="alert" aria-live="assertive" aria-atomic="true">
-              <div class="toast-header">
-                <strong class="me-auto">Profile Updated</strong>
-                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
-              </div>
-              <div class="toast-body">
-                Profile image uploaded successfully!
-              </div>
-            </div>
-          `;
-            document.body.appendChild(toast);
-
-            // Remove toast after 3 seconds
-            setTimeout(() => {
-              document.body.removeChild(toast);
-            }, 3000);
-          }, 500);
-        };
-        reader.readAsDataURL(file);
+      } catch (error) {
+        console.error("Image upload error:", error);
+        Toast.fire({
+          icon: "error",
+          title: "Server error. Please try again.",
+        });
       }
     });
 
   // Profile form validation
-  document.getElementById("fullName").addEventListener("input", function () {
-    const fullName = this.value.trim();
-    const fullNameError = document.getElementById("fullNameError");
+  const fullNameInput = document.getElementById("fullName");
+  const phoneInput = document.getElementById("phone");
+  const fullNameError = document.getElementById("fullNameError");
+  const phoneError = document.getElementById("phoneError");
 
-    if (fullName === "") {
-      fullNameError.textContent = "";
-      this.classList.remove("is-invalid");
-      this.classList.remove("is-valid");
+  fullNameInput.addEventListener("input", function () {
+    const fullName = this.value.trim();
+    if (!fullName) {
+      clearValidation(this, fullNameError);
     } else if (!validateFullName(fullName)) {
-      const nameWords = fullName.split(" ").filter((word) => word.length > 0);
+      const nameWords = fullName.split(/\s+/).filter((word) => word.length > 0);
       if (nameWords.length < 2) {
-        fullNameError.textContent = "Please provide both first and last name.";
+        setInvalid(this, fullNameError, "Please provide both first and last name");
       } else if (!/^[A-Za-z\s'-]+$/.test(fullName)) {
-        fullNameError.textContent = "Name contains invalid characters.";
+        setInvalid(this, fullNameError, "Name contains invalid characters");
       } else {
-        fullNameError.textContent = "Full name must be at least 3 characters.";
+        setInvalid(this, fullNameError, "Full name must be at least 3 characters");
       }
-      setInvalid(this);
     } else {
-      fullNameError.textContent = "";
-      setValid(this);
+      setValid(this, fullNameError);
     }
   });
 
-  document.getElementById("phone").addEventListener("input", function () {
+  phoneInput.addEventListener("input", function () {
     const phoneNumber = this.value.trim();
-    const phoneError = document.getElementById("phoneError");
-
-    if (phoneNumber === "") {
-      phoneError.textContent = "";
-      this.classList.remove("is-invalid");
-      this.classList.remove("is-valid");
+    if (!phoneNumber) {
+      clearValidation(this, phoneError);
     } else if (!validatePhoneNumber(phoneNumber)) {
       const cleanPhone = phoneNumber.replace(/\D/g, "");
-
       if (
         /^(.)\1+$/.test(cleanPhone) ||
         /^0{10}$/.test(cleanPhone) ||
         /^1{10}$/.test(cleanPhone)
       ) {
-        phoneError.textContent = "Please enter a valid phone number.";
+        setInvalid(this, phoneError, "Please enter a valid phone number");
       } else {
-        phoneError.textContent =
-          "Phone number must be 10 digits or include a valid country code.";
+        setInvalid(
+          this,
+          phoneError,
+          "Phone number must be 10 digits or include a valid country code"
+        );
       }
-      setInvalid(this);
     } else {
-      phoneError.textContent = "";
-      setValid(this);
+      setValid(this, phoneError);
     }
   });
 
   // Profile form submission
-  document
-    .getElementById("profileForm")
-    .addEventListener("submit", async function (event) {
-      event.preventDefault();
+  document.getElementById("profileForm").addEventListener("submit", async function (event) {
+    event.preventDefault();
 
-      const fullName = document.getElementById("fullName").value.trim();
-      const phone = document.getElementById("phone").value.trim();
+    const fullName = fullNameInput.value.trim();
+    const phone = phoneInput.value.trim();
+    let isValid = true;
 
-      let isValid = true;
-
-      // Validate fullName
-      if (!fullName || !validateFullName(fullName)) {
-        const nameWords = fullName.split(" ").filter((word) => word.length > 0);
-        if (nameWords.length < 2) {
-          document.getElementById("fullNameError").textContent =
-            "Please provide both first and last name.";
-        } else {
-          document.getElementById("fullNameError").textContent =
-            "Full name must be at least 3 characters with valid characters.";
-        }
-        setInvalid(document.getElementById("fullName"));
-        isValid = false;
+    // Validate fullName
+    if (!fullName || !validateFullName(fullName)) {
+      const nameWords = fullName.split(/\s+/).filter((word) => word.length > 0);
+      if (nameWords.length < 2) {
+        setInvalid(fullNameInput, fullNameError, "Please provide both first and last name");
+      } else {
+        setInvalid(
+          fullNameInput,
+          fullNameError,
+          "Full name must be at least 3 characters with valid characters"
+        );
       }
+      isValid = false;
+    }
 
-      // Validate phone
-      if (!phone || !validatePhoneNumber(phone)) {
-        document.getElementById("phoneError").textContent =
-          "Valid phone number is required.";
-        setInvalid(document.getElementById("phone"));
-        isValid = false;
+    // Validate phone
+    if (phone && !validatePhoneNumber(phone)) {
+      setInvalid(phoneInput, phoneError, "Valid phone number is required");
+      isValid = false;
+    }
+
+    if (!isValid) return;
+
+    const submitButton = this.querySelector('button[type="submit"]');
+    const originalText = submitButton.innerHTML;
+    submitButton.disabled = true;
+    submitButton.innerHTML =
+      '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Saving...';
+
+    try {
+      const response = await fetch("/profile", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ fullName, phone }),
+      });
+      const result = await response.json();
+
+      submitButton.disabled = false;
+      submitButton.innerHTML = originalText;
+
+      if (result.success) {
+        // Update UI immediately
+        document.querySelector(".card-body h5").textContent = result.user.fullName;
+        fullNameInput.value = result.user.fullName;
+        phoneInput.value = result.user.phone || "";
+        Toast.fire({
+          icon: "success",
+          title: "Profile updated successfully",
+        });
+      } else {
+        Toast.fire({
+          icon: "error",
+          title: result.message || "Failed to update profile",
+        });
       }
+    } catch (error) {
+      console.error("Profile update error:", error);
+      submitButton.disabled = false;
+      submitButton.innerHTML = originalText;
+      Toast.fire({
+        icon: "error",
+        title: "Server error. Please try again.",
+      });
+    }
+  });
 
-      if (isValid) {
-        // Show loading state on button
-        const submitButton = this.querySelector('button[type="submit"]');
-        const originalText = submitButton.innerHTML;
-        submitButton.disabled = true;
-        submitButton.innerHTML =
-          '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Saving...';
+  // Email update form validation
+  const newEmailInput = document.getElementById("newEmail");
+  const newEmailError = document.getElementById("newEmailError");
+  const currentEmail = document.getElementById("currentEmail").value.trim();
 
-        // Simulate API call delay
-        setTimeout(() => {
-          // Reset button state
-          submitButton.disabled = false;
-          submitButton.innerHTML = originalText;
-
-          // Show success message
-          const toast = document.createElement("div");
-          toast.className = "position-fixed bottom-0 end-0 p-3";
-          toast.style.zIndex = "11";
-          toast.innerHTML = `
-            <div class="toast show" role="alert" aria-live="assertive" aria-atomic="true">
-              <div class="toast-header">
-                <strong class="me-auto">Profile Updated</strong>
-                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
-              </div>
-              <div class="toast-body">
-                Your profile has been updated successfully!
-              </div>
-            </div>
-          `;
-          document.body.appendChild(toast);
-
-          // Remove toast after 3 seconds
-          setTimeout(() => {
-            document.body.removeChild(toast);
-          }, 3000);
-        }, 1000);
-
-        // In a real implementation, you would submit the form data here
-        // this.submit();
-      }
-    });
-
-  // New Email validation
-  document.getElementById("newEmail").addEventListener("input", function () {
+  newEmailInput.addEventListener("input", function () {
     const email = this.value.trim();
-    const newEmailError = document.getElementById("newEmailError");
-    const currentEmail = document.getElementById("currentEmail").value.trim();
-
-    if (email === "") {
-      newEmailError.textContent = "";
-      this.classList.remove("is-invalid");
-      this.classList.remove("is-valid");
-    } else if (email === currentEmail) {
-      newEmailError.textContent =
-        "New email must be different from current email.";
-      setInvalid(this);
+    if (!email) {
+      clearValidation(this, newEmailError);
+    } else if (email.toLowerCase() === currentEmail.toLowerCase()) {
+      setInvalid(this, newEmailError, "New email must be different from current email");
     } else if (!validateEmail(email)) {
       const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
       if (!emailRegex.test(email)) {
-        newEmailError.textContent = "Please enter a valid email address.";
+        setInvalid(this, newEmailError, "Please enter a valid email address");
       } else {
-        newEmailError.textContent =
-          "Please use a non-disposable email address.";
+        setInvalid(this, newEmailError, "Please use a non-disposable email address");
       }
-      setInvalid(this);
     } else {
-      newEmailError.textContent = "";
-      setValid(this);
+      setValid(this, newEmailError);
     }
   });
 
   // Email update form submission
-  document
-    .getElementById("emailUpdateForm")
-    .addEventListener("submit", async function (event) {
-      event.preventDefault();
+  document.getElementById("emailUpdateForm").addEventListener("submit", async function (event) {
+    event.preventDefault();
 
-      const email = document.getElementById("newEmail").value.trim();
-      const currentEmail = document.getElementById("currentEmail").value.trim();
-      let isValid = true;
+    const email = newEmailInput.value.trim();
+    let isValid = true;
 
-      // Validate email
-      if (!email || !validateEmail(email)) {
-        document.getElementById("newEmailError").textContent =
-          "Valid email is required (non-disposable).";
-        setInvalid(document.getElementById("newEmail"));
-        isValid = false;
-      } else if (email === currentEmail) {
-        document.getElementById("newEmailError").textContent =
-          "New email must be different from current email.";
-        setInvalid(document.getElementById("newEmail"));
-        isValid = false;
+    if (!email || !validateEmail(email)) {
+      setInvalid(newEmailInput, newEmailError, "Valid email is required (non-disposable)");
+      isValid = false;
+    } else if (email.toLowerCase() === currentEmail.toLowerCase()) {
+      setInvalid(newEmailInput, newEmailError, "New email must be different from current email");
+      isValid = false;
+    }
+
+    if (!isValid) return;
+
+    const submitButton = document.getElementById("emailUpdateSubmitBtn");
+    const originalText = submitButton.innerHTML;
+    submitButton.disabled = true;
+    submitButton.innerHTML =
+      '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Sending...';
+
+    try {
+      const response = await fetch("/request-email-update", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email }),
+      });
+      const result = await response.json();
+
+      submitButton.disabled = false;
+      submitButton.innerHTML = originalText;
+
+      if (result.success) {
+        bootstrap.Modal.getInstance(document.getElementById("emailUpdateModal")).hide();
+        Toast.fire({
+          icon: "success",
+          title: "OTP sent to your new email",
+        });
+        setTimeout(() => {
+          window.location.href = "/verify-email-otp";
+        }, 1000);
+      } else {
+        setInvalid(newEmailInput, newEmailError, result.message || "Failed to send OTP");
       }
-
-      if (isValid) {
-        // Show loading state
-        const submitButton = document.getElementById("emailUpdateSubmitBtn");
-        submitButton.disabled = true;
-        submitButton.innerHTML =
-          '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Sending...';
-
-        try {
-          const response = await fetch("/request-email-update", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ email }),
-          });
-
-          const result = await response.json();
-          submitButton.disabled = false;
-          submitButton.innerHTML = '<i class="bi bi-send me-2"></i>Send OTP';
-
-          if (result.success) {
-            // Close modal
-            const modal = bootstrap.Modal.getInstance(
-              document.getElementById("emailUpdateModal")
-            );
-            modal.hide();
-
-            // Show success message
-            Swal.fire({
-              icon: "success",
-              title: "OTP Sent",
-              text: "A verification code has been sent to your new email. Please check your inbox.",
-              confirmButtonColor: "#3085d6",
-              confirmButtonText: "Verify OTP",
-            }).then(() => {
-              window.location.href = "/verify-email-otp";
-            });
-          } else {
-            // Handle errors
-            if (result.errors && result.errors.email) {
-              document.getElementById("newEmailError").textContent =
-                result.errors.email;
-              setInvalid(document.getElementById("newEmail"));
-            } else {
-              Swal.fire({
-                icon: "error",
-                title: "Error",
-                text: result.message || "Something went wrong!",
-              });
-            }
-          }
-        } catch (err) {
-          console.log("Email update error:", err);
-          submitButton.disabled = false;
-          submitButton.innerHTML = '<i class="bi bi-send me-2"></i>Send OTP';
-
-          Swal.fire({
-            icon: "error",
-            title: "Error",
-            text: "Server not responding. Try again later.",
-          });
-        }
-      }
-    });
+    } catch (error) {
+      console.error("Email update error:", error);
+      submitButton.disabled = false;
+      submitButton.innerHTML = originalText;
+      Toast.fire({
+        icon: "error",
+        title: "Server error. Please try again.",
+      });
+    }
+  });
 </script>
 
 <%- include("../partials/user/footer") %>

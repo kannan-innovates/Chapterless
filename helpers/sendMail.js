@@ -4,10 +4,10 @@ const nodemailer = require("nodemailer");
 const sendOtpEmail = async (email, name, otp, subject, purpose = "signup") => {
   const transporter = nodemailer.createTransport({
     service: "gmail",
-      auth: {
-        user: process.env.EMAIL,
-        pass: process.env.EMAIL_PASS,
-      }
+    auth: {
+      user: process.env.EMAIL,
+      pass: process.env.EMAIL_PASS,
+    },
   });
 
   let messageText;
@@ -18,6 +18,9 @@ const sendOtpEmail = async (email, name, otp, subject, purpose = "signup") => {
       break;
     case "forgot-password":
       messageText = `Hello ${name},\n\nYour OTP to reset your Chapterless password is: ${otp}.\n\nThanks,\nTeam Chapterless`;
+      break;
+    case "email-update":
+      messageText = `Hello ${name},\n\nYour OTP to update your Chapterless email is: ${otp}.\n\nThanks,\nTeam Chapterless`;
       break;
     default:
       messageText = `Hello ${name},\n\nYour OTP for Chapterless signup is: ${otp}\n\nThanks,\nTeam Chapterless`;

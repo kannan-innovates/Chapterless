@@ -22,7 +22,7 @@ const { isAuthenticated, isNotAuthenticated, preventBackButtonCache } = require(
 
 const { searchProducts } = require('../../controllers/userController/searchController');
 
-const profileController = require('../../controllers/userController/profile-controller')
+const profileController = require('../../controllers/userController/profile-controller');
 
 // Public routes
 router.get("/", userController.loadHomePage);
@@ -78,7 +78,13 @@ router.post('/wishlist/clear', isAuthenticated, wishlistController.clearWishlist
 // Search route
 router.get('/search', searchProducts);
 
-//Profile Routes
-router.get('/profile',profileController.getProfile)
+// Profile Routes
+router.get('/profile', isAuthenticated, profileController.getProfile);
+router.patch('/profile', isAuthenticated, profileController.updateProfile);
+router.post('/profile/image', isAuthenticated, profileController.uploadProfileImage);
+router.post('/request-email-update', isAuthenticated, profileController.requestEmailUpdate);
+router.get('/verify-email-otp', isAuthenticated, preventBackButtonCache, (req, res) => res.render('profile-otp'));
+router.post('/verify-email-otp', isAuthenticated, profileController.verifyEmailOtp);
+router.post('/resend-email-otp', isAuthenticated, profileController.resendEmailOtp);
 
 module.exports = router;

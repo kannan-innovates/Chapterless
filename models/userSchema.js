@@ -28,7 +28,10 @@ const userSchema = new mongoose.Schema(
       type: String,
       unique: true,
     },
-
+    profileImage: {
+      type: String,
+      required: false,
+    },
     isBlocked: {
       type: Boolean,
       default: false,
@@ -41,12 +44,10 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
-
     wallet: {
       type: Number,
       default: 0,
     },
-
     orderHistory: [
       {
         type: mongoose.Schema.Types.ObjectId,
