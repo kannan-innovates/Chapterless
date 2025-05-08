@@ -77,7 +77,7 @@
                 </div>
               </div>
             </div>
-            <% }); %> <% } else { %>a
+            <% }); %> <% } else { %>
             <div class="col-12 text-center py-5">
               <div class="mb-4">
                 <i
@@ -608,6 +608,8 @@
   function resetForm() {
     addressForm.reset();
     addressIdInput.value = "";
+    const isDefaultCheckbox = document.getElementById("isDefault");
+    isDefaultCheckbox.disabled = false; // Re-enable the checkbox
 
     // Clear all validations
     clearValidation(fullNameInput, fullNameError);
@@ -670,8 +672,6 @@
     }
 
     return isValid;
-    streetError, "Complete address is required";
-    isValid = false;
   }
 
   // Get form data
@@ -834,8 +834,16 @@
     stateInput.value = address.state;
     streetInput.value = address.street;
     document.getElementById("landmark").value = address.landmark || "";
-    document.getElementById("isDefault").checked = address.isDefault;
+    const isDefaultCheckbox = document.getElementById("isDefault");
+    isDefaultCheckbox.checked = address.isDefault;
     addressIdInput.value = address._id;
+
+    // If this is the default address, disable the checkbox to prevent unchecking
+    if (address.isDefault) {
+      isDefaultCheckbox.disabled = true;
+    } else {
+      isDefaultCheckbox.disabled = false;
+    }
 
     // Trigger validation
     fullNameInput.dispatchEvent(new Event("input"));
@@ -928,7 +936,7 @@
       modal.hide();
       resetForm();
 
-      // If the address was set as default, refresh the page to update all cards
+      // If the address was set as default (or remains default), refresh the page to update all cards
       if (formData.isDefault) {
         setTimeout(() => {
           location.reload();
