@@ -62,6 +62,10 @@ app.use("/admin",adminRoute)
 
 const PORT = process.env.PORT || 3001;
 
+// app.use((req,res) =>{
+//   res.redirect('/pageNotFound')
+// })
+
 app.listen(PORT, () => {
   console.log(`🚀 Server running at http://localhost:${PORT}`);
 });
