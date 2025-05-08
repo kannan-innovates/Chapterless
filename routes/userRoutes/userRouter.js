@@ -24,6 +24,8 @@ const { searchProducts } = require('../../controllers/userController/searchContr
 
 const profileController = require('../../controllers/userController/profile-controller');
 
+const addressController = require('../../controllers/userController/address-controller')
+
 // Public routes
 router.get("/", userController.loadHomePage);
 router.get("/pageNotFound", userController.pageNotFound);
@@ -86,5 +88,7 @@ router.post('/request-email-update', isAuthenticated, profileController.requestE
 router.get('/verify-email-otp', isAuthenticated, preventBackButtonCache, (req, res) => res.render('profile-otp'));
 router.post('/verify-email-otp', isAuthenticated, profileController.verifyEmailOtp);
 router.post('/resend-email-otp', isAuthenticated, profileController.resendEmailOtp);
+
+router.get('/address',addressController.getAddress )
 
 module.exports = router;

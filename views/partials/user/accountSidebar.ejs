@@ -1,0 +1,58 @@
+<!-- Sidebar -->
+<div class="col-lg-3 profile-sidebar">
+     <div class="card border-0 shadow-sm mb-4">
+       <div class="card-body p-4 text-center">
+         <div class="position-relative mx-auto mb-3">
+           <div class="profile-image-container">
+             <img
+               id="profileImage"
+               src="<%= user.profileImage || '/api/placeholder/120/120' %>"
+               alt="Profile"
+               class="rounded-circle img-thumbnail"
+               onerror="this.src='/api/placeholder/120/120'; this.onerror=null;"
+             />
+             <div class="profile-image-overlay">
+               <label for="profileImageUpload" class="upload-icon">
+                 <i class="bi bi-camera-fill"></i>
+               </label>
+               <input
+                 type="file"
+                 id="profileImageUpload"
+                 accept="image/*"
+                 class="d-none"
+               />
+             </div>
+           </div>
+         </div>
+         <h5 class="fw-bold mb-1"><%= user.fullName %></h5>
+         <p class="text-muted small mb-0"><%= user.email %></p>
+       </div>
+     </div>
+
+     <div class="card border-0 shadow-sm">
+       <div class="list-group list-group-flush rounded-0">
+         <div class="bg-dark text-white p-3 fw-medium">Manage My Account</div>
+         <a
+           href="/profile"
+           class="list-group-item list-group-item-action primary-bg"
+         >
+           <i class="bi bi-person me-2"></i> My Profile
+         </a>
+         <a href="/address" class="list-group-item list-group-item-action">
+           <i class="bi bi-geo-alt me-2"></i> Address Book
+         </a>
+         <a href="/orders" class="list-group-item list-group-item-action">
+           <i class="bi bi-box me-2"></i> My Orders
+         </a>
+         <a href="/wishlist" class="list-group-item list-group-item-action">
+           <i class="bi bi-heart me-2"></i> My Wishlist
+         </a>
+         <a href="/wallet" class="list-group-item list-group-item-action">
+           <i class="bi bi-wallet2 me-2"></i> Wallet
+         </a>
+         <a href="/coupons" class="list-group-item list-group-item-action">
+           <i class="bi bi-ticket-perforated me-2"></i> Coupons
+         </a>
+       </div>
+     </div>
+   </div>
