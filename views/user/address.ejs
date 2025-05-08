@@ -5,7 +5,7 @@
   <nav aria-label="breadcrumb" class="mb-4">
     <ol class="breadcrumb">
       <li class="breadcrumb-item"><a href="/">Home</a></li>
-      <li class="breadcrumb-item"><a href="/user/dashboard">My Account</a></li>
+      <li class="breadcrumb-item"><a href="/profile">My Account</a></li>
       <li class="breadcrumb-item active" aria-current="page">Address Book</li>
     </ol>
   </nav>
@@ -16,84 +16,88 @@
     <!-- Main Content -->
     <div class="col-lg-9">
       <div class="card border-0 shadow-sm mb-4">
-        <div class="card-header bg-white p-4 border-0 d-flex justify-content-between align-items-center">
+        <div
+          class="card-header bg-white p-4 border-0 d-flex justify-content-between align-items-center"
+        >
           <h4 class="mb-0">My Addresses</h4>
-          <button class="btn btn-dark" data-bs-toggle="modal" data-bs-target="#addAddressModal">
+          <button
+            class="btn btn-dark"
+            data-bs-toggle="modal"
+            data-bs-target="#addAddressModal"
+          >
             <i class="bi bi-plus-lg me-2"></i>Add New Address
           </button>
         </div>
         <div class="card-body p-4">
           <!-- Address List -->
-          <div class="row g-4">
-            <!-- Default Address -->
-            <div class="col-md-6">
+          <div class="row g-4" id="addressContainer">
+            <% if (addresses && addresses.length > 0) { %> <%
+            addresses.forEach(address => { %>
+            <div class="col-md-6" data-address-id="<%= address._id %>">
               <div class="card h-100 border shadow-sm">
                 <div class="card-body position-relative">
-                  <span class="badge bg-success position-absolute end-0 top-0 mt-3 me-3">Default</span>
-                  <h5 class="mb-3">John Doe</h5>
-                  <p class="mb-1">123 Main Street, Near Central Park</p>
-                  <p class="mb-1">Cityville, State - 123456</p>
-                  <p class="mb-1">Landmark: Shopping Mall</p>
-                  <p class="mb-3">Phone: +91 98765 43210</p>
-                  <div class="d-flex mt-auto">
-                    <button class="btn btn-sm btn-outline-dark me-2">
-                      <i class="bi bi-pencil me-1"></i>Edit
-                    </button>
-                    <button class="btn btn-sm btn-outline-danger">
-                      <i class="bi bi-trash me-1"></i>Delete
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            <!-- Regular Address -->
-            <div class="col-md-6">
-              <div class="card h-100 border shadow-sm">
-                <div class="card-body">
-                  <h5 class="mb-3">Jane Smith</h5>
-                  <p class="mb-1">456 Park Avenue, Near City Hospital</p>
-                  <p class="mb-1">Townsville, State - 654321</p>
-                  <p class="mb-1">Landmark: Coffee Shop</p>
-                  <p class="mb-3">Phone: +91 87654 32109</p>
+                  <% if (address.isDefault) { %>
+                  <span
+                    class="badge bg-success position-absolute end-0 top-0 mt-3 me-3"
+                    >Default</span
+                  >
+                  <% } %>
+                  <h5 class="mb-3"><%= address.fullName %></h5>
+                  <p class="mb-1"><%= address.street %></p>
+                  <p class="mb-1">
+                    <%= address.district %>, <%= address.state %> - <%=
+                    address.pincode %>
+                  </p>
+                  <% if (address.landmark) { %>
+                  <p class="mb-1">Landmark: <%= address.landmark %></p>
+                  <% } %>
+                  <p class="mb-3">Phone: <%= address.phone %></p>
                   <div class="d-flex mt-auto gap-2">
-                    <button class="btn btn-sm btn-outline-dark">
+                    <button
+                      class="btn btn-sm btn-outline-dark edit-address-btn"
+                      data-address-id="<%= address._id %>"
+                    >
                       <i class="bi bi-pencil me-1"></i>Edit
                     </button>
-                    <button class="btn btn-sm btn-outline-danger">
+                    <button
+                      class="btn btn-sm btn-outline-danger delete-address-btn"
+                      data-address-id="<%= address._id %>"
+                    >
                       <i class="bi bi-trash me-1"></i>Delete
                     </button>
-                    <button class="btn btn-sm btn-outline-primary">
+                    <% if (!address.isDefault) { %>
+                    <button
+                      class="btn btn-sm btn-outline-primary set-default-btn"
+                      data-address-id="<%= address._id %>"
+                    >
                       <i class="bi bi-check-circle me-1"></i>Set as Default
                     </button>
+                    <% } %>
                   </div>
                 </div>
               </div>
             </div>
-            
-            <!-- Another Regular Address -->
-            <div class="col-md-6">
-              <div class="card h-100 border shadow-sm">
-                <div class="card-body">
-                  <h5 class="mb-3">Robert Johnson</h5>
-                  <p class="mb-1">789 Broadway Street, Near Public Library</p>
-                  <p class="mb-1">Villagetown, State - 987654</p>
-                  <p class="mb-1">Landmark: Gas Station</p>
-                  <p class="mb-3">Phone: +91 76543 21098</p>
-                  <div class="d-flex mt-auto gap-2">
-                    <button class="btn btn-sm btn-outline-dark">
-                      <i class="bi bi-pencil me-1"></i>Edit
-                    </button>
-                    <button class="btn btn-sm btn-outline-danger">
-                      <i class="bi bi-trash me-1"></i>Delete
-                    </button>
-                    <button class="btn btn-sm btn-outline-primary">
-                      <i class="bi bi-check-circle me-1"></i>Set as Default
-                    </button>
-                  </div>
-                </div>
+            <% }); %> <% } else { %>a
+            <div class="col-12 text-center py-5">
+              <div class="mb-4">
+                <i
+                  class="bi bi-geo-alt-fill text-muted"
+                  style="font-size: 3rem"
+                ></i>
               </div>
+              <h5 class="text-muted mb-3">No addresses found</h5>
+              <p class="text-muted mb-4">
+                You haven't added any addresses yet.
+              </p>
+              <button
+                class="btn btn-dark"
+                data-bs-toggle="modal"
+                data-bs-target="#addAddressModal"
+              >
+                <i class="bi bi-plus-lg me-2"></i>Add New Address
+              </button>
             </div>
+            <% } %>
           </div>
         </div>
       </div>
@@ -102,15 +106,27 @@
 </div>
 
 <!-- Add Address Modal -->
-<div class="modal fade" id="addAddressModal" tabindex="-1" aria-labelledby="addAddressModalLabel" aria-hidden="true">
+<div
+  class="modal fade"
+  id="addAddressModal"
+  tabindex="-1"
+  aria-labelledby="addAddressModalLabel"
+  aria-hidden="true"
+>
   <div class="modal-dialog modal-dialog-centered modal-lg">
     <div class="modal-content">
       <div class="modal-header border-0">
         <h5 class="modal-title" id="addAddressModalLabel">Add New Address</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Close"
+        ></button>
       </div>
       <div class="modal-body">
         <form id="addressForm">
+          <input type="hidden" id="addressId" value="" />
           <div class="row g-3">
             <div class="col-md-6">
               <label for="fullName" class="form-label">Full Name</label>
@@ -118,40 +134,66 @@
                 <span class="input-group-text bg-light border-end-0">
                   <i class="bi bi-person"></i>
                 </span>
-                <input type="text" class="form-control border-start-0" id="fullName" name="fullName" placeholder="Enter full name" required>
+                <input
+                  type="text"
+                  class="form-control border-start-0"
+                  id="fullName"
+                  name="fullName"
+                  placeholder="Enter full name"
+                  required
+                />
               </div>
               <div id="fullNameError" class="text-danger small mt-1"></div>
             </div>
-            
+
             <div class="col-md-6">
               <label for="phone" class="form-label">Phone Number</label>
               <div class="input-group">
                 <span class="input-group-text bg-light border-end-0">
                   <i class="bi bi-telephone"></i>
                 </span>
-                <input type="tel" class="form-control border-start-0" id="phone" name="phone" placeholder="+91 12345 67890" required>
+                <input
+                  type="tel"
+                  class="form-control border-start-0"
+                  id="phone"
+                  name="phone"
+                  placeholder="+91 12345 67890"
+                  required
+                />
               </div>
               <div id="phoneError" class="text-danger small mt-1"></div>
             </div>
-            
+
             <div class="col-md-6">
               <label for="pincode" class="form-label">PIN Code</label>
               <div class="input-group">
                 <span class="input-group-text bg-light border-end-0">
                   <i class="bi bi-geo"></i>
                 </span>
-                <input type="text" class="form-control border-start-0" id="pincode" name="pincode" placeholder="Enter 6-digit pincode" required>
+                <input
+                  type="text"
+                  class="form-control border-start-0"
+                  id="pincode"
+                  name="pincode"
+                  placeholder="Enter 6-digit pincode"
+                  required
+                />
               </div>
               <div id="pincodeError" class="text-danger small mt-1"></div>
             </div>
-            
+
             <div class="col-md-6">
               <label for="state" class="form-label">State</label>
               <div class="input-group">
                 <span class="input-group-text bg-light border-end-0">
                   <i class="bi bi-geo-alt"></i>
                 </span>
-                <select class="form-select border-start-0" id="state" name="state" required>
+                <select
+                  class="form-select border-start-0"
+                  id="state"
+                  name="state"
+                  required
+                >
                   <option value="" selected disabled>Select your state</option>
                   <option value="Andhra Pradesh">Andhra Pradesh</option>
                   <option value="Arunachal Pradesh">Arunachal Pradesh</option>
@@ -185,42 +227,69 @@
               </div>
               <div id="stateError" class="text-danger small mt-1"></div>
             </div>
-            
+
             <div class="col-md-6">
               <label for="district" class="form-label">District</label>
               <div class="input-group">
                 <span class="input-group-text bg-light border-end-0">
                   <i class="bi bi-geo-alt"></i>
                 </span>
-                <input type="text" class="form-control border-start-0" id="district" name="district" placeholder="Enter your district" required>
+                <input
+                  type="text"
+                  class="form-control border-start-0"
+                  id="district"
+                  name="district"
+                  placeholder="Enter your district"
+                  required
+                />
               </div>
               <div id="districtError" class="text-danger small mt-1"></div>
             </div>
-            
+
             <div class="col-md-6">
-              <label for="landmark" class="form-label">Landmark (Optional)</label>
+              <label for="landmark" class="form-label"
+                >Landmark (Optional)</label
+              >
               <div class="input-group">
                 <span class="input-group-text bg-light border-end-0">
                   <i class="bi bi-signpost"></i>
                 </span>
-                <input type="text" class="form-control border-start-0" id="landmark" name="landmark" placeholder="Enter a nearby landmark">
+                <input
+                  type="text"
+                  class="form-control border-start-0"
+                  id="landmark"
+                  name="landmark"
+                  placeholder="Enter a nearby landmark"
+                />
               </div>
             </div>
-            
+
             <div class="col-12">
               <label for="street" class="form-label">Street Address</label>
               <div class="input-group">
                 <span class="input-group-text bg-light border-end-0">
                   <i class="bi bi-house-door"></i>
                 </span>
-                <textarea class="form-control border-start-0" id="street" name="street" rows="2" placeholder="Enter your complete address with house/building number, street, locality" required></textarea>
+                <textarea
+                  class="form-control border-start-0"
+                  id="street"
+                  name="street"
+                  rows="2"
+                  placeholder="Enter your complete address with house/building number, street, locality"
+                  required
+                ></textarea>
               </div>
               <div id="streetError" class="text-danger small mt-1"></div>
             </div>
-            
+
             <div class="col-12">
               <div class="form-check mt-2">
-                <input class="form-check-input" type="checkbox" id="isDefault" name="isDefault">
+                <input
+                  class="form-check-input"
+                  type="checkbox"
+                  id="isDefault"
+                  name="isDefault"
+                />
                 <label class="form-check-label" for="isDefault">
                   Set as default address
                 </label>
@@ -230,8 +299,15 @@
         </form>
       </div>
       <div class="modal-footer border-0">
-        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
-        <button type="submit" form="addressForm" class="btn btn-dark">
+        <button type="button" class="btn btn-light" data-bs-dismiss="modal">
+          Cancel
+        </button>
+        <button
+          type="submit"
+          form="addressForm"
+          class="btn btn-dark"
+          id="saveAddressBtn"
+        >
           <i class="bi bi-check-circle me-2"></i>Save Address
         </button>
       </div>
@@ -239,8 +315,45 @@
   </div>
 </div>
 
+<!-- Edit Address Modal -->
+<div
+  class="modal fade"
+  id="editAddressModal"
+  tabindex="-1"
+  aria-labelledby="editAddressModalLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-header border-0">
+        <h5 class="modal-title" id="editAddressModalLabel">Edit Address</h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Close"
+        ></button>
+      </div>
+      <div class="modal-body">
+        <!-- The form will be cloned from the add address form -->
+      </div>
+      <div class="modal-footer border-0">
+        <button type="button" class="btn btn-light" data-bs-dismiss="modal">
+          Cancel
+        </button>
+        <button type="button" class="btn btn-dark" id="updateAddressBtn">
+          <i class="bi bi-check-circle me-2"></i>Update Address
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Add Bootstrap Icons CDN -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+<link
+  rel="stylesheet"
+  href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css"
+/>
 <!-- Add SweetAlert2 CDN -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
@@ -325,7 +438,7 @@
   .card-body h5 {
     font-weight: 600;
   }
-  
+
   .card-body p {
     margin-bottom: 0.5rem;
     color: #4a4a4a;
@@ -361,10 +474,14 @@
   // Phone Number validation
   function validatePhoneNumber(phoneNumber) {
     const cleanPhone = phoneNumber.replace(/\D/g, "");
-    if (cleanPhone.length !== 10 && (cleanPhone.length < 11 || cleanPhone.length > 15)) {
+    if (cleanPhone.length !== 10) {
       return false;
     }
-    if (/^(.)\1+$/.test(cleanPhone) || /^0{10}$/.test(cleanPhone) || /^1{10}$/.test(cleanPhone)) {
+    if (
+      /^(.)\1+$/.test(cleanPhone) ||
+      /^0{10}$/.test(cleanPhone) ||
+      /^1{10}$/.test(cleanPhone)
+    ) {
       return false;
     }
     return true;
@@ -390,12 +507,14 @@
   });
 
   // Form validation
+  const addressForm = document.getElementById("addressForm");
   const fullNameInput = document.getElementById("fullName");
   const phoneInput = document.getElementById("phone");
   const pincodeInput = document.getElementById("pincode");
   const districtInput = document.getElementById("district");
   const stateInput = document.getElementById("state");
   const streetInput = document.getElementById("street");
+  const addressIdInput = document.getElementById("addressId");
 
   const fullNameError = document.getElementById("fullNameError");
   const phoneError = document.getElementById("phoneError");
@@ -405,29 +524,37 @@
   const streetError = document.getElementById("streetError");
 
   // Add input validation event listeners
-  fullNameInput.addEventListener("input", function() {
+  fullNameInput.addEventListener("input", function () {
     const fullName = this.value.trim();
     if (!fullName) {
       clearValidation(this, fullNameError);
     } else if (!validateFullName(fullName)) {
-      setInvalid(this, fullNameError, "Please enter a valid name (min 3 characters)");
+      setInvalid(
+        this,
+        fullNameError,
+        "Please enter a valid name (min 3 characters)"
+      );
     } else {
       setValid(this, fullNameError);
     }
   });
 
-  phoneInput.addEventListener("input", function() {
+  phoneInput.addEventListener("input", function () {
     const phone = this.value.trim();
     if (!phone) {
       clearValidation(this, phoneError);
     } else if (!validatePhoneNumber(phone)) {
-      setInvalid(this, phoneError, "Please enter a valid 10-digit phone number");
+      setInvalid(
+        this,
+        phoneError,
+        "Please enter a valid 10-digit phone number"
+      );
     } else {
       setValid(this, phoneError);
     }
   });
 
-  pincodeInput.addEventListener("input", function() {
+  pincodeInput.addEventListener("input", function () {
     const pincode = this.value.trim();
     if (!pincode) {
       clearValidation(this, pincodeError);
@@ -438,18 +565,22 @@
     }
   });
 
-  districtInput.addEventListener("input", function() {
+  districtInput.addEventListener("input", function () {
     const district = this.value.trim();
     if (!district) {
       clearValidation(this, districtError);
     } else if (district.length < 3) {
-      setInvalid(this, districtError, "District name must be at least 3 characters");
+      setInvalid(
+        this,
+        districtError,
+        "District name must be at least 3 characters"
+      );
     } else {
       setValid(this, districtError);
     }
   });
 
-  stateInput.addEventListener("change", function() {
+  stateInput.addEventListener("change", function () {
     const state = this.value;
     if (!state) {
       clearValidation(this, stateError);
@@ -458,29 +589,43 @@
     }
   });
 
-  streetInput.addEventListener("input", function() {
+  streetInput.addEventListener("input", function () {
     const street = this.value.trim();
     if (!street) {
       clearValidation(this, streetError);
     } else if (street.length < 10) {
-      setInvalid(this, streetError, "Please enter a complete address (min 10 characters)");
+      setInvalid(
+        this,
+        streetError,
+        "Please enter a complete address (min 10 characters)"
+      );
     } else {
       setValid(this, streetError);
     }
   });
 
-  // Form submission
-  document.getElementById("addressForm").addEventListener("submit", async function(event) {
-    event.preventDefault();
+  // Reset form
+  function resetForm() {
+    addressForm.reset();
+    addressIdInput.value = "";
 
+    // Clear all validations
+    clearValidation(fullNameInput, fullNameError);
+    clearValidation(phoneInput, phoneError);
+    clearValidation(pincodeInput, pincodeError);
+    clearValidation(districtInput, districtError);
+    clearValidation(stateInput, stateError);
+    clearValidation(streetInput, streetError);
+  }
+
+  // Validate form
+  function validateForm() {
     const fullName = fullNameInput.value.trim();
     const phone = phoneInput.value.trim();
     const pincode = pincodeInput.value.trim();
     const district = districtInput.value.trim();
     const state = stateInput.value;
     const street = streetInput.value.trim();
-    const landmark = document.getElementById("landmark").value.trim();
-    const isDefault = document.getElementById("isDefault").checked;
 
     let isValid = true;
 
@@ -498,7 +643,11 @@
 
     // Validate pincode
     if (!pincode || !validatePincode(pincode)) {
-      setInvalid(pincodeInput, pincodeError, "Valid 6-digit pincode is required");
+      setInvalid(
+        pincodeInput,
+        pincodeError,
+        "Valid 6-digit pincode is required"
+      );
       isValid = false;
     }
 
@@ -520,73 +669,463 @@
       isValid = false;
     }
 
-    if (!isValid) return;
+    return isValid;
+    streetError, "Complete address is required";
+    isValid = false;
+  }
 
-    const submitButton = this.querySelector('button[type="submit"]');
+  // Get form data
+  function getFormData() {
+    return {
+      fullName: fullNameInput.value.trim(),
+      phone: phoneInput.value.trim(),
+      pincode: pincodeInput.value.trim(),
+      district: districtInput.value.trim(),
+      state: stateInput.value,
+      street: streetInput.value.trim(),
+      landmark: document.getElementById("landmark").value.trim(),
+      isDefault: document.getElementById("isDefault").checked,
+    };
+  }
+
+  // Add new address
+  async function addAddress(formData) {
+    try {
+      const response = await fetch("/address", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to add address");
+      }
+
+      return data;
+    } catch (error) {
+      console.error("Error adding address:", error);
+      throw error;
+    }
+  }
+
+  // Update existing address
+  async function updateAddress(addressId, formData) {
+    try {
+      const response = await fetch(`/address/${addressId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to update address");
+      }
+
+      return data;
+    } catch (error) {
+      console.error("Error updating address:", error);
+      throw error;
+    }
+  }
+
+  // Delete address
+  async function deleteAddress(addressId) {
+    try {
+      const response = await fetch(`/address/${addressId}`, {
+        method: "DELETE",
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to delete address");
+      }
+
+      return data;
+    } catch (error) {
+      console.error("Error deleting address:", error);
+      throw error;
+    }
+  }
+
+  // Set address as default
+  async function setDefaultAddress(addressId) {
+    try {
+      const response = await fetch(`/address/${addressId}/default`, {
+        method: "PATCH",
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to set default address");
+      }
+
+      return data;
+    } catch (error) {
+      console.error("Error setting default address:", error);
+      throw error;
+    }
+  }
+
+  // Create address card HTML
+  function createAddressCard(address) {
+    return `
+      <div class="col-md-6" data-address-id="${address._id}">
+        <div class="card h-100 border shadow-sm">
+          <div class="card-body position-relative">
+            ${
+              address.isDefault
+                ? '<span class="badge bg-success position-absolute end-0 top-0 mt-3 me-3">Default</span>'
+                : ""
+            }
+            <h5 class="mb-3">${address.fullName}</h5>
+            <p class="mb-1">${address.street}</p>
+            <p class="mb-1">${address.district}, ${address.state} - ${
+      address.pincode
+    }</p>
+            ${
+              address.landmark
+                ? `<p class="mb-1">Landmark: ${address.landmark}</p>`
+                : ""
+            }
+            <p class="mb-3">Phone: ${address.phone}</p>
+            <div class="d-flex mt-auto gap-2">
+              <button class="btn btn-sm btn-outline-dark edit-address-btn" data-address-id="${
+                address._id
+              }">
+                <i class="bi bi-pencil me-1"></i>Edit
+              </button>
+              <button class="btn btn-sm btn-outline-danger delete-address-btn" data-address-id="${
+                address._id
+              }">
+                <i class="bi bi-trash me-1"></i>Delete
+              </button>
+              ${
+                !address.isDefault
+                  ? `
+                <button class="btn btn-sm btn-outline-primary set-default-btn" data-address-id="${address._id}">
+                  <i class="bi bi-check-circle me-1"></i>Set as Default
+                </button>
+              `
+                  : ""
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // Fill form with address data for editing
+  function fillFormWithAddressData(address) {
+    fullNameInput.value = address.fullName;
+    phoneInput.value = address.phone;
+    pincodeInput.value = address.pincode;
+    districtInput.value = address.district;
+    stateInput.value = address.state;
+    streetInput.value = address.street;
+    document.getElementById("landmark").value = address.landmark || "";
+    document.getElementById("isDefault").checked = address.isDefault;
+    addressIdInput.value = address._id;
+
+    // Trigger validation
+    fullNameInput.dispatchEvent(new Event("input"));
+    phoneInput.dispatchEvent(new Event("input"));
+    pincodeInput.dispatchEvent(new Event("input"));
+    districtInput.dispatchEvent(new Event("input"));
+    stateInput.dispatchEvent(new Event("change"));
+    streetInput.dispatchEvent(new Event("input"));
+  }
+
+  // Get address by ID
+  async function getAddressById(addressId) {
+    try {
+      const response = await fetch(`/address/${addressId}`);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to get address");
+      }
+
+      return data.address;
+    } catch (error) {
+      console.error("Error getting address:", error);
+      throw error;
+    }
+  }
+
+  // Form submission
+  addressForm.addEventListener("submit", async function (event) {
+    event.preventDefault();
+
+    if (!validateForm()) return;
+
+    const formData = getFormData();
+    const addressId = addressIdInput.value;
+    const isEditing = !!addressId;
+
+    const submitButton = document.getElementById("saveAddressBtn");
     const originalText = submitButton.innerHTML;
     submitButton.disabled = true;
-    submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Saving...';
+    submitButton.innerHTML =
+      '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Saving...';
 
     try {
-      // Simulate server request
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      submitButton.disabled = false;
-      submitButton.innerHTML = originalText;
-      
-      // Close modal and show success message
-      bootstrap.Modal.getInstance(document.getElementById("addAddressModal")).hide();
-      
-      Toast.fire({
-        icon: "success",
-        title: "Address added successfully",
-      });
-      
-      // In a real implementation, you would refresh the page or add the new address to the DOM
-      setTimeout(() => {
-        location.reload();
-      }, 1000);
+      let result;
+
+      if (isEditing) {
+        result = await updateAddress(addressId, formData);
+
+        // Update the address card in the DOM
+        const addressCard = document.querySelector(
+          `[data-address-id="${addressId}"]`
+        );
+        if (addressCard) {
+          addressCard.outerHTML = createAddressCard(result.address);
+        }
+
+        Toast.fire({
+          icon: "success",
+          title: "Address updated successfully",
+        });
+      } else {
+        result = await addAddress(formData);
+
+        // Add the new address card to the DOM
+        const addressContainer = document.getElementById("addressContainer");
+        const noAddressesMessage = addressContainer.querySelector(
+          ".col-12.text-center"
+        );
+
+        if (noAddressesMessage) {
+          // Remove the "No addresses found" message
+          addressContainer.innerHTML = "";
+        }
+
+        // Add the new address card
+        const addressCardHTML = createAddressCard(result.address);
+        addressContainer.insertAdjacentHTML("afterbegin", addressCardHTML);
+
+        Toast.fire({
+          icon: "success",
+          title: "Address added successfully",
+        });
+      }
+
+      // Close modal and reset form
+      const modal = bootstrap.Modal.getInstance(
+        document.getElementById("addAddressModal")
+      );
+      modal.hide();
+      resetForm();
+
+      // If the address was set as default, refresh the page to update all cards
+      if (formData.isDefault) {
+        setTimeout(() => {
+          location.reload();
+        }, 1000);
+      }
+
+      // Add event listeners to the new buttons
+      addEventListenersToButtons();
     } catch (error) {
       console.error("Address save error:", error);
-      submitButton.disabled = false;
-      submitButton.innerHTML = originalText;
-      
+
       Toast.fire({
         icon: "error",
-        title: "Server error. Please try again.",
+        title: error.message || "Server error. Please try again.",
       });
+    } finally {
+      submitButton.disabled = false;
+      submitButton.innerHTML = originalText;
     }
   });
 
   // Add event listeners to address action buttons
-  document.querySelectorAll('.btn-outline-danger').forEach(button => {
-    button.addEventListener('click', function() {
-      Swal.fire({
-        title: 'Delete Address?',
-        text: "This action cannot be undone.",
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#dc3545',
-        cancelButtonColor: '#6c757d',
-        confirmButtonText: 'Yes, delete it!'
-      }).then((result) => {
-        if (result.isConfirmed) {
+  function addEventListenersToButtons() {
+    // Delete address buttons
+    document.querySelectorAll(".delete-address-btn").forEach((button) => {
+      button.addEventListener("click", async function () {
+        const addressId = this.getAttribute("data-address-id");
+
+        Swal.fire({
+          title: "Delete Address?",
+          text: "This action cannot be undone.",
+          icon: "warning",
+          showCancelButton: true,
+          confirmButtonColor: "#dc3545",
+          cancelButtonColor: "#6c757d",
+          confirmButtonText: "Yes, delete it!",
+        }).then(async (result) => {
+          if (result.isConfirmed) {
+            try {
+              await deleteAddress(addressId);
+
+              // Remove the address card from the DOM
+              const addressCard = document.querySelector(
+                `[data-address-id="${addressId}"]`
+              );
+              if (addressCard) {
+                addressCard.remove();
+              }
+
+              // Check if there are no more addresses
+              const addressContainer =
+                document.getElementById("addressContainer");
+              if (addressContainer.children.length === 0) {
+                // Add the "No addresses found" message
+                addressContainer.innerHTML = `
+                  <div class="col-12 text-center py-5">
+                    <div class="mb-4">
+                      <i class="bi bi-geo-alt-fill text-muted" style="font-size: 3rem;"></i>
+                    </div>
+                    <h5 class="text-muted mb-3">No addresses found</h5>
+                    <p class="text-muted mb-4">You haven't added any addresses yet.</p>
+                    <button class="btn btn-dark" data-bs-toggle="modal" data-bs-target="#addAddressModal">
+                      <i class="bi bi-plus-lg me-2"></i>Add New Address
+                    </button>
+                  </div>
+                `;
+              }
+
+              Toast.fire({
+                icon: "success",
+                title: "Address deleted successfully",
+              });
+            } catch (error) {
+              Toast.fire({
+                icon: "error",
+                title: error.message || "Failed to delete address",
+              });
+            }
+          }
+        });
+      });
+    });
+
+    // Set default address buttons
+    document.querySelectorAll(".set-default-btn").forEach((button) => {
+      button.addEventListener("click", async function () {
+        const addressId = this.getAttribute("data-address-id");
+
+        try {
+          await setDefaultAddress(addressId);
+
+          // Refresh the page to update all cards
           Toast.fire({
-            icon: 'success',
-            title: 'Address deleted successfully'
+            icon: "success",
+            title: "Address set as default",
+          });
+
+          setTimeout(() => {
+            location.reload();
+          }, 1000);
+        } catch (error) {
+          Toast.fire({
+            icon: "error",
+            title: error.message || "Failed to set default address",
           });
         }
       });
     });
-  });
 
-  document.querySelectorAll('.btn-outline-primary').forEach(button => {
-    button.addEventListener('click', function() {
-      Toast.fire({
-        icon: 'success',
-        title: 'Address set as default'
+    // Edit address buttons
+    document.querySelectorAll(".edit-address-btn").forEach((button) => {
+      button.addEventListener("click", async function () {
+        const addressId = this.getAttribute("data-address-id");
+
+        try {
+          // Find the address data from the DOM
+          const addressCard = document.querySelector(
+            `[data-address-id="${addressId}"]`
+          );
+          if (!addressCard) return;
+
+          // Extract data from the card
+          const fullName = addressCard.querySelector("h5").textContent;
+          const paragraphs = addressCard.querySelectorAll("p");
+          const street = paragraphs[0].textContent;
+
+          const locationParts = paragraphs[1].textContent.split(", ");
+          const district = locationParts[0];
+          const statePincodeParts = locationParts[1].split(" - ");
+          const state = statePincodeParts[0];
+          const pincode = statePincodeParts[1];
+
+          let landmark = "";
+          if (
+            paragraphs.length > 3 &&
+            paragraphs[2].textContent.includes("Landmark:")
+          ) {
+            landmark = paragraphs[2].textContent
+              .replace("Landmark:", "")
+              .trim();
+          }
+
+          const phoneParagraph = paragraphs[paragraphs.length - 1];
+          const phone = phoneParagraph.textContent.replace("Phone:", "").trim();
+
+          const isDefault =
+            addressCard.querySelector(".badge.bg-success") !== null;
+
+          // Create a temporary address object
+          const address = {
+            _id: addressId,
+            fullName,
+            phone,
+            pincode,
+            district,
+            state,
+            street,
+            landmark,
+            isDefault,
+          };
+
+          // Fill the form with the address data
+          fillFormWithAddressData(address);
+
+          // Show the modal
+          const modal = new bootstrap.Modal(
+            document.getElementById("addAddressModal")
+          );
+          modal.show();
+
+          // Update the modal title
+          document.getElementById("addAddressModalLabel").textContent =
+            "Edit Address";
+        } catch (error) {
+          console.error("Error editing address:", error);
+          Toast.fire({
+            icon: "error",
+            title: "Failed to edit address",
+          });
+        }
       });
     });
+  }
+
+  // Initialize event listeners
+  document.addEventListener("DOMContentLoaded", function () {
+    // Add event listeners to buttons
+    addEventListenersToButtons();
+
+    // Reset form when modal is hidden
+    document
+      .getElementById("addAddressModal")
+      .addEventListener("hidden.bs.modal", function () {
+        resetForm();
+        document.getElementById("addAddressModalLabel").textContent =
+          "Add New Address";
+      });
   });
 </script>
 

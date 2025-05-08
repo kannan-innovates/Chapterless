@@ -89,6 +89,11 @@ router.get('/verify-email-otp', isAuthenticated, preventBackButtonCache, (req, r
 router.post('/verify-email-otp', isAuthenticated, profileController.verifyEmailOtp);
 router.post('/resend-email-otp', isAuthenticated, profileController.resendEmailOtp);
 
-router.get('/address',addressController.getAddress )
+// Address routes
+router.get('/address', isAuthenticated, addressController.getAddress);
+router.post('/address', isAuthenticated, addressController.addAddress);
+router.put('/address/:id', isAuthenticated, addressController.updateAddress);
+router.delete('/address/:id', isAuthenticated, addressController.deleteAddress);
+router.patch('/address/:id/default', isAuthenticated, addressController.setDefaultAddress);
 
 module.exports = router;
