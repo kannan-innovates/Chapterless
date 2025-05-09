@@ -97,6 +97,7 @@ router.post('/address', isAuthenticated, addressController.addAddress);
 router.put('/address/:id', isAuthenticated, addressController.updateAddress);
 router.delete('/address/:id', isAuthenticated, addressController.deleteAddress);
 router.patch('/address/:id/default', isAuthenticated, addressController.setDefaultAddress);
+router.get('/address/:id', isAuthenticated, addressController.getAddressById);
 
 // Checkout routes
 router.get('/checkout',checkoutController.getCheckout);

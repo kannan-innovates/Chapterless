@@ -153,10 +153,32 @@ const setDefaultAddress = async (req, res) => {
   }
 };
 
+const getAddressById = async (req, res) => {
+  try {
+    const userId = req.session.user_id;
+    const addressId = req.params.id;
+
+    // Find address and verify ownership
+    const address = await Address.findById(addressId);
+    if (!address) {
+      return res.status(404).json({ success: false, message: 'Address not found' });
+    }
+    if (address.userId.toString() !== userId) {
+      return res.status(403).json({ success: false, message: 'Unauthorized access' });
+    }
+
+    res.json({ success: true, address });
+  } catch (error) {
+    console.log('Error fetching address:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch address' });
+  }
+};
+
 module.exports = {
   getAddress,
   addAddress,
   updateAddress,
   deleteAddress,
-  setDefaultAddress
+  setDefaultAddress,
+  getAddressById // Add the new function to exports
 };
