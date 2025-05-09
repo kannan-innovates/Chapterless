@@ -60,53 +60,39 @@
           </div>
           <div class="card-body p-4">
             <div class="cart-items">
-              <!-- Cart Item 1 -->
-              <div class="cart-item d-flex flex-wrap py-3 border-bottom">
-                <div class="cart-item-image me-3">
-                  <img src="/api/placeholder/80/80" alt="Product" class="rounded" width="80" height="80">
-                </div>
-                <div class="cart-item-details flex-grow-1">
-                  <h5 class="mb-1">Premium Wireless Headphones</h5>
-                  <p class="text-muted mb-1">Color: Black | Size: Standard</p>
-                  <div class="d-flex align-items-center">
-                    <div class="input-group input-group-sm quantity-selector me-3" style="width: 120px;">
-                      <button class="btn btn-outline-secondary" type="button">-</button>
-                      <input type="text" class="form-control text-center" value="1" readonly>
-                      <button class="btn btn-outline-secondary" type="button">+</button>
+              <% if (cartItems && cartItems.length > 0) { %>
+                <% cartItems.forEach(item => { %>
+                  <div class="cart-item d-flex flex-wrap py-3 border-bottom">
+                    <div class="cart-item-image me-3">
+                      <img 
+                        src="<%= item.product && item.product.mainImage ? item.product.mainImage : 'https://via.placeholder.com/80' %>" 
+                        alt="<%= item.product && item.product.title ? item.product.title : 'Product' %>" 
+                        class="rounded" 
+                        width="80" 
+                        height="80"
+                        onerror="console.log('Image failed to load: <%= item.product && item.product.mainImage ? item.product.mainImage : 'https://via.placeholder.com/80' %>')"
+                      >
                     </div>
-                    <div class="cart-item-price fw-bold">₹4,999</div>
-                  </div>
-                </div>
-                <div class="cart-item-actions ms-auto mt-2 mt-md-0">
-                  <button class="btn btn-sm btn-outline-danger">
-                    <i class="bi bi-trash me-1"></i>Remove
-                  </button>
-                </div>
-              </div>
-              
-              <!-- Cart Item 2 -->
-              <div class="cart-item d-flex flex-wrap py-3 border-bottom">
-                <div class="cart-item-image me-3">
-                  <img src="/api/placeholder/80/80" alt="Product" class="rounded" width="80" height="80">
-                </div>
-                <div class="cart-item-details flex-grow-1">
-                  <h5 class="mb-1">Smart Fitness Tracker</h5>
-                  <p class="text-muted mb-1">Color: Blue | Size: M</p>
-                  <div class="d-flex align-items-center">
-                    <div class="input-group input-group-sm quantity-selector me-3" style="width: 120px;">
-                      <button class="btn btn-outline-secondary" type="button">-</button>
-                      <input type="text" class="form-control text-center" value="1" readonly>
-                      <button class="btn btn-outline-secondary" type="button">+</button>
+                    <div class="cart-item-details flex-grow-1">
+                      <h5 class="mb-1"><%= item.product && item.product.title ? item.product.title : 'Unknown Product' %></h5>
+                      <p class="text-muted mb-1">Price: ₹<%= item.priceAtAddition ? item.priceAtAddition.toFixed(2) : '0.00' %></p>
+                      <div class="d-flex align-items-center">
+                        <span class="text-muted me-3">Qty: <%= item.quantity || 1 %></span>
+                        <div class="cart-item-price fw-bold">₹<%= item.quantity && item.priceAtAddition ? (item.quantity * item.priceAtAddition).toFixed(2) : '0.00' %></div>
+                      </div>
                     </div>
-                    <div class="cart-item-price fw-bold">₹2,499</div>
+                    <div class="cart-item-actions ms-auto mt-2 mt-md-0">
+                      <button class="btn btn-sm btn-outline-danger remove-item" data-product-id="<%= item.product ? item.product._id : '' %>">
+                        <i class="bi bi-trash me-1"></i>Remove
+                      </button>
+                    </div>
                   </div>
+                <% }) %>
+              <% } else { %>
+                <div class="alert alert-info text-center">
+                  Your cart is empty. <a href="/shopPage">Continue shopping</a>.
                 </div>
-                <div class="cart-item-actions ms-auto mt-2 mt-md-0">
-                  <button class="btn btn-sm btn-outline-danger">
-                    <i class="bi bi-trash me-1"></i>Remove
-                  </button>
-                </div>
-              </div>
+              <% } %>
               
               <!-- Coupon Code -->
               <div class="mt-4">
@@ -117,7 +103,7 @@
                       <button class="btn btn-dark" type="button" id="applyCoupon">Apply</button>
                     </div>
                   </div>
-                  <button class="btn btn-outline-secondary" type="button">
+                  <button class="btn btn-outline-secondary" type="button" disabled>
                     <i class="bi bi-arrow-clockwise me-1"></i>Update Cart
                   </button>
                 </div>
@@ -128,9 +114,15 @@
             <a href="/cart" class="btn btn-outline-dark">
               <i class="bi bi-arrow-left me-2"></i>Back to Cart
             </a>
-            <button class="btn btn-dark next-step" data-next="2">
-              Continue to Address<i class="bi bi-arrow-right ms-2"></i>
-            </button>
+            <% if (cartItems && cartItems.length > 0) { %>
+              <button class="btn btn-dark next-step" data-next="2">
+                Continue to Address<i class="bi bi-arrow-right ms-2"></i>
+              </button>
+            <% } else { %>
+              <button class="btn btn-dark" disabled>
+                Continue to Address<i class="bi bi-arrow-right ms-2"></i>
+              </button>
+            <% } %>
           </div>
         </div>
         
@@ -346,7 +338,7 @@
                       <div class="alert alert-info d-flex align-items-center" role="alert">
                         <i class="bi bi-info-circle-fill me-2"></i>
                         <div>
-                          You will pay ₹7,498 when your order is delivered. Please keep exact change ready.
+                          You will pay ₹<%= totalAmount ? totalAmount.toFixed(2) : '0.00' %> when your order is delivered. Please keep exact change ready.
                         </div>
                       </div>
                       <div class="form-check mt-3">
@@ -387,7 +379,7 @@
                       <div class="alert alert-warning d-flex align-items-center" role="alert">
                         <i class="bi bi-exclamation-triangle-fill me-2"></i>
                         <div>
-                          Your wallet balance is insufficient for this order. Please add ₹2,498 more or choose another payment method.
+                          Your wallet balance is insufficient for this order. Please add ₹<%= totalAmount ? (totalAmount - 5000).toFixed(2) : '0.00' %> more or choose another payment method.
                         </div>
                       </div>
                     </div>
@@ -454,42 +446,42 @@
               <!-- Order Items -->
               <div class="order-section mb-4">
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                  <h5 class="mb-0">Order Items (2)</h5>
+                  <h5 class="mb-0">Order Items (<%= cartItems ? cartItems.length : 0 %>)</h5>
                   <button class="btn btn-sm btn-link text-dark p-0" data-step="1">Change</button>
                 </div>
                 <div class="card border">
                   <div class="card-body p-0">
                     <div class="list-group list-group-flush">
-                      <div class="list-group-item py-3">
-                        <div class="d-flex">
-                          <div class="flex-shrink-0 me-3">
-                            <img src="/api/placeholder/60/60" alt="Product" class="rounded" width="60" height="60">
-                          </div>
-                          <div class="flex-grow-1">
-                            <h6 class="mb-1">Premium Wireless Headphones</h6>
-                            <p class="text-muted mb-1 small">Color: Black | Size: Standard</p>
-                            <div class="d-flex justify-content-between">
-                              <span class="text-muted">Qty: 1</span>
-                              <span class="fw-medium">₹4,999</span>
+                      <% if (cartItems && cartItems.length > 0) { %>
+                        <% cartItems.forEach(item => { %>
+                          <div class="list-group-item py-3">
+                            <div class="d-flex">
+                              <div class="flex-shrink-0 me-3">
+                                <img 
+                                  src="<%= item.product && item.product.mainImage ? item.product.mainImage : 'https://via.placeholder.com/60' %>" 
+                                  alt="<%= item.product && item.product.title ? item.product.title : 'Product' %>" 
+                                  class="rounded" 
+                                  width="60" 
+                                  height="60"
+                                  onerror="console.log('Image failed to load: <%= item.product && item.product.mainImage ? item.product.mainImage : 'https://via.placeholder.com/60' %>')"
+                                >
+                              </div>
+                              <div class="flex-grow-1">
+                                <h6 class="mb-1"><%= item.product && item.product.title ? item.product.title : 'Unknown Product' %></h6>
+                                <p class="text-muted mb-1 small">Price: ₹<%= item.priceAtAddition ? item.priceAtAddition.toFixed(2) : '0.00' %></p>
+                                <div class="d-flex justify-content-between">
+                                  <span class="text-muted">Qty: <%= item.quantity || 1 %></span>
+                                  <span class="fw-medium">₹<%= item.quantity && item.priceAtAddition ? (item.quantity * item.priceAtAddition).toFixed(2) : '0.00' %></span>
+                                </div>
+                              </div>
                             </div>
                           </div>
+                        <% }) %>
+                      <% } else { %>
+                        <div class="list-group-item py-3">
+                          <p class="text-muted mb-0">No items in cart</p>
                         </div>
-                      </div>
-                      <div class="list-group-item py-3">
-                        <div class="d-flex">
-                          <div class="flex-shrink-0 me-3">
-                            <img src="/api/placeholder/60/60" alt="Product" class="rounded" width="60" height="60">
-                          </div>
-                          <div class="flex-grow-1">
-                            <h6 class="mb-1">Smart Fitness Tracker</h6>
-                            <p class="text-muted mb-1 small">Color: Blue | Size: M</p>
-                            <div class="d-flex justify-content-between">
-                              <span class="text-muted">Qty: 1</span>
-                              <span class="fw-medium">₹2,499</span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
+                      <% } %>
                     </div>
                   </div>
                 </div>
@@ -525,29 +517,29 @@
         </div>
         <div class="card-body p-4">
           <div class="summary-item d-flex justify-content-between mb-3">
-            <span class="text-muted">Subtotal (2 items)</span>
-            <span class="fw-medium">₹7,498</span>
+            <span class="text-muted">Subtotal (<%= cartItems ? cartItems.length : 0 %> items)</span>
+            <span class="fw-medium">₹<%= subtotal ? subtotal.toFixed(2) : '0.00' %></span>
           </div>
           <div class="summary-item d-flex justify-content-between mb-3">
             <span class="text-muted">Shipping</span>
             <span class="fw-medium">₹0</span>
           </div>
           <div class="summary-item d-flex justify-content-between mb-3">
-            <span class="text-muted">Tax</span>
-            <span class="fw-medium">₹1,350</span>
+            <span class="text-muted">Tax (8%)</span>
+            <span class="fw-medium">₹<%= tax ? tax.toFixed(2) : '0.00' %></span>
           </div>
           <div class="summary-item d-flex justify-content-between mb-3">
             <span class="text-muted">Discount</span>
-            <span class="fw-medium text-success">-₹750</span>
+            <span class="fw-medium text-success">₹0</span>
           </div>
           <div class="summary-item d-flex justify-content-between mb-3">
             <span class="text-muted">Coupon Discount</span>
-            <span class="fw-medium text-success">-₹0</span>
+            <span class="fw-medium text-success">₹0</span>
           </div>
           <hr>
           <div class="summary-item d-flex justify-content-between mb-3">
             <span class="fw-bold">Total</span>
-            <span class="fw-bold fs-5">₹8,098</span>
+            <span class="fw-bold fs-5">₹<%= totalAmount ? totalAmount.toFixed(2) : '0.00' %></span>
           </div>
           
           <!-- Delivery Info -->
@@ -924,10 +916,6 @@
     border-bottom: none !important;
   }
 
-  .quantity-selector input {
-    text-align: center;
-  }
-
   /* Validation styling */
   .is-valid {
     border-color: #198754 !important;
@@ -964,7 +952,6 @@
     }
   }
 </style>
-<script src="/validators/user/checkout-validator.js"></script>
 <script>
   document.addEventListener('DOMContentLoaded', function() {
     // Initialize tooltips
@@ -1097,7 +1084,54 @@
       });
     }
     
-    // Apply coupon
+    // Remove item from cart
+    document.querySelectorAll('.remove-item').forEach(button => {
+      button.addEventListener('click', function() {
+        const productId = this.getAttribute('data-product-id');
+        if (!productId) {
+          Toast.fire({
+            icon: 'error',
+            title: 'Invalid product'
+          });
+          return;
+        }
+        
+        fetch('/cart/remove', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ productId })
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            Toast.fire({
+              icon: 'success',
+              title: 'Item removed from cart'
+            });
+            // Reload the page to reflect updated cart
+            setTimeout(() => {
+              window.location.reload();
+            }, 1500);
+          } else {
+            Toast.fire({
+              icon: 'error',
+              title: data.message || 'Failed to remove item'
+            });
+          }
+        })
+        .catch(error => {
+          console.error('Error removing item:', error);
+          Toast.fire({
+            icon: 'error',
+            title: 'Server error'
+          });
+        });
+      });
+    });
+    
+    // Apply coupon (non-functional, just UI feedback)
     const applyCouponBtn = document.getElementById('applyCoupon');
     if (applyCouponBtn) {
       applyCouponBtn.addEventListener('click', function() {
@@ -1111,24 +1145,10 @@
           return;
         }
         
-        // Simulate coupon application
-        if (couponCode.toUpperCase() === 'SAVE10') {
-          Toast.fire({
-            icon: "success",
-            title: "Coupon applied successfully!"
-          });
-          
-          // Update the coupon discount in the order summary
-          document.querySelector('.summary-item:nth-child(5) span:last-child').textContent = '-₹750';
-          
-          // Update the total
-          document.querySelector('.summary-item:last-child span:last-child').textContent = '₹7,348';
-        } else {
-          Toast.fire({
-            icon: "error",
-            title: "Invalid coupon code"
-          });
-        }
+        Toast.fire({
+          icon: "info",
+          title: "Coupon functionality not implemented"
+        });
       });
     }
     
@@ -1150,16 +1170,41 @@
         this.disabled = true;
         this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...';
         
-        // Simulate order processing
-        setTimeout(() => {
-          // Show success modal
-          const orderSuccessModal = new bootstrap.Modal(document.getElementById('orderSuccessModal'));
-          orderSuccessModal.show();
-          
-          // Reset button state
+        // Simulate order processing and clear cart
+        fetch('/cart/clear', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            // Show success modal
+            const orderSuccessModal = new bootstrap.Modal(document.getElementById('orderSuccessModal'));
+            orderSuccessModal.show();
+            
+            // Reset button state
+            this.disabled = false;
+            this.innerHTML = '<i class="bi bi-bag-check me-2"></i>Place Order';
+          } else {
+            Toast.fire({
+              icon: 'error',
+              title: 'Failed to place order'
+            });
+            this.disabled = false;
+            this.innerHTML = '<i class="bi bi-bag-check me-2"></i>Place Order';
+          }
+        })
+        .catch(error => {
+          console.error('Error placing order:', error);
+          Toast.fire({
+            icon: 'error',
+            title: 'Server error'
+          });
           this.disabled = false;
           this.innerHTML = '<i class="bi bi-bag-check me-2"></i>Place Order';
-        }, 2000);
+        });
       });
     }
   });
