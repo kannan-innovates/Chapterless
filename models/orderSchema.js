@@ -1,120 +1,180 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
-const orderItemSchema = new mongoose.Schema({
-  product: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Product',
-    required: true
+const addressSchema = new mongoose.Schema(
+  {
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+    fullName: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    phone: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    pincode: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    district: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    state: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    street: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    landmark: {
+      type: String,
+      trim: true,
+    },
+    isDefault: {
+      type: Boolean,
+      default: false,
+    },
   },
-  quantity: {
-    type: Number,
-    required: true,
-    min: 1
-  },
-  price: {
-    type: Number,
-    required: true
-  },
-  title: {
-    type: String,
-    required: true
-  },
-  image: {
-    type: String,
-    required: true
-  }
-});
+  { _id: false, timestamps: true }
+);
 
-const addressSchema = new mongoose.Schema({
-  fullName: {
-    type: String,
-    required: true
+const orderItemSchema = new mongoose.Schema(
+  {
+    product: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Product",
+      required: true,
+    },
+    title: {
+      type: String,
+      required: true,
+    },
+    image: {
+      type: String,
+      required: true,
+    },
+    price: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+    quantity: {
+      type: Number,
+      required: true,
+      min: 1,
+    },
   },
-  phone: {
-    type: String,
-    required: true
-  },
-  pincode: {
-    type: String,
-    required: true
-  },
-  district: {
-    type: String,
-    required: true
-  },
-  state: {
-    type: String,
-    required: true
-  },
-  street: {
-    type: String,
-    required: true
-  },
-  landmark: {
-    type: String
-  }
-});
+  { _id: false }
+);
 
+// Main Order Schema
 const orderSchema = new mongoose.Schema({
   user: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
+    ref: "User",
+    required: true,
   },
   orderNumber: {
     type: String,
     required: true,
-    unique: true
+    unique: true,
   },
   items: [orderItemSchema],
   shippingAddress: addressSchema,
   paymentMethod: {
     type: String,
-    enum: ['COD', 'UPI', 'Card', 'Wallet'],
-    required: true
+    enum: ["COD", "UPI", "Card", "Wallet"],
+    required: true,
   },
   paymentStatus: {
     type: String,
-    enum: ['Pending', 'Paid', 'Failed', 'Refunded'],
-    default: 'Pending'
+    enum: ["Pending", "Paid", "Failed", "Refunded"],
+    default: "Pending",
   },
   orderStatus: {
     type: String,
-    enum: ['Placed', 'Processing', 'Shipped', 'Delivered', 'Cancelled', 'Returned'],
-    default: 'Placed'
+    enum: [
+      "Placed",
+      "Processing",
+      "Shipped",
+      "Delivered",
+      "Cancelled",
+      "Returned",
+    ],
+    default: "Placed",
   },
   subtotal: {
     type: Number,
-    required: true
+    required: true,
+    min: 0,
   },
   shipping: {
     type: Number,
-    default: 0
+    required: true,
+    default: 0,
   },
   tax: {
     type: Number,
-    default: 0
+    required: true,
+    default: 0,
   },
   discount: {
     type: Number,
-    default: 0
+    default: 0,
+  },
+  couponCode: {
+    type: String,
   },
   couponDiscount: {
     type: Number,
-    default: 0
+    default: 0,
   },
   total: {
     type: Number,
-    required: true
+    required: true,
+    min: 0,
+  },
+  deliveredAt: {
+    type: Date,
+  },
+  cancelledAt: {
+    type: Date,
+  },
+  returnedAt: {
+    type: Date,
+  },
+  trackingId: {
+    type: String,
+  },
+  isDeleted: {
+    type: Boolean,
+    default: false,
   },
   createdAt: {
     type: Date,
-    default: Date.now
+    default: Date.now,
   },
   updatedAt: {
     type: Date,
-    default: Date.now
-  }
+    default: Date.now,
+  },
 });
 
-module.exports = mongoose.model('Order', orderSchema);
+// Auto update updatedAt
+orderSchema.pre("save", function (next) {
+  this.updatedAt = Date.now();
+  next();
+});
+
+module.exports = mongoose.model("Order", orderSchema);

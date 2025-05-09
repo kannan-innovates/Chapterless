@@ -98,6 +98,8 @@ router.put('/address/:id', isAuthenticated, addressController.updateAddress);
 router.delete('/address/:id', isAuthenticated, addressController.deleteAddress);
 router.patch('/address/:id/default', isAuthenticated, addressController.setDefaultAddress);
 
-router.get('/checkout',checkoutController.getCheckout)
+// Checkout routes
+router.get('/checkout',checkoutController.getCheckout);
+router.post('/checkout/place-order', isAuthenticated, checkoutController.placeOrder);
 
 module.exports = router;

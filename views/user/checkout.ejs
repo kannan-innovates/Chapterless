@@ -60,72 +60,103 @@
           </div>
           <div class="card-body p-4">
             <div class="cart-items">
-              <% if (cartItems && cartItems.length > 0) { %>
-                <% cartItems.forEach(item => { %>
-                  <div class="cart-item d-flex flex-wrap py-3 border-bottom">
-                    <div class="cart-item-image me-3">
-                      <img 
-                        src="<%= item.product && item.product.mainImage ? item.product.mainImage : 'https://via.placeholder.com/80' %>" 
-                        alt="<%= item.product && item.product.title ? item.product.title : 'Product' %>" 
-                        class="rounded" 
-                        width="80" 
-                        height="80"
-                        onerror="console.log('Image failed to load: <%= item.product && item.product.mainImage ? item.product.mainImage : 'https://via.placeholder.com/80' %>')"
-                      >
-                    </div>
-                    <div class="cart-item-details flex-grow-1">
-                      <h5 class="mb-1"><%= item.product && item.product.title ? item.product.title : 'Unknown Product' %></h5>
-                      <p class="text-muted mb-1">Price: ₹<%= item.priceAtAddition ? item.priceAtAddition.toFixed(2) : '0.00' %></p>
-                      <div class="d-flex align-items-center">
-                        <span class="text-muted me-3">Qty: <%= item.quantity || 1 %></span>
-                        <div class="cart-item-price fw-bold">₹<%= item.quantity && item.priceAtAddition ? (item.quantity * item.priceAtAddition).toFixed(2) : '0.00' %></div>
-                      </div>
-                    </div>
-                    <div class="cart-item-actions ms-auto mt-2 mt-md-0">
-                      <button class="btn btn-sm btn-outline-danger remove-item" data-product-id="<%= item.product ? item.product._id : '' %>">
-                        <i class="bi bi-trash me-1"></i>Remove
-                      </button>
+              <% if (cartItems && cartItems.length > 0) { %> <%
+              cartItems.forEach(item => { %>
+              <div class="cart-item d-flex flex-wrap py-3 border-bottom">
+                <div class="cart-item-image me-3">
+                  <img
+                    src="<%= item.product && item.product.mainImage ? item.product.mainImage : 'https://via.placeholder.com/80' %>"
+                    alt="<%= item.product && item.product.title ? item.product.title : 'Product' %>"
+                    class="rounded"
+                    width="80"
+                    height="80"
+                    onerror="console.log('Image failed to load: <%= item.product && item.product.mainImage ? item.product.mainImage : 'https://via.placeholder.com/80' %>')"
+                  />
+                </div>
+                <div class="cart-item-details flex-grow-1">
+                  <h5 class="mb-1">
+                    <%= item.product && item.product.title ? item.product.title
+                    : 'Unknown Product' %>
+                  </h5>
+                  <p class="text-muted mb-1">
+                    Price: ₹<%= item.priceAtAddition ?
+                    item.priceAtAddition.toFixed(2) : '0.00' %>
+                  </p>
+                  <div class="d-flex align-items-center">
+                    <span class="text-muted me-3"
+                      >Qty: <%= item.quantity || 1 %></span
+                    >
+                    <div class="cart-item-price fw-bold">
+                      ₹<%= item.quantity && item.priceAtAddition ?
+                      (item.quantity * item.priceAtAddition).toFixed(2) : '0.00'
+                      %>
                     </div>
                   </div>
-                <% }) %>
-              <% } else { %>
-                <div class="alert alert-info text-center">
-                  Your cart is empty. <a href="/shopPage">Continue shopping</a>.
                 </div>
+                <div class="cart-item-actions ms-auto mt-2 mt-md-0">
+                  <button
+                    class="btn btn-sm btn-outline-danger remove-item"
+                    data-product-id="<%= item.product ? item.product._id : '' %>"
+                  >
+                    <i class="bi bi-trash me-1"></i>Remove
+                  </button>
+                </div>
+              </div>
+              <% }) %> <% } else { %>
+              <div class="alert alert-info text-center">
+                Your cart is empty. <a href="/shopPage">Continue shopping</a>.
+              </div>
               <% } %>
-              
+
               <!-- Coupon Code -->
               <div class="mt-4">
                 <div class="d-flex flex-wrap gap-2">
                   <div class="flex-grow-1">
                     <div class="input-group">
-                      <input type="text" class="form-control" placeholder="Enter coupon code" id="couponCode">
-                      <button class="btn btn-dark" type="button" id="applyCoupon">Apply</button>
+                      <input
+                        type="text"
+                        class="form-control"
+                        placeholder="Enter coupon code"
+                        id="couponCode"
+                      />
+                      <button
+                        class="btn btn-dark"
+                        type="button"
+                        id="applyCoupon"
+                      >
+                        Apply
+                      </button>
                     </div>
                   </div>
-                  <button class="btn btn-outline-secondary" type="button" disabled>
+                  <button
+                    class="btn btn-outline-secondary"
+                    type="button"
+                    disabled
+                  >
                     <i class="bi bi-arrow-clockwise me-1"></i>Update Cart
                   </button>
                 </div>
               </div>
             </div>
           </div>
-          <div class="card-footer bg-white p-4 border-0 d-flex justify-content-between">
+          <div
+            class="card-footer bg-white p-4 border-0 d-flex justify-content-between"
+          >
             <a href="/cart" class="btn btn-outline-dark">
               <i class="bi bi-arrow-left me-2"></i>Back to Cart
             </a>
             <% if (cartItems && cartItems.length > 0) { %>
-              <button class="btn btn-dark next-step" data-next="2">
-                Continue to Address<i class="bi bi-arrow-right ms-2"></i>
-              </button>
+            <button class="btn btn-dark next-step" data-next="2">
+              Continue to Address<i class="bi bi-arrow-right ms-2"></i>
+            </button>
             <% } else { %>
-              <button class="btn btn-dark" disabled>
-                Continue to Address<i class="bi bi-arrow-right ms-2"></i>
-              </button>
+            <button class="btn btn-dark" disabled>
+              Continue to Address<i class="bi bi-arrow-right ms-2"></i>
+            </button>
             <% } %>
           </div>
         </div>
-        
+
         <!-- Step 2: Address Selection -->
         <div class="checkout-step-content" id="step-2-content">
           <div class="card-header bg-white p-4 border-0">
@@ -133,72 +164,99 @@
           </div>
           <div class="card-body p-4">
             <div class="row g-3" id="addressSelectionContainer">
-              <% if (addresses && addresses.length > 0) { %>
-                <% addresses.forEach((address, index) => { %>
-                  <div class="col-md-6" data-address-id="<%= address._id %>">
-                    <div class="card h-100 border shadow-sm address-card <%= index === 0 ? 'selected' : '' %>">
-                      <div class="card-body position-relative">
-                        <% if (address.isDefault) { %>
-                          <span class="badge bg-success position-absolute end-0 top-0 mt-3 me-3">Default</span>
-                        <% } %>
-                        <div class="form-check position-absolute start-0 top-0 mt-3 ms-3">
-                          <input 
-                            class="form-check-input" 
-                            type="radio" 
-                            name="selectedAddress" 
-                            id="address<%= address._id %>" 
-                            value="<%= address._id %>"
-                            <%= index === 0 ? 'checked' : '' %>
-                          >
-                          <label class="form-check-label" for="address<%= address._id %>"></label>
-                        </div>
-                        <div class="ps-4">
-                          <h5 class="mb-3"><%= address.fullName %></h5>
-                          <p class="mb-1"><%= address.street %></p>
-                          <p class="mb-1"><%= address.district %>, <%= address.state %> - <%= address.pincode %></p>
-                          <% if (address.landmark) { %>
-                            <p class="mb-1">Landmark: <%= address.landmark %></p>
-                          <% } %>
-                          <p class="mb-3">Phone: <%= address.phone %></p>
-                        </div>
-                      </div>
+              <% if (addresses && addresses.length > 0) { %> <%
+              addresses.forEach((address, index) => { %>
+              <div class="col-md-6" data-address-id="<%= address._id %>">
+                <div
+                  class="card h-100 border shadow-sm address-card <%= index === 0 ? 'selected' : '' %>"
+                >
+                  <div class="card-body position-relative">
+                    <% if (address.isDefault) { %>
+                    <span
+                      class="badge bg-success position-absolute end-0 top-0 mt-3 me-3"
+                      >Default</span
+                    >
+                    <% } %>
+                    <div
+                      class="form-check position-absolute start-0 top-0 mt-3 ms-3"
+                    >
+                      <input class="form-check-input" type="radio"
+                      name="selectedAddress" id="address<%= address._id %>"
+                      value="<%= address._id %>" <%= index === 0 ? 'checked' :
+                      '' %> >
+                      <label
+                        class="form-check-label"
+                        for="address<%= address._id %>"
+                      ></label>
+                    </div>
+                    <div class="ps-4">
+                      <h5 class="mb-3"><%= address.fullName %></h5>
+                      <p class="mb-1"><%= address.street %></p>
+                      <p class="mb-1">
+                        <%= address.district %>, <%= address.state %> - <%=
+                        address.pincode %>
+                      </p>
+                      <% if (address.landmark) { %>
+                      <p class="mb-1">Landmark: <%= address.landmark %></p>
+                      <% } %>
+                      <p class="mb-3">Phone: <%= address.phone %></p>
                     </div>
                   </div>
-                <% }) %>
-              <% } else { %>
-                <div class="col-12 text-center py-5">
-                  <div class="mb-4">
-                    <i class="bi bi-geo-alt-fill text-muted" style="font-size: 3rem;"></i>
-                  </div>
-                  <h5 class="text-muted mb-3">No addresses found</h5>
-                  <p class="text-muted mb-4">Please add a delivery address to proceed.</p>
                 </div>
+              </div>
+              <% }) %> <% } else { %>
+              <div class="col-12 text-center py-5">
+                <div class="mb-4">
+                  <i
+                    class="bi bi-geo-alt-fill text-muted"
+                    style="font-size: 3rem"
+                  ></i>
+                </div>
+                <h5 class="text-muted mb-3">No addresses found</h5>
+                <p class="text-muted mb-4">
+                  Please add a delivery address to proceed.
+                </p>
+              </div>
               <% } %>
-              
+
               <!-- Add New Address Card -->
               <div class="col-md-6">
-                <div class="card h-100 border shadow-sm address-card add-address" data-bs-toggle="modal" data-bs-target="#addAddressModal">
-                  <div class="card-body d-flex flex-column align-items-center justify-content-center text-center p-4">
+                <div
+                  class="card h-100 border shadow-sm address-card add-address"
+                  data-bs-toggle="modal"
+                  data-bs-target="#addAddressModal"
+                >
+                  <div
+                    class="card-body d-flex flex-column align-items-center justify-content-center text-center p-4"
+                  >
                     <div class="add-address-icon mb-3">
                       <i class="bi bi-plus-circle"></i>
                     </div>
                     <h5 class="mb-2">Add New Address</h5>
-                    <p class="text-muted mb-0">Add a new delivery address for your order</p>
+                    <p class="text-muted mb-0">
+                      Add a new delivery address for your order
+                    </p>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-          <div class="card-footer bg-white p-4 border-0 d-flex justify-content-between">
-            <button class="btn btn-outline-dark prev-step" data-prev="1">
-              <i class="bi bi-arrow-left me-2"></i>Back to Review
-            </button>
-            <button class="btn btn-dark next-step" data-next="3" id="continueToPaymentBtn">
+          <div
+            class="card-footer bg-white p-4 border-0 d-flex justify-content-between"
+          >
+          <button class="btn btn-dark next-step" id="continueToReviewBtn" data-next="4">
+            Review Order<i class="bi bi-arrow-right ms-2"></i>
+          </button>
+            <button
+              class="btn btn-dark next-step"
+              data-next="3"
+              id="continueToPaymentBtn"
+            >
               Continue to Payment<i class="bi bi-arrow-right ms-2"></i>
             </button>
           </div>
         </div>
-        
+
         <!-- Step 3: Payment Method -->
         <div class="checkout-step-content" id="step-3-content">
           <div class="card-header bg-white p-4 border-0">
@@ -210,45 +268,86 @@
                 <!-- UPI Payment -->
                 <div class="accordion-item border mb-3 rounded">
                   <h2 class="accordion-header">
-                    <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#upiPayment" aria-expanded="true" aria-controls="upiPayment">
+                    <button
+                      class="accordion-button"
+                      type="button"
+                      data-bs-toggle="collapse"
+                      data-bs-target="#upiPayment"
+                      aria-expanded="true"
+                      aria-controls="upiPayment"
+                    >
                       <div class="d-flex align-items-center">
                         <div class="payment-icon me-3">
                           <i class="bi bi-phone"></i>
                         </div>
                         <div>
                           <span class="fw-medium">UPI Payment</span>
-                          <small class="d-block text-muted">Pay using Google Pay, PhonePe, Paytm, or any UPI app</small>
+                          <small class="d-block text-muted"
+                            >Pay using Google Pay, PhonePe, Paytm, or any UPI
+                            app</small
+                          >
                         </div>
                       </div>
                     </button>
                   </h2>
-                  <div id="upiPayment" class="accordion-collapse collapse show" data-bs-parent="#paymentAccordion">
+                  <div
+                    id="upiPayment"
+                    class="accordion-collapse collapse show"
+                    data-bs-parent="#paymentAccordion"
+                  >
                     <div class="accordion-body">
                       <div class="mb-3">
-                        <label for="upiId" class="form-label">Enter UPI ID</label>
+                        <label for="upiId" class="form-label"
+                          >Enter UPI ID</label
+                        >
                         <div class="input-group">
-                          <input type="text" class="form-control" id="upiId" placeholder="yourname@upi">
-                          <button class="btn btn-dark" type="button">Verify</button>
+                          <input
+                            type="text"
+                            class="form-control"
+                            id="upiId"
+                            placeholder="yourname@upi"
+                          />
+                          <button class="btn btn-dark" type="button">
+                            Verify
+                          </button>
                         </div>
-                        <div class="form-text">Example: yourname@okicici, yourname@ybl</div>
+                        <div class="form-text">
+                          Example: yourname@okicici, yourname@ybl
+                        </div>
                       </div>
                       <div class="upi-apps mt-4">
                         <p class="mb-2">Or pay using</p>
                         <div class="d-flex flex-wrap gap-3">
                           <div class="upi-app-option">
-                            <img src="/api/placeholder/60/60?query=gpay" alt="Google Pay" class="img-fluid mb-2">
+                            <img
+                              src="/api/placeholder/60/60?query=gpay"
+                              alt="Google Pay"
+                              class="img-fluid mb-2"
+                            />
                             <span>Google Pay</span>
                           </div>
                           <div class="upi-app-option">
-                            <img src="/api/placeholder/60/60?query=phonepe" alt="PhonePe" class="img-fluid mb-2">
+                            <img
+                              src="/api/placeholder/60/60?query=phonepe"
+                              alt="PhonePe"
+                              class="img-fluid mb-2"
+                            />
                             <span>PhonePe</span>
                           </div>
                           <div class="upi-app-option">
-                            <img src="/api/placeholder/60/60?query=paytm" alt="Paytm" class="img-fluid mb-2">
+                            <img
+                              src="/api/placeholder/60/60?query=paytm"
+                              alt="Paytm"
+                              class="img-fluid mb-2"
+                            />
                             <span>Paytm</span>
                           </div>
                           <div class="upi-app-option">
-                            <img src="/api/placeholder/60/60?query=amazonpay" alt="Amazon Pay" class="img-fluid mb-2">
+                            <img
+                              src="/api/placeholder/60/60?query=amazonpay"
+                              alt="Amazon Pay"
+                              class="img-fluid mb-2"
+                            />
                             <span>Amazon Pay</span>
                           </div>
                         </div>
@@ -256,62 +355,127 @@
                     </div>
                   </div>
                 </div>
-                
+
                 <!-- Credit/Debit Card -->
                 <div class="accordion-item border mb-3 rounded">
                   <h2 class="accordion-header">
-                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#cardPayment" aria-expanded="false" aria-controls="cardPayment">
+                    <button
+                      class="accordion-button collapsed"
+                      type="button"
+                      data-bs-toggle="collapse"
+                      data-bs-target="#cardPayment"
+                      aria-expanded="false"
+                      aria-controls="cardPayment"
+                    >
                       <div class="d-flex align-items-center">
                         <div class="payment-icon me-3">
                           <i class="bi bi-credit-card"></i>
                         </div>
                         <div>
                           <span class="fw-medium">Credit/Debit Card</span>
-                          <small class="d-block text-muted">Pay using Visa, Mastercard, RuPay, or American Express</small>
+                          <small class="d-block text-muted"
+                            >Pay using Visa, Mastercard, RuPay, or American
+                            Express</small
+                          >
                         </div>
                       </div>
                     </button>
                   </h2>
-                  <div id="cardPayment" class="accordion-collapse collapse" data-bs-parent="#paymentAccordion">
+                  <div
+                    id="cardPayment"
+                    class="accordion-collapse collapse"
+                    data-bs-parent="#paymentAccordion"
+                  >
                     <div class="accordion-body">
                       <form id="cardPaymentForm">
                         <div class="mb-3">
-                          <label for="cardNumber" class="form-label">Card Number</label>
+                          <label for="cardNumber" class="form-label"
+                            >Card Number</label
+                          >
                           <div class="input-group">
-                            <span class="input-group-text bg-light border-end-0">
+                            <span
+                              class="input-group-text bg-light border-end-0"
+                            >
                               <i class="bi bi-credit-card"></i>
                             </span>
-                            <input type="text" class="form-control border-start-0" id="cardNumber" placeholder="1234 5678 9012 3456" maxlength="19">
+                            <input
+                              type="text"
+                              class="form-control border-start-0"
+                              id="cardNumber"
+                              placeholder="1234 5678 9012 3456"
+                              maxlength="19"
+                            />
                           </div>
-                          <div id="cardNumberError" class="text-danger small mt-1"></div>
+                          <div
+                            id="cardNumberError"
+                            class="text-danger small mt-1"
+                          ></div>
                         </div>
-                        
+
                         <div class="row g-3 mb-3">
                           <div class="col-md-6">
-                            <label for="expiryDate" class="form-label">Expiry Date</label>
-                            <input type="text" class="form-control" id="expiryDate" placeholder="MM/YY" maxlength="5">
-                            <div id="expiryDateError" class="text-danger small mt-1"></div>
+                            <label for="expiryDate" class="form-label"
+                              >Expiry Date</label
+                            >
+                            <input
+                              type="text"
+                              class="form-control"
+                              id="expiryDate"
+                              placeholder="MM/YY"
+                              maxlength="5"
+                            />
+                            <div
+                              id="expiryDateError"
+                              class="text-danger small mt-1"
+                            ></div>
                           </div>
                           <div class="col-md-6">
                             <label for="cvv" class="form-label">CVV</label>
                             <div class="input-group">
-                              <input type="password" class="form-control" id="cvv" placeholder="123" maxlength="3">
+                              <input
+                                type="password"
+                                class="form-control"
+                                id="cvv"
+                                placeholder="123"
+                                maxlength="3"
+                              />
                               <span class="input-group-text bg-light">
-                                <i class="bi bi-question-circle" data-bs-toggle="tooltip" title="3-digit code on the back of your card"></i>
+                                <i
+                                  class="bi bi-question-circle"
+                                  data-bs-toggle="tooltip"
+                                  title="3-digit code on the back of your card"
+                                ></i>
                               </span>
                             </div>
-                            <div id="cvvError" class="text-danger small mt-1"></div>
+                            <div
+                              id="cvvError"
+                              class="text-danger small mt-1"
+                            ></div>
                           </div>
                         </div>
-                        
+
                         <div class="mb-3">
-                          <label for="nameOnCard" class="form-label">Name on Card</label>
-                          <input type="text" class="form-control" id="nameOnCard" placeholder="John Doe">
-                          <div id="nameOnCardError" class="text-danger small mt-1"></div>
+                          <label for="nameOnCard" class="form-label"
+                            >Name on Card</label
+                          >
+                          <input
+                            type="text"
+                            class="form-control"
+                            id="nameOnCard"
+                            placeholder="John Doe"
+                          />
+                          <div
+                            id="nameOnCardError"
+                            class="text-danger small mt-1"
+                          ></div>
                         </div>
-                        
+
                         <div class="form-check mb-3">
-                          <input class="form-check-input" type="checkbox" id="saveCard">
+                          <input
+                            class="form-check-input"
+                            type="checkbox"
+                            id="saveCard"
+                          />
                           <label class="form-check-label" for="saveCard">
                             Save this card for future payments
                           </label>
@@ -320,68 +484,114 @@
                     </div>
                   </div>
                 </div>
-                
+
                 <!-- Cash on Delivery -->
                 <div class="accordion-item border mb-3 rounded">
                   <h2 class="accordion-header">
-                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#codPayment" aria-expanded="false" aria-controls="codPayment">
+                    <button
+                      class="accordion-button collapsed"
+                      type="button"
+                      data-bs-toggle="collapse"
+                      data-bs-target="#codPayment"
+                      aria-expanded="false"
+                      aria-controls="codPayment"
+                    >
                       <div class="d-flex align-items-center">
                         <div class="payment-icon me-3">
                           <i class="bi bi-cash"></i>
                         </div>
                         <div>
                           <span class="fw-medium">Cash on Delivery</span>
-                          <small class="d-block text-muted">Pay when your order is delivered</small>
+                          <small class="d-block text-muted"
+                            >Pay when your order is delivered</small
+                          >
                         </div>
                       </div>
                     </button>
                   </h2>
-                  <div id="codPayment" class="accordion-collapse collapse" data-bs-parent="#paymentAccordion">
+                  <div
+                    id="codPayment"
+                    class="accordion-collapse collapse"
+                    data-bs-parent="#paymentAccordion"
+                  >
                     <div class="accordion-body">
-                      <div class="alert alert-info d-flex align-items-center" role="alert">
+                      <div
+                        class="alert alert-info d-flex align-items-center"
+                        role="alert"
+                      >
                         <i class="bi bi-info-circle-fill me-2"></i>
                         <div>
-                          You will pay ₹<%= totalAmount ? totalAmount.toFixed(2) : '0.00' %> when your order is delivered. Please keep exact change ready.
+                          You will pay ₹<%= totalAmount ? totalAmount.toFixed(2)
+                          : '0.00' %> when your order is delivered. Please keep
+                          exact change ready.
                         </div>
                       </div>
                       <div class="form-check mt-3">
-                        <input class="form-check-input" type="checkbox" id="confirmCod">
+                        <input
+                          class="form-check-input"
+                          type="checkbox"
+                          id="confirmCod"
+                        />
                         <label class="form-check-label" for="confirmCod">
-                          I understand that I need to pay when the order is delivered
+                          I understand that I need to pay when the order is
+                          delivered
                         </label>
                       </div>
                     </div>
                   </div>
                 </div>
-                
+
                 <!-- Wallet -->
                 <div class="accordion-item border mb-3 rounded">
                   <h2 class="accordion-header">
-                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#walletPayment" aria-expanded="false" aria-controls="walletPayment">
+                    <button
+                      class="accordion-button collapsed"
+                      type="button"
+                      data-bs-toggle="collapse"
+                      data-bs-target="#walletPayment"
+                      aria-expanded="false"
+                      aria-controls="walletPayment"
+                    >
                       <div class="d-flex align-items-center">
                         <div class="payment-icon me-3">
                           <i class="bi bi-wallet2"></i>
                         </div>
                         <div>
                           <span class="fw-medium">Wallet</span>
-                          <small class="d-block text-muted">Pay using your wallet balance</small>
+                          <small class="d-block text-muted"
+                            >Pay using your wallet balance</small
+                          >
                         </div>
                       </div>
                     </button>
                   </h2>
-                  <div id="walletPayment" class="accordion-collapse collapse" data-bs-parent="#paymentAccordion">
+                  <div
+                    id="walletPayment"
+                    class="accordion-collapse collapse"
+                    data-bs-parent="#paymentAccordion"
+                  >
                     <div class="accordion-body">
-                      <div class="d-flex justify-content-between align-items-center mb-3">
+                      <div
+                        class="d-flex justify-content-between align-items-center mb-3"
+                      >
                         <div>
                           <h6 class="mb-1">Available Balance</h6>
                           <h5 class="mb-0 fw-bold">₹5,000</h5>
                         </div>
-                        <a href="/wallet" class="btn btn-outline-dark btn-sm">Add Money</a>
+                        <a href="/wallet" class="btn btn-outline-dark btn-sm"
+                          >Add Money</a
+                        >
                       </div>
-                      <div class="alert alert-warning d-flex align-items-center" role="alert">
+                      <div
+                        class="alert alert-warning d-flex align-items-center"
+                        role="alert"
+                      >
                         <i class="bi bi-exclamation-triangle-fill me-2"></i>
                         <div>
-                          Your wallet balance is insufficient for this order. Please add ₹<%= totalAmount ? (totalAmount - 5000).toFixed(2) : '0.00' %> more or choose another payment method.
+                          Your wallet balance is insufficient for this order.
+                          Please add ₹<%= totalAmount ? (totalAmount -
+                          5000).toFixed(2) : '0.00' %> more or choose another
+                          payment method.
                         </div>
                       </div>
                     </div>
@@ -390,7 +600,9 @@
               </div>
             </div>
           </div>
-          <div class="card-footer bg-white p-4 border-0 d-flex justify-content-between">
+          <div
+            class="card-footer bg-white p-4 border-0 d-flex justify-content-between"
+          >
             <button class="btn btn-outline-dark prev-step" data-prev="2">
               <i class="bi bi-arrow-left me-2"></i>Back to Address
             </button>
@@ -399,7 +611,7 @@
             </button>
           </div>
         </div>
-        
+
         <!-- Step 4: Order Confirmation -->
         <div class="checkout-step-content" id="step-4-content">
           <div class="card-header bg-white p-4 border-0">
@@ -409,91 +621,135 @@
             <div class="order-summary">
               <!-- Delivery Address -->
               <div class="order-section mb-4">
-                <div class="d-flex justify-content-between align-items-center mb-3">
+                <div
+                  class="d-flex justify-content-between align-items-center mb-3"
+                >
                   <h5 class="mb-0">Delivery Address</h5>
-                  <button class="btn btn-sm btn-link text-dark p-0" data-step="2">Change</button>
+                  <button
+                    class="btn btn-sm btn-link text-dark p-0"
+                    data-step="2"
+                  >
+                    Change
+                  </button>
                 </div>
                 <div class="card border" id="selectedAddressSummary">
                   <!-- Dynamically populated via JavaScript -->
                 </div>
               </div>
-              
+
               <!-- Payment Method -->
               <div class="order-section mb-4">
-                <div class="d-flex justify-content-between align-items-center mb-3">
+                <div
+                  class="d-flex justify-content-between align-items-center mb-3"
+                >
                   <h5 class="mb-0">Payment Method</h5>
-                  <button class="btn btn-sm btn-link text-dark p-0" data-step="3">Change</button>
+                  <button
+                    class="btn btn-sm btn-link text-dark p-0"
+                    data-step="3"
+                  >
+                    Change
+                  </button>
                 </div>
-                <div class="card border">
+                <div class="card border" id="paymentMethodSummary">
                   <div class="card-body">
                     <div class="d-flex align-items-center">
                       <div class="payment-icon me-3">
-                        <i class="bi bi-phone"></i>
+                        <i class="bi bi-cash"></i>
                       </div>
                       <div>
-                        <h6 class="mb-1">UPI Payment</h6>
-                        <p class="mb-0 text-muted">johndoe@okicici</p>
+                        <h6 class="mb-1" id="paymentMethodText">Cash on Delivery</h6>
+                        <p class="mb-0 text-muted" id="paymentMethodDetails">Pay when your order is delivered</p>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
-              
+
               <!-- Order Items -->
               <div class="order-section mb-4">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                  <h5 class="mb-0">Order Items (<%= cartItems ? cartItems.length : 0 %>)</h5>
-                  <button class="btn btn-sm btn-link text-dark p-0" data-step="1">Change</button>
+                <div
+                  class="d-flex justify-content-between align-items-center mb-3"
+                >
+                  <h5 class="mb-0">
+                    Order Items (<%= cartItems ? cartItems.length : 0 %>)
+                  </h5>
+                  <button
+                    class="btn btn-sm btn-link text-dark p-0"
+                    data-step="1"
+                  >
+                    Change
+                  </button>
                 </div>
                 <div class="card border">
                   <div class="card-body p-0">
                     <div class="list-group list-group-flush">
-                      <% if (cartItems && cartItems.length > 0) { %>
-                        <% cartItems.forEach(item => { %>
-                          <div class="list-group-item py-3">
-                            <div class="d-flex">
-                              <div class="flex-shrink-0 me-3">
-                                <img 
-                                  src="<%= item.product && item.product.mainImage ? item.product.mainImage : 'https://via.placeholder.com/60' %>" 
-                                  alt="<%= item.product && item.product.title ? item.product.title : 'Product' %>" 
-                                  class="rounded" 
-                                  width="60" 
-                                  height="60"
-                                  onerror="console.log('Image failed to load: <%= item.product && item.product.mainImage ? item.product.mainImage : 'https://via.placeholder.com/60' %>')"
-                                >
-                              </div>
-                              <div class="flex-grow-1">
-                                <h6 class="mb-1"><%= item.product && item.product.title ? item.product.title : 'Unknown Product' %></h6>
-                                <p class="text-muted mb-1 small">Price: ₹<%= item.priceAtAddition ? item.priceAtAddition.toFixed(2) : '0.00' %></p>
-                                <div class="d-flex justify-content-between">
-                                  <span class="text-muted">Qty: <%= item.quantity || 1 %></span>
-                                  <span class="fw-medium">₹<%= item.quantity && item.priceAtAddition ? (item.quantity * item.priceAtAddition).toFixed(2) : '0.00' %></span>
-                                </div>
-                              </div>
+                      <% if (cartItems && cartItems.length > 0) { %> <%
+                      cartItems.forEach(item => { %>
+                      <div class="list-group-item py-3">
+                        <div class="d-flex">
+                          <div class="flex-shrink-0 me-3">
+                            <img
+                              src="<%= item.product && item.product.mainImage ? item.product.mainImage : 'https://via.placeholder.com/60' %>"
+                              alt="<%= item.product && item.product.title ? item.product.title : 'Product' %>"
+                              class="rounded"
+                              width="60"
+                              height="60"
+                              onerror="console.log('Image failed to load: <%= item.product && item.product.mainImage ? item.product.mainImage : 'https://via.placeholder.com/60' %>')"
+                            />
+                          </div>
+                          <div class="flex-grow-1">
+                            <h6 class="mb-1">
+                              <%= item.product && item.product.title ?
+                              item.product.title : 'Unknown Product' %>
+                            </h6>
+                            <p class="text-muted mb-1 small">
+                              Price: ₹<%= item.priceAtAddition ?
+                              item.priceAtAddition.toFixed(2) : '0.00' %>
+                            </p>
+                            <div class="d-flex justify-content-between">
+                              <span class="text-muted"
+                                >Qty: <%= item.quantity || 1 %></span
+                              >
+                              <span class="fw-medium"
+                                >₹<%= item.quantity && item.priceAtAddition ?
+                                (item.quantity *
+                                item.priceAtAddition).toFixed(2) : '0.00'
+                                %></span
+                              >
                             </div>
                           </div>
-                        <% }) %>
-                      <% } else { %>
-                        <div class="list-group-item py-3">
-                          <p class="text-muted mb-0">No items in cart</p>
                         </div>
+                      </div>
+                      <% }) %> <% } else { %>
+                      <div class="list-group-item py-3">
+                        <p class="text-muted mb-0">No items in cart</p>
+                      </div>
                       <% } %>
                     </div>
                   </div>
                 </div>
               </div>
-              
+
               <!-- Terms and Conditions -->
               <div class="form-check mb-4">
-                <input class="form-check-input" type="checkbox" id="termsCheck" required>
+                <input
+                  class="form-check-input"
+                  type="checkbox"
+                  id="termsCheck"
+                  required
+                />
                 <label class="form-check-label" for="termsCheck">
-                  I agree to the <a href="/terms" target="_blank">Terms and Conditions</a> and <a href="/privacy" target="_blank">Privacy Policy</a>
+                  I agree to the
+                  <a href="/terms" target="_blank">Terms and Conditions</a> and
+                  <a href="/privacy" target="_blank">Privacy Policy</a>
                 </label>
                 <div id="termsCheckError" class="text-danger small mt-1"></div>
               </div>
             </div>
           </div>
-          <div class="card-footer bg-white p-4 border-0 d-flex justify-content-between">
+          <div
+            class="card-footer bg-white p-4 border-0 d-flex justify-content-between"
+          >
             <button class="btn btn-outline-dark prev-step" data-prev="3">
               <i class="bi bi-arrow-left me-2"></i>Back to Payment
             </button>
@@ -504,17 +760,24 @@
         </div>
       </div>
     </div>
-    
+
     <!-- Order Summary Sidebar -->
     <div class="col-lg-4">
-      <div class="card border-0 shadow-sm mb-4 sticky-lg-top" style="top: 20px; z-index: 1;">
+      <div
+        class="card border-0 shadow-sm mb-4 sticky-lg-top"
+        style="top: 20px; z-index: 1"
+      >
         <div class="card-header bg-white p-4 border-0">
           <h4 class="mb-0">Order Summary</h4>
         </div>
         <div class="card-body p-4">
           <div class="summary-item d-flex justify-content-between mb-3">
-            <span class="text-muted">Subtotal (<%= cartItems ? cartItems.length : 0 %> items)</span>
-            <span class="fw-medium">₹<%= subtotal ? subtotal.toFixed(2) : '0.00' %></span>
+            <span class="text-muted"
+              >Subtotal (<%= cartItems ? cartItems.length : 0 %> items)</span
+            >
+            <span class="fw-medium"
+              >₹<%= subtotal ? subtotal.toFixed(2) : '0.00' %></span
+            >
           </div>
           <div class="summary-item d-flex justify-content-between mb-3">
             <span class="text-muted">Shipping</span>
@@ -532,12 +795,14 @@
             <span class="text-muted">Coupon Discount</span>
             <span class="fw-medium text-success">₹0</span>
           </div>
-          <hr>
+          <hr />
           <div class="summary-item d-flex justify-content-between mb-3">
             <span class="fw-bold">Total</span>
-            <span class="fw-bold fs-5">₹<%= totalAmount ? totalAmount.toFixed(2) : '0.00' %></span>
+            <span class="fw-bold fs-5"
+              >₹<%= totalAmount ? totalAmount.toFixed(2) : '0.00' %></span
+            >
           </div>
-          
+
           <!-- Delivery Info -->
           <div class="delivery-info mt-4">
             <div class="d-flex align-items-center mb-2">
@@ -553,7 +818,7 @@
               <span>Secure Payment</span>
             </div>
           </div>
-          
+
           <!-- Need Help -->
           <div class="need-help mt-4">
             <h6 class="mb-2">Need Help?</h6>
@@ -573,12 +838,23 @@
 </div>
 
 <!-- Add Address Modal -->
-<div class="modal fade" id="addAddressModal" tabindex="-1" aria-labelledby="addAddressModalLabel" aria-hidden="true">
+<div
+  class="modal fade"
+  id="addAddressModal"
+  tabindex="-1"
+  aria-labelledby="addAddressModalLabel"
+  aria-hidden="true"
+>
   <div class="modal-dialog modal-dialog-centered modal-lg">
     <div class="modal-content">
       <div class="modal-header border-0">
         <h5 class="modal-title" id="addAddressModalLabel">Add New Address</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Close"
+        ></button>
       </div>
       <div class="modal-body">
         <form id="addressForm">
@@ -589,40 +865,66 @@
                 <span class="input-group-text bg-light border-end-0">
                   <i class="bi bi-person"></i>
                 </span>
-                <input type="text" class="form-control border-start-0" id="fullName" name="fullName" placeholder="Enter full name" required>
+                <input
+                  type="text"
+                  class="form-control border-start-0"
+                  id="fullName"
+                  name="fullName"
+                  placeholder="Enter full name"
+                  required
+                />
               </div>
               <div id="fullNameError" class="text-danger small mt-1"></div>
             </div>
-            
+
             <div class="col-md-6">
               <label for="phone" class="form-label">Phone Number</label>
               <div class="input-group">
                 <span class="input-group-text bg-light border-end-0">
                   <i class="bi bi-telephone"></i>
                 </span>
-                <input type="tel" class="form-control border-start-0" id="phone" name="phone" placeholder="+91 12345 67890" required>
+                <input
+                  type="tel"
+                  class="form-control border-start-0"
+                  id="phone"
+                  name="phone"
+                  placeholder="+91 12345 67890"
+                  required
+                />
               </div>
               <div id="phoneError" class="text-danger small mt-1"></div>
             </div>
-            
+
             <div class="col-md-6">
               <label for="pincode" class="form-label">PIN Code</label>
               <div class="input-group">
                 <span class="input-group-text bg-light border-end-0">
                   <i class="bi bi-geo"></i>
                 </span>
-                <input type="text" class="form-control border-start-0" id="pincode" name="pincode" placeholder="Enter 6-digit pincode" required>
+                <input
+                  type="text"
+                  class="form-control border-start-0"
+                  id="pincode"
+                  name="pincode"
+                  placeholder="Enter 6-digit pincode"
+                  required
+                />
               </div>
               <div id="pincodeError" class="text-danger small mt-1"></div>
             </div>
-            
+
             <div class="col-md-6">
               <label for="state" class="form-label">State</label>
               <div class="input-group">
                 <span class="input-group-text bg-light border-end-0">
                   <i class="bi bi-geo-alt"></i>
                 </span>
-                <select class="form-select border-start-0" id="state" name="state" required>
+                <select
+                  class="form-select border-start-0"
+                  id="state"
+                  name="state"
+                  required
+                >
                   <option value="" selected disabled>Select your state</option>
                   <option value="Andhra Pradesh">Andhra Pradesh</option>
                   <option value="Arunachal Pradesh">Arunachal Pradesh</option>
@@ -656,42 +958,69 @@
               </div>
               <div id="stateError" class="text-danger small mt-1"></div>
             </div>
-            
+
             <div class="col-md-6">
               <label for="district" class="form-label">District</label>
               <div class="input-group">
                 <span class="input-group-text bg-light border-end-0">
                   <i class="bi bi-geo-alt"></i>
                 </span>
-                <input type="text" class="form-control border-start-0" id="district" name="district" placeholder="Enter your district" required>
+                <input
+                  type="text"
+                  class="form-control border-start-0"
+                  id="district"
+                  name="district"
+                  placeholder="Enter your district"
+                  required
+                />
               </div>
               <div id="districtError" class="text-danger small mt-1"></div>
             </div>
-            
+
             <div class="col-md-6">
-              <label for="landmark" class="form-label">Landmark (Optional)</label>
+              <label for="landmark" class="form-label"
+                >Landmark (Optional)</label
+              >
               <div class="input-group">
                 <span class="input-group-text bg-light border-end-0">
                   <i class="bi bi-signpost"></i>
                 </span>
-                <input type="text" class="form-control border-start-0" id="landmark" name="landmark" placeholder="Enter a nearby landmark">
+                <input
+                  type="text"
+                  class="form-control border-start-0"
+                  id="landmark"
+                  name="landmark"
+                  placeholder="Enter a nearby landmark"
+                />
               </div>
             </div>
-            
+
             <div class="col-12">
               <label for="street" class="form-label">Street Address</label>
               <div class="input-group">
                 <span class="input-group-text bg-light border-end-0">
                   <i class="bi bi-house-door"></i>
                 </span>
-                <textarea class="form-control border-start-0" id="street" name="street" rows="2" placeholder="Enter your complete address with house/building number, street, locality" required></textarea>
+                <textarea
+                  class="form-control border-start-0"
+                  id="street"
+                  name="street"
+                  rows="2"
+                  placeholder="Enter your complete address with house/building number, street, locality"
+                  required
+                ></textarea>
               </div>
               <div id="streetError" class="text-danger small mt-1"></div>
             </div>
-            
+
             <div class="col-12">
               <div class="form-check mt-2">
-                <input class="form-check-input" type="checkbox" id="isDefault" name="isDefault">
+                <input
+                  class="form-check-input"
+                  type="checkbox"
+                  id="isDefault"
+                  name="isDefault"
+                />
                 <label class="form-check-label" for="isDefault">
                   Set as default address
                 </label>
@@ -701,8 +1030,15 @@
         </form>
       </div>
       <div class="modal-footer border-0">
-        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
-        <button type="submit" form="addressForm" class="btn btn-dark" id="saveAddressBtn">
+        <button type="button" class="btn btn-light" data-bs-dismiss="modal">
+          Cancel
+        </button>
+        <button
+          type="submit"
+          form="addressForm"
+          class="btn btn-dark"
+          id="saveAddressBtn"
+        >
           <i class="bi bi-check-circle me-2"></i>Save Address
         </button>
       </div>
@@ -711,15 +1047,27 @@
 </div>
 
 <!-- Order Success Modal -->
-<div class="modal fade" id="orderSuccessModal" tabindex="-1" aria-labelledby="orderSuccessModalLabel" aria-hidden="true">
+<div
+  class="modal fade"
+  id="orderSuccessModal"
+  tabindex="-1"
+  aria-labelledby="orderSuccessModalLabel"
+  aria-hidden="true"
+>
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
       <div class="modal-body text-center p-5">
         <div class="mb-4">
-          <i class="bi bi-check-circle-fill text-success" style="font-size: 5rem;"></i>
+          <i
+            class="bi bi-check-circle-fill text-success"
+            style="font-size: 5rem"
+          ></i>
         </div>
         <h3 class="mb-3">Order Placed Successfully!</h3>
-        <p class="mb-4">Your order #ORD12345 has been placed successfully. You will receive a confirmation email shortly.</p>
+        <p class="mb-4" id="orderSuccessMessage">
+          Your order has been placed successfully. You will receive a
+          confirmation email shortly.
+        </p>
         <div class="d-grid gap-2">
           <a href="/orders" class="btn btn-dark">
             <i class="bi bi-box me-2"></i>Track Your Order
@@ -734,7 +1082,10 @@
 </div>
 
 <!-- Add Bootstrap Icons CDN -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+<link
+  rel="stylesheet"
+  href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css"
+/>
 <!-- Add SweetAlert2 CDN -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
@@ -936,13 +1287,13 @@
       left: 10%;
       right: 10%;
     }
-    
+
     .checkout-step-icon {
       width: 50px;
       height: 50px;
       font-size: 1.2rem;
     }
-    
+
     .checkout-step-label {
       font-size: 0.8rem;
     }
@@ -950,593 +1301,807 @@
 </style>
 
 <script>
-// Validation helper functions (reused from address page)
-function setInvalid(element, errorElement, message) {
-  element.classList.add("is-invalid");
-  element.classList.remove("is-valid");
-  errorElement.textContent = message;
-}
+  // Validation helper functions (reused from address page)
+  function setInvalid(element, errorElement, message) {
+    element.classList.add("is-invalid");
+    element.classList.remove("is-valid");
+    errorElement.textContent = message;
+  }
 
-function setValid(element, errorElement) {
-  element.classList.add("is-valid");
-  element.classList.remove("is-invalid");
-  errorElement.textContent = "";
-}
+  function setValid(element, errorElement) {
+    element.classList.add("is-valid");
+    element.classList.remove("is-invalid");
+    errorElement.textContent = "";
+  }
 
-function clearValidation(element, errorElement) {
-  element.classList.remove("is-invalid", "is-valid");
-  errorElement.textContent = "";
-}
+  function clearValidation(element, errorElement) {
+    element.classList.remove("is-invalid", "is-valid");
+    errorElement.textContent = "";
+  }
 
-function validateFullName(fullName) {
-  const trimmedName = fullName.trim();
-  if (trimmedName.length < 3) return false;
-  return /^[A-Za-z\s'-]+$/.test(trimmedName);
-}
+  function validateFullName(fullName) {
+    const trimmedName = fullName.trim();
+    if (trimmedName.length < 3) return false;
+    return /^[A-Za-z\s'-]+$/.test(trimmedName);
+  }
 
-function validatePhoneNumber(phoneNumber) {
-  const cleanPhone = phoneNumber.replace(/\D/g, "");
-  if (cleanPhone.length !== 10) return false;
-  if (/^(.)\1+$/.test(cleanPhone) || /^0{10}$/.test(cleanPhone) || /^1{10}$/.test(cleanPhone)) return false;
-  return true;
-}
+  function validatePhoneNumber(phoneNumber) {
+    const cleanPhone = phoneNumber.replace(/\D/g, "");
+    if (cleanPhone.length !== 10) return false;
+    if (
+      /^(.)\1+$/.test(cleanPhone) ||
+      /^0{10}$/.test(cleanPhone) ||
+      /^1{10}$/.test(cleanPhone)
+    )
+      return false;
+    return true;
+  }
 
-function validatePincode(pincode) {
-  const cleanPincode = pincode.replace(/\D/g, "");
-  return cleanPincode.length === 6 && /^\d+$/.test(cleanPincode);
-}
+  function validatePincode(pincode) {
+    const cleanPincode = pincode.replace(/\D/g, "");
+    return cleanPincode.length === 6 && /^\d+$/.test(cleanPincode);
+  }
 
-// Toast configuration
-const Toast = Swal.mixin({
-  toast: true,
-  position: "bottom-end",
-  showConfirmButton: false,
-  timer: 3000,
-  timerProgressBar: true,
-  didOpen: (toast) => {
-    toast.addEventListener("mouseenter", Swal.stopTimer);
-    toast.addEventListener("mouseleave", Swal.resumeTimer);
-  },
-});
-
-document.addEventListener('DOMContentLoaded', function() {
-  // Initialize tooltips
-  const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-  tooltipTriggerList.map(function (tooltipTriggerEl) {
-    return new bootstrap.Tooltip(tooltipTriggerEl);
+  // Toast configuration
+  const Toast = Swal.mixin({
+    toast: true,
+    position: "bottom-end",
+    showConfirmButton: false,
+    timer: 3000,
+    timerProgressBar: true,
+    didOpen: (toast) => {
+      toast.addEventListener("mouseenter", Swal.stopTimer);
+      toast.addEventListener("mouseleave", Swal.resumeTimer);
+    },
   });
 
-  // Checkout steps navigation
-  const checkoutSteps = document.querySelectorAll('.checkout-step');
-  const checkoutStepContents = document.querySelectorAll('.checkout-step-content');
-
-  // Next step buttons
-  document.querySelectorAll('.next-step').forEach(button => {
-    button.addEventListener('click', function() {
-      const nextStep = parseInt(this.getAttribute('data-next'));
-      goToStep(nextStep);
+  document.addEventListener("DOMContentLoaded", function () {
+    // Initialize tooltips
+    const tooltipTriggerList = [].slice.call(
+      document.querySelectorAll('[data-bs-toggle="tooltip"]')
+    );
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+      return new bootstrap.Tooltip(tooltipTriggerEl);
     });
-  });
 
-  // Previous step buttons
-  document.querySelectorAll('.prev-step').forEach(button => {
-    button.addEventListener('click', function() {
-      const prevStep = parseInt(this.getAttribute('data-prev'));
-      goToStep(prevStep);
-    });
-  });
+    // Checkout steps navigation
+    const checkoutSteps = document.querySelectorAll(".checkout-step");
+    const checkoutStepContents = document.querySelectorAll(
+      ".checkout-step-content"
+    );
 
-  // Change buttons in review step
-  document.querySelectorAll('.order-section button').forEach(button => {
-    button.addEventListener('click', function() {
-      const step = parseInt(this.getAttribute('data-step'));
-      goToStep(step);
+    // Next step buttons
+    document.querySelectorAll(".next-step").forEach((button) => {
+      button.addEventListener("click", function () {
+        const nextStep = parseInt(this.getAttribute("data-next"));
+        goToStep(nextStep);
+      });
     });
-  });
 
-  // Go to specific step
-  function goToStep(stepNumber) {
-    checkoutStepContents.forEach(content => {
-      content.classList.remove('active');
+    // Previous step buttons
+    document.querySelectorAll(".prev-step").forEach((button) => {
+      button.addEventListener("click", function () {
+        const prevStep = parseInt(this.getAttribute("data-prev"));
+        goToStep(prevStep);
+      });
     });
-    document.getElementById(`step-${stepNumber}-content`).classList.add('active');
-    checkoutSteps.forEach((step, index) => {
-      const stepNum = index + 1;
-      if (stepNum < stepNumber) {
-        step.classList.remove('active');
-        step.classList.add('completed');
-      } else if (stepNum === stepNumber) {
-        step.classList.add('active');
-        step.classList.remove('completed');
+
+    // Change buttons in review step
+    document.querySelectorAll(".order-section button").forEach((button) => {
+      button.addEventListener("click", function () {
+        const step = parseInt(this.getAttribute("data-step"));
+        goToStep(step);
+      });
+    });
+
+    // Go to specific step
+    function goToStep(stepNumber) {
+      checkoutStepContents.forEach((content) => {
+        content.classList.remove("active");
+      });
+      document
+        .getElementById(`step-${stepNumber}-content`)
+        .classList.add("active");
+      checkoutSteps.forEach((step, index) => {
+        const stepNum = index + 1;
+        if (stepNum < stepNumber) {
+          step.classList.remove("active");
+          step.classList.add("completed");
+        } else if (stepNum === stepNumber) {
+          step.classList.add("active");
+          step.classList.remove("completed");
+        } else {
+          step.classList.remove("active", "completed");
+        }
+      });
+      window.scrollTo({
+        top: document.querySelector(".checkout-progress").offsetTop - 20,
+        behavior: "smooth",
+      });
+    }
+
+    // Form validation
+    const addressForm = document.getElementById("addressForm");
+    const fullNameInput = document.getElementById("fullName");
+    const phoneInput = document.getElementById("phone");
+    const pincodeInput = document.getElementById("pincode");
+    const districtInput = document.getElementById("district");
+    const stateInput = document.getElementById("state");
+    const streetInput = document.getElementById("street");
+
+    const fullNameError = document.getElementById("fullNameError");
+    const phoneError = document.getElementById("phoneError");
+    const pincodeError = document.getElementById("pincodeError");
+    const districtError = document.getElementById("districtError");
+    const stateError = document.getElementById("stateError");
+    const streetError = document.getElementById("streetError");
+
+    // Input validation
+    fullNameInput.addEventListener("input", function () {
+      const fullName = this.value.trim();
+      if (!fullName) {
+        clearValidation(this, fullNameError);
+      } else if (!validateFullName(fullName)) {
+        setInvalid(
+          this,
+          fullNameError,
+          "Please enter a valid name (min 3 characters)"
+        );
       } else {
-        step.classList.remove('active', 'completed');
+        setValid(this, fullNameError);
       }
     });
-    window.scrollTo({
-      top: document.querySelector('.checkout-progress').offsetTop - 20,
-      behavior: 'smooth'
+
+    phoneInput.addEventListener("input", function () {
+      const phone = this.value.trim();
+      if (!phone) {
+        clearValidation(this, phoneError);
+      } else if (!validatePhoneNumber(phone)) {
+        setInvalid(
+          this,
+          phoneError,
+          "Please enter a valid 10-digit phone number"
+        );
+      } else {
+        setValid(this, phoneError);
+      }
     });
-  }
 
-  // Form validation
-  const addressForm = document.getElementById("addressForm");
-  const fullNameInput = document.getElementById("fullName");
-  const phoneInput = document.getElementById("phone");
-  const pincodeInput = document.getElementById("pincode");
-  const districtInput = document.getElementById("district");
-  const stateInput = document.getElementById("state");
-  const streetInput = document.getElementById("street");
+    pincodeInput.addEventListener("input", function () {
+      const pincode = this.value.trim();
+      if (!pincode) {
+        clearValidation(this, pincodeError);
+      } else if (!validatePincode(pincode)) {
+        setInvalid(this, pincodeError, "Please enter a valid 6-digit pincode");
+      } else {
+        setValid(this, pincodeError);
+      }
+    });
 
-  const fullNameError = document.getElementById("fullNameError");
-  const phoneError = document.getElementById("phoneError");
-  const pincodeError = document.getElementById("pincodeError");
-  const districtError = document.getElementById("districtError");
-  const stateError = document.getElementById("stateError");
-  const streetError = document.getElementById("streetError");
+    districtInput.addEventListener("input", function () {
+      const district = this.value.trim();
+      if (!district) {
+        clearValidation(this, districtError);
+      } else if (district.length < 3) {
+        setInvalid(
+          this,
+          districtError,
+          "District name must be at least 3 characters"
+        );
+      } else {
+        setValid(this, districtError);
+      }
+    });
 
-  // Input validation
-  fullNameInput.addEventListener("input", function () {
-    const fullName = this.value.trim();
-    if (!fullName) {
-      clearValidation(this, fullNameError);
-    } else if (!validateFullName(fullName)) {
-      setInvalid(this, fullNameError, "Please enter a valid name (min 3 characters)");
-    } else {
-      setValid(this, fullNameError);
-    }
-  });
+    stateInput.addEventListener("change", function () {
+      const state = this.value;
+      if (!state) {
+        clearValidation(this, stateError);
+      } else {
+        setValid(this, stateError);
+      }
+    });
 
-  phoneInput.addEventListener("input", function () {
-    const phone = this.value.trim();
-    if (!phone) {
-      clearValidation(this, phoneError);
-    } else if (!validatePhoneNumber(phone)) {
-      setInvalid(this, phoneError, "Please enter a valid 10-digit phone number");
-    } else {
-      setValid(this, phoneError);
-    }
-  });
+    streetInput.addEventListener("input", function () {
+      const street = this.value.trim();
+      if (!street) {
+        clearValidation(this, streetError);
+      } else if (street.length < 10) {
+        setInvalid(
+          this,
+          streetError,
+          "Please enter a complete address (min 10 characters)"
+        );
+      } else {
+        setValid(this, streetError);
+      }
+    });
 
-  pincodeInput.addEventListener("input", function () {
-    const pincode = this.value.trim();
-    if (!pincode) {
-      clearValidation(this, pincodeError);
-    } else if (!validatePincode(pincode)) {
-      setInvalid(this, pincodeError, "Please enter a valid 6-digit pincode");
-    } else {
-      setValid(this, pincodeError);
-    }
-  });
+    // Validate form
+    function validateForm() {
+      const fullName = fullNameInput.value.trim();
+      const phone = phoneInput.value.trim();
+      const pincode = pincodeInput.value.trim();
+      const district = districtInput.value.trim();
+      const state = stateInput.value;
+      const street = streetInput.value.trim();
 
-  districtInput.addEventListener("input", function () {
-    const district = this.value.trim();
-    if (!district) {
-      clearValidation(this, districtError);
-    } else if (district.length < 3) {
-      setInvalid(this, districtError, "District name must be at least 3 characters");
-    } else {
-      setValid(this, districtError);
-    }
-  });
+      let isValid = true;
 
-  stateInput.addEventListener("change", function () {
-    const state = this.value;
-    if (!state) {
-      clearValidation(this, stateError);
-    } else {
-      setValid(this, stateError);
-    }
-  });
+      if (!fullName || !validateFullName(fullName)) {
+        setInvalid(fullNameInput, fullNameError, "Valid full name is required");
+        isValid = false;
+      }
 
-  streetInput.addEventListener("input", function () {
-    const street = this.value.trim();
-    if (!street) {
-      clearValidation(this, streetError);
-    } else if (street.length < 10) {
-      setInvalid(this, streetError, "Please enter a complete address (min 10 characters)");
-    } else {
-      setValid(this, streetError);
-    }
-  });
+      if (!phone || !validatePhoneNumber(phone)) {
+        setInvalid(phoneInput, phoneError, "Valid phone number is required");
+        isValid = false;
+      }
 
-  // Validate form
-  function validateForm() {
-    const fullName = fullNameInput.value.trim();
-    const phone = phoneInput.value.trim();
-    const pincode = pincodeInput.value.trim();
-    const district = districtInput.value.trim();
-    const state = stateInput.value;
-    const street = streetInput.value.trim();
+      if (!pincode || !validatePincode(pincode)) {
+        setInvalid(
+          pincodeInput,
+          pincodeError,
+          "Valid 6-digit pincode is required"
+        );
+        isValid = false;
+      }
 
-    let isValid = true;
+      if (!district || district.length < 3) {
+        setInvalid(districtInput, districtError, "District is required");
+        isValid = false;
+      }
 
-    if (!fullName || !validateFullName(fullName)) {
-      setInvalid(fullNameInput, fullNameError, "Valid full name is required");
-      isValid = false;
-    }
+      if (!state) {
+        setInvalid(stateInput, stateError, "Please select a state");
+        isValid = false;
+      }
 
-    if (!phone || !validatePhoneNumber(phone)) {
-      setInvalid(phoneInput, phoneError, "Valid phone number is required");
-      isValid = false;
+      if (!street || street.length < 10) {
+        setInvalid(streetInput, streetError, "Complete address is required");
+        isValid = false;
+      }
+
+      return isValid;
     }
 
-    if (!pincode || !validatePincode(pincode)) {
-      setInvalid(pincodeInput, pincodeError, "Valid 6-digit pincode is required");
-      isValid = false;
+    // Get form data
+    function getFormData() {
+      return {
+        fullName: fullNameInput.value.trim(),
+        phone: phoneInput.value.trim(),
+        pincode: pincodeInput.value.trim(),
+        district: districtInput.value.trim(),
+        state: stateInput.value,
+        street: streetInput.value.trim(),
+        landmark: document.getElementById("landmark").value.trim(),
+        isDefault: document.getElementById("isDefault").checked,
+      };
     }
 
-    if (!district || district.length < 3) {
-      setInvalid(districtInput, districtError, "District is required");
-      isValid = false;
-    }
-
-    if (!state) {
-      setInvalid(stateInput, stateError, "Please select a state");
-      isValid = false;
-    }
-
-    if (!street || street.length < 10) {
-      setInvalid(streetInput, streetError, "Complete address is required");
-      isValid = false;
-    }
-
-    return isValid;
-  }
-
-  // Get form data
-  function getFormData() {
-    return {
-      fullName: fullNameInput.value.trim(),
-      phone: phoneInput.value.trim(),
-      pincode: pincodeInput.value.trim(),
-      district: districtInput.value.trim(),
-      state: stateInput.value,
-      street: streetInput.value.trim(),
-      landmark: document.getElementById("landmark").value.trim(),
-      isDefault: document.getElementById("isDefault").checked,
-    };
-  }
-
-  // Create address card HTML
-  function createAddressCard(address, isSelected = false) {
-    return `
+    // Create address card HTML
+    function createAddressCard(address, isSelected = false) {
+      return `
       <div class="col-md-6" data-address-id="${address._id}">
-        <div class="card h-100 border shadow-sm address-card ${isSelected ? 'selected' : ''}">
+        <div class="card h-100 border shadow-sm address-card ${
+          isSelected ? "selected" : ""
+        }">
           <div class="card-body position-relative">
-            ${address.isDefault ? '<span class="badge bg-success position-absolute end-0 top-0 mt-3 me-3">Default</span>' : ''}
+            ${
+              address.isDefault
+                ? '<span class="badge bg-success position-absolute end-0 top-0 mt-3 me-3">Default</span>'
+                : ""
+            }
             <div class="form-check position-absolute start-0 top-0 mt-3 ms-3">
-              <input class="form-check-input" type="radio" name="selectedAddress" id="address${address._id}" value="${address._id}" ${isSelected ? 'checked' : ''}>
-              <label class="form-check-label" for="address${address._id}"></label>
+              <input class="form-check-input" type="radio" name="selectedAddress" id="address${
+                address._id
+              }" value="${address._id}" ${isSelected ? "checked" : ""}>
+              <label class="form-check-label" for="address${
+                address._id
+              }"></label>
             </div>
             <div class="ps-4">
               <h5 class="mb-3">${address.fullName}</h5>
               <p class="mb-1">${address.street}</p>
-              <p class="mb-1">${address.district}, ${address.state} - ${address.pincode}</p>
-              ${address.landmark ? `<p class="mb-1">Landmark: ${address.landmark}</p>` : ''}
+              <p class="mb-1">${
+                address.district
+              }, ${address.state} - ${address.pincode}</p>
+              ${
+                address.landmark
+                  ? `<p class="mb-1">Landmark: ${address.landmark}</p>`
+                  : ""
+              }
               <p class="mb-3">Phone: ${address.phone}</p>
             </div>
           </div>
         </div>
       </div>
     `;
+    }
+// Update payment method summary
+function updatePaymentMethodSummary() {
+  const summaryContainer = document.getElementById('paymentMethodSummary');
+  const paymentMethodText = document.getElementById('paymentMethodText');
+  const paymentMethodDetails = document.getElementById('paymentMethodDetails');
+  const paymentIcon = summaryContainer.querySelector('.payment-icon i');
+  const activePaymentMethod = document.querySelector('.accordion-collapse.show')?.id;
+
+  let displayName = 'None';
+  let details = 'No payment method selected';
+  let iconClass = 'bi bi-question';
+
+  if (activePaymentMethod === 'codPayment') {
+    displayName = 'Cash on Delivery';
+    details = 'Pay when your order is delivered';
+    iconClass = 'bi bi-cash';
+  } else if (activePaymentMethod === 'upiPayment') {
+    displayName = 'UPI Payment';
+    details = 'Pay using Google Pay, PhonePe, Paytm, or any UPI app';
+    iconClass = 'bi bi-phone';
+  } else if (activePaymentMethod === 'cardPayment') {
+    displayName = 'Credit/Debit Card';
+    details = 'Pay using Visa, Mastercard, RuPay, or American Express';
+    iconClass = 'bi bi-credit-card';
+  } else if (activePaymentMethod === 'walletPayment') {
+    displayName = 'Wallet';
+    details = 'Pay using your wallet balance';
+    iconClass = 'bi bi-wallet2';
   }
 
-  // Update selected address summary
-  function updateSelectedAddressSummary(address) {
-    const summaryContainer = document.getElementById('selectedAddressSummary');
-    summaryContainer.innerHTML = `
+  paymentMethodText.textContent = displayName;
+  paymentMethodDetails.textContent = details;
+  paymentIcon.className = iconClass;
+}
+
+// Update payment method summary when accordion changes
+document.querySelectorAll('.accordion-collapse').forEach(collapse => {
+  collapse.addEventListener('shown.bs.collapse', function() {
+    updatePaymentMethodSummary();
+  });
+});
+    // Update selected address summary
+    function updateSelectedAddressSummary(address) {
+      const summaryContainer = document.getElementById(
+        "selectedAddressSummary"
+      );
+      summaryContainer.innerHTML = `
       <div class="card-body">
         <h6 class="mb-2">${address.fullName}</h6>
         <p class="mb-1">${address.street}</p>
-        <p class="mb-1">${address.district}, ${address.state} - ${address.pincode}</p>
-        ${address.landmark ? `<p class="mb-1">Landmark: ${address.landmark}</p>` : ''}
+        <p class="mb-1">${address.district}, ${address.state} - ${
+        address.pincode
+      }</p>
+        ${
+          address.landmark
+            ? `<p class="mb-1">Landmark: ${address.landmark}</p>`
+            : ""
+        }
         <p class="mb-0">Phone: ${address.phone}</p>
       </div>
     `;
-  }
-
-  // Add new address
-  async function addAddress(formData) {
-    try {
-      const response = await fetch("/address", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Failed to add address");
-      }
-
-      return data;
-    } catch (error) {
-      console.error("Error adding address:", error);
-      throw error;
     }
-  }
 
-  // Reset form
-  function resetForm() {
-    addressForm.reset();
-    clearValidation(fullNameInput, fullNameError);
-    clearValidation(phoneInput, phoneError);
-    clearValidation(pincodeInput, pincodeError);
-    clearValidation(districtInput, districtError);
-    clearValidation(stateInput, stateError);
-    clearValidation(streetInput, streetError);
-  }
-
-  // Form submission
-  addressForm.addEventListener("submit", async function (event) {
-    event.preventDefault();
-
-    if (!validateForm()) return;
-
-    const formData = getFormData();
-    const submitButton = document.getElementById("saveAddressBtn");
-    const originalText = submitButton.innerHTML;
-    submitButton.disabled = true;
-    submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Saving...';
-
-    try {
-      const result = await addAddress(formData);
-
-      // Add the new address card to the DOM
-      const addressContainer = document.getElementById("addressSelectionContainer");
-      const noAddressesMessage = addressContainer.querySelector(".col-12.text-center");
-
-      if (noAddressesMessage) {
-        addressContainer.innerHTML = "";
-      }
-
-      const addressCardHTML = createAddressCard(result.address, true);
-      addressContainer.insertAdjacentHTML("afterbegin", addressCardHTML);
-
-      // Update selected address summary
-      updateSelectedAddressSummary(result.address);
-
-      // Update radio button states
-      document.querySelectorAll('input[name="selectedAddress"]').forEach(radio => {
-        radio.checked = radio.value === result.address._id;
-      });
-
-      // Update visual selection
-      document.querySelectorAll('.address-card').forEach(card => {
-        card.classList.remove('selected');
-        if (card.parentElement.getAttribute('data-address-id') === result.address._id) {
-          card.classList.add('selected');
-        }
-      });
-
-      Toast.fire({
-        icon: "success",
-        title: "Address added successfully",
-      });
-
-      // Close modal and reset form
-      const modal = bootstrap.Modal.getInstance(document.getElementById("addAddressModal"));
-      modal.hide();
-      resetForm();
-
-      // Refresh page if set as default
-      if (formData.isDefault) {
-        setTimeout(() => {
-          location.reload();
-        }, 1000);
-      }
-    } catch (error) {
-      Toast.fire({
-        icon: "error",
-        title: error.message || "Server error. Please try again.",
-      });
-    } finally {
-      submitButton.disabled = false;
-      submitButton.innerHTML = originalText;
-    }
-  });
-
-  // Address selection
-  document.querySelectorAll('.address-card:not(.add-address)').forEach(card => {
-    card.addEventListener('click', function() {
-      document.querySelectorAll('.address-card').forEach(c => {
-        c.classList.remove('selected');
-      });
-      this.classList.add('selected');
-      const radio = this.querySelector('input[type="radio"]');
-      if (radio) {
-        radio.checked = true;
-      }
-
-      // Update selected address summary
-      const addressId = this.parentElement.getAttribute('data-address-id');
-      const address = {
-        _id: addressId,
-        fullName: this.querySelector('h5').textContent,
-        street: this.querySelectorAll('p')[0].textContent,
-        district: this.querySelectorAll('p')[1].textContent.split(', ')[0],
-        state: this.querySelectorAll('p')[1].textContent.split(', ')[1].split(' - ')[0],
-        pincode: this.querySelectorAll('p')[1].textContent.split(' - ')[1],
-        phone: this.querySelector('p:last-child').textContent.replace('Phone: ', ''),
-        landmark: this.querySelectorAll('p').length > 3 ? this.querySelectorAll('p')[2].textContent.replace('Landmark: ', '') : ''
-      };
-      updateSelectedAddressSummary(address);
-    });
-  });
-
-  // Initialize selected address summary
-  const selectedAddress = document.querySelector('input[name="selectedAddress"]:checked');
-  if (selectedAddress) {
-    const card = selectedAddress.closest('.address-card');
-    const address = {
-      _id: selectedAddress.value,
-      fullName: card.querySelector('h5').textContent,
-      street: card.querySelectorAll('p')[0].textContent,
-      district: card.querySelectorAll('p')[1].textContent.split(', ')[0],
-      state: card.querySelectorAll('p')[1].textContent.split(', ')[1].split(' - ')[0],
-      pincode: card.querySelectorAll('p')[1].textContent.split(' - ')[1],
-      phone: card.querySelector('p:last-child').textContent.replace('Phone: ', ''),
-      landmark: card.querySelectorAll('p').length > 3 ? card.querySelectorAll('p')[2].textContent.replace('Landmark: ', '') : ''
-    };
-    updateSelectedAddressSummary(address);
-  }
-
-  // Validate address selection before proceeding to payment
-  document.getElementById('continueToPaymentBtn').addEventListener('click', function() {
-    const selectedAddress = document.querySelector('input[name="selectedAddress"]:checked');
-    if (!selectedAddress) {
-      Toast.fire({
-        icon: 'error',
-        title: 'Please select a delivery address or add a new one'
-      });
-      return;
-    }
-    goToStep(3);
-  });
-
-  // Card number formatting
-  const cardNumberInput = document.getElementById('cardNumber');
-  if (cardNumberInput) {
-    cardNumberInput.addEventListener('input', function(e) {
-      let value = e.target.value.replace(/\D/g, '');
-      if (value.length > 16) {
-        value = value.slice(0, 16);
-      }
-      const formattedValue = value.replace(/(\d{4})(?=\d)/g, '$1 ');
-      e.target.value = formattedValue;
-    });
-  }
-
-  // Expiry date formatting
-  const expiryDateInput = document.getElementById('expiryDate');
-  if (expiryDateInput) {
-    expiryDateInput.addEventListener('input', function(e) {
-      let value = e.target.value.replace(/\D/g, '');
-      if (value.length > 4) {
-        value = value.slice(0, 4);
-      }
-      if (value.length > 2) {
-        value = value.slice(0, 2) + '/' + value.slice(2);
-      }
-      e.target.value = value;
-    });
-  }
-
-  // Remove item from cart
-  document.querySelectorAll('.remove-item').forEach(button => {
-    button.addEventListener('click', function() {
-      const productId = this.getAttribute('data-product-id');
-      if (!productId) {
-        Toast.fire({
-          icon: 'error',
-          title: 'Invalid product'
+    // Add new address
+    async function addAddress(formData) {
+      try {
+        const response = await fetch("/address", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(formData),
         });
-        return;
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.message || "Failed to add address");
+        }
+
+        return data;
+      } catch (error) {
+        console.error("Error adding address:", error);
+        throw error;
       }
-      fetch('/cart/remove', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ productId })
-      })
-      .then(response => response.json())
-      .then(data => {
-        if (data.success) {
-          Toast.fire({
-            icon: 'success',
-            title: 'Item removed from cart'
+    }
+
+    // Reset form
+    function resetForm() {
+      addressForm.reset();
+      clearValidation(fullNameInput, fullNameError);
+      clearValidation(phoneInput, phoneError);
+      clearValidation(pincodeInput, pincodeError);
+      clearValidation(districtInput, districtError);
+      clearValidation(stateInput, stateError);
+      clearValidation(streetInput, streetError);
+    }
+
+    // Form submission
+    addressForm.addEventListener("submit", async function (event) {
+      event.preventDefault();
+
+      if (!validateForm()) return;
+
+      const formData = getFormData();
+      const submitButton = document.getElementById("saveAddressBtn");
+      const originalText = submitButton.innerHTML;
+      submitButton.disabled = true;
+      submitButton.innerHTML =
+        '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Saving...';
+
+      try {
+        const result = await addAddress(formData);
+
+        // Add the new address card to the DOM
+        const addressContainer = document.getElementById(
+          "addressSelectionContainer"
+        );
+        const noAddressesMessage = addressContainer.querySelector(
+          ".col-12.text-center"
+        );
+
+        if (noAddressesMessage) {
+          addressContainer.innerHTML = "";
+        }
+
+        const addressCardHTML = createAddressCard(result.address, true);
+        addressContainer.insertAdjacentHTML("afterbegin", addressCardHTML);
+
+        // Update selected address summary
+        updateSelectedAddressSummary(result.address);
+
+        // Update radio button states
+        document
+          .querySelectorAll('input[name="selectedAddress"]')
+          .forEach((radio) => {
+            radio.checked = radio.value === result.address._id;
           });
+
+        // Update visual selection
+        document.querySelectorAll(".address-card").forEach((card) => {
+          card.classList.remove("selected");
+          if (
+            card.parentElement.getAttribute("data-address-id") ===
+            result.address._id
+          ) {
+            card.classList.add("selected");
+          }
+        });
+
+        Toast.fire({
+          icon: "success",
+          title: "Address added successfully",
+        });
+
+        // Close modal and reset form
+        const modal = bootstrap.Modal.getInstance(
+          document.getElementById("addAddressModal")
+        );
+        modal.hide();
+        resetForm();
+
+        // Refresh page if set as default
+        if (formData.isDefault) {
           setTimeout(() => {
-            window.location.reload();
-          }, 1500);
-        } else {
-          Toast.fire({
-            icon: 'error',
-            title: data.message || 'Failed to remove item'
-          });
+            location.reload();
+          }, 1000);
         }
-      })
-      .catch(error => {
-        console.error('Error removing item:', error);
-        Toast.fire({
-          icon: 'error',
-          title: 'Server error'
-        });
-      });
-    });
-  });
-
-  // Apply coupon (non-functional, just UI feedback)
-  const applyCouponBtn = document.getElementById('applyCoupon');
-  if (applyCouponBtn) {
-    applyCouponBtn.addEventListener('click', function() {
-      const couponCode = document.getElementById('couponCode').value.trim();
-      if (!couponCode) {
+      } catch (error) {
         Toast.fire({
           icon: "error",
-          title: "Please enter a coupon code"
+          title: error.message || "Server error. Please try again.",
         });
-        return;
+      } finally {
+        submitButton.disabled = false;
+        submitButton.innerHTML = originalText;
       }
-      Toast.fire({
-        icon: "info",
-        title: "Coupon functionality not implemented"
+    });
+
+    // Address selection
+    document
+      .querySelectorAll(".address-card:not(.add-address)")
+      .forEach((card) => {
+        card.addEventListener("click", function () {
+          document.querySelectorAll(".address-card").forEach((c) => {
+            c.classList.remove("selected");
+          });
+          this.classList.add("selected");
+          const radio = this.querySelector('input[type="radio"]');
+          if (radio) {
+            radio.checked = true;
+          }
+
+          // Update selected address summary
+          const addressId = this.parentElement.getAttribute("data-address-id");
+          const address = {
+            _id: addressId,
+            fullName: this.querySelector("h5").textContent,
+            street: this.querySelectorAll("p")[0].textContent,
+            district: this.querySelectorAll("p")[1].textContent.split(", ")[0],
+            state: this.querySelectorAll("p")[1]
+              .textContent.split(", ")[1]
+              .split(" - ")[0],
+            pincode: this.querySelectorAll("p")[1].textContent.split(" - ")[1],
+            phone: this.querySelector("p:last-child").textContent.replace(
+              "Phone: ",
+              ""
+            ),
+            landmark:
+              this.querySelectorAll("p").length > 3
+                ? this.querySelectorAll("p")[2].textContent.replace(
+                    "Landmark: ",
+                    ""
+                  )
+                : "",
+          };
+          updateSelectedAddressSummary(address);
+        });
+      });
+
+    // Initialize selected address summary
+    const selectedAddress = document.querySelector(
+      'input[name="selectedAddress"]:checked'
+    );
+    if (selectedAddress) {
+      const card = selectedAddress.closest(".address-card");
+      const address = {
+        _id: selectedAddress.value,
+        fullName: card.querySelector("h5").textContent,
+        street: card.querySelectorAll("p")[0].textContent,
+        district: card.querySelectorAll("p")[1].textContent.split(", ")[0],
+        state: card
+          .querySelectorAll("p")[1]
+          .textContent.split(", ")[1]
+          .split(" - ")[0],
+        pincode: card.querySelectorAll("p")[1].textContent.split(" - ")[1],
+        phone: card
+          .querySelector("p:last-child")
+          .textContent.replace("Phone: ", ""),
+        landmark:
+          card.querySelectorAll("p").length > 3
+            ? card
+                .querySelectorAll("p")[2]
+                .textContent.replace("Landmark: ", "")
+            : "",
+      };
+      updateSelectedAddressSummary(address);
+    }
+
+   // Validate address selection before proceeding to payment
+// Validate address selection before proceeding to payment
+document.getElementById('continueToPaymentBtn').addEventListener('click', function() {
+  const selectedAddress = document.querySelector('input[name="selectedAddress"]:checked');
+  if (!selectedAddress) {
+    Toast.fire({
+      icon: 'error',
+      title: 'Please select a delivery address or add a new one'
+    });
+    return;
+  }
+  updatePaymentMethodSummary(); // Update payment method summary
+  goToStep(3);
+});
+
+// Update payment method summary when navigating from Step 3 to Step 4
+document.querySelector('#step-3-content .next-step').addEventListener('click', function() {
+  const paymentMethod = document.querySelector('.accordion-collapse.show')?.id;
+  if (!paymentMethod) {
+    Toast.fire({
+      icon: 'error',
+      title: 'Please select a payment method'
+    });
+    return;
+  }
+  updatePaymentMethodSummary();
+  goToStep(4);
+});
+
+    // Card number formatting
+    const cardNumberInput = document.getElementById("cardNumber");
+    if (cardNumberInput) {
+      cardNumberInput.addEventListener("input", function (e) {
+        let value = e.target.value.replace(/\D/g, "");
+        if (value.length > 16) {
+          value = value.slice(0, 16);
+        }
+        const formattedValue = value.replace(/(\d{4})(?=\d)/g, "$1 ");
+        e.target.value = formattedValue;
+      });
+    }
+
+    // Expiry date formatting
+    const expiryDateInput = document.getElementById("expiryDate");
+    if (expiryDateInput) {
+      expiryDateInput.addEventListener("input", function (e) {
+        let value = e.target.value.replace(/\D/g, "");
+        if (value.length > 4) {
+          value = value.slice(0, 4);
+        }
+        if (value.length > 2) {
+          value = value.slice(0, 2) + "/" + value.slice(2);
+        }
+        e.target.value = value;
+      });
+    }
+
+    // Remove item from cart
+    document.querySelectorAll(".remove-item").forEach((button) => {
+      button.addEventListener("click", function () {
+        const productId = this.getAttribute("data-product-id");
+        if (!productId) {
+          Toast.fire({
+            icon: "error",
+            title: "Invalid product",
+          });
+          return;
+        }
+        fetch("/cart/remove", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ productId }),
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.success) {
+              Toast.fire({
+                icon: "success",
+                title: "Item removed from cart",
+              });
+              setTimeout(() => {
+                window.location.reload();
+              }, 1500);
+            } else {
+              Toast.fire({
+                icon: "error",
+                title: data.message || "Failed to remove item",
+              });
+            }
+          })
+          .catch((error) => {
+            console.error("Error removing item:", error);
+            Toast.fire({
+              icon: "error",
+              title: "Server error",
+            });
+          });
       });
     });
-  }
 
-  // Place order button
-  const placeOrderBtn = document.getElementById('placeOrderBtn');
-  if (placeOrderBtn) {
-    placeOrderBtn.addEventListener('click', function() {
-      const termsCheck = document.getElementById('termsCheck');
-      const termsCheckError = document.getElementById('termsCheckError');
-      if (!termsCheck.checked) {
-        termsCheckError.textContent = 'You must agree to the terms and conditions';
-        return;
-      } else {
-        termsCheckError.textContent = '';
-      }
-      this.disabled = true;
-      this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...';
-      fetch('/cart/clear', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
+    // Apply coupon (non-functional, just UI feedback)
+    const applyCouponBtn = document.getElementById("applyCoupon");
+    if (applyCouponBtn) {
+      applyCouponBtn.addEventListener("click", function () {
+        const couponCode = document.getElementById("couponCode").value.trim();
+        if (!couponCode) {
+          Toast.fire({
+            icon: "error",
+            title: "Please enter a coupon code",
+          });
+          return;
         }
-      })
-      .then(response => response.json())
-      .then(data => {
-        if (data.success) {
-          const orderSuccessModal = new bootstrap.Modal(document.getElementById('orderSuccessModal'));
-          orderSuccessModal.show();
-          this.disabled = false;
-          this.innerHTML = '<i class="bi bi-bag-check me-2"></i>Place Order';
+        Toast.fire({
+          icon: "info",
+          title: "Coupon functionality not implemented",
+        });
+      });
+    }
+
+    // Place order button
+    const placeOrderBtn = document.getElementById("placeOrderBtn");
+    if (placeOrderBtn) {
+      placeOrderBtn.addEventListener("click", async function () {
+        const termsCheck = document.getElementById("termsCheck");
+        const termsCheckError = document.getElementById("termsCheckError");
+        const selectedAddress = document.querySelector(
+          'input[name="selectedAddress"]:checked'
+        );
+        const paymentMethod = document.querySelector(
+          ".accordion-collapse.show"
+        )?.id;
+
+        // Validate terms checkbox
+        if (!termsCheck.checked) {
+          termsCheckError.textContent =
+            "You must agree to the terms and conditions";
+          return;
+        } else {
+          termsCheckError.textContent = "";
+        }
+
+        // Validate address selection
+        if (!selectedAddress) {
+          Toast.fire({
+            icon: "error",
+            title: "Please select a delivery address",
+          });
+          return;
+        }
+
+        // Determine payment method
+        let paymentMethodValue;
+        if (paymentMethod === "codPayment") {
+          const confirmCod = document.getElementById("confirmCod");
+          if (!confirmCod.checked) {
+            Toast.fire({
+              icon: "error",
+              title: "Please confirm Cash on Delivery terms",
+            });
+            return;
+          }
+          paymentMethodValue = "COD";
+        } else if (paymentMethod === "upiPayment") {
+          paymentMethodValue = "UPI";
+        } else if (paymentMethod === "cardPayment") {
+          paymentMethodValue = "Card";
+        } else if (paymentMethod === "walletPayment") {
+          paymentMethodValue = "Wallet";
         } else {
           Toast.fire({
-            icon: 'error',
-            title: 'Failed to place order'
+            icon: "error",
+            title: "Please select a payment method",
           });
+          return;
+        }
+
+        // Handle non-COD methods
+        if (paymentMethodValue !== "COD") {
+          Toast.fire({
+            icon: "info",
+            title: `${paymentMethodValue} payment is not yet implemented. Please use Cash on Delivery.`,
+          });
+          return;
+        }
+
+        this.disabled = true;
+        this.innerHTML =
+          '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...';
+
+        try {
+          const response = await fetch("/checkout/place-order", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              addressId: selectedAddress.value,
+              paymentMethod: paymentMethodValue,
+            }),
+          });
+
+          const data = await response.json();
+
+          if (data.success) {
+            const orderSuccessModal = new bootstrap.Modal(
+              document.getElementById("orderSuccessModal")
+            );
+            const modalBody = document.querySelector(
+              "#orderSuccessModal .modal-body"
+            );
+            modalBody.querySelector(
+              "p"
+            ).textContent = `Your order #${data.orderNumber} has been placed successfully. You will receive a confirmation email shortly.`;
+            orderSuccessModal.show();
+          } else {
+            Toast.fire({
+              icon: "error",
+              title: data.message || "Failed to place order",
+            });
+          }
+        } catch (error) {
+          console.error("Error placing order:", error);
+          Toast.fire({
+            icon: "error",
+            title: "Server error",
+          });
+        } finally {
           this.disabled = false;
           this.innerHTML = '<i class="bi bi-bag-check me-2"></i>Place Order';
         }
-      })
-      .catch(error => {
-        console.error('Error placing order:', error);
-        Toast.fire({
-          icon: 'error',
-          title: 'Server error'
-        });
-        this.disabled = false;
-        this.innerHTML = '<i class="bi bi-bag-check me-2"></i>Place Order';
       });
-    });
-  }
-});
+    }
+  });
 </script>
 
 <%- include("../partials/user/footer") %>
