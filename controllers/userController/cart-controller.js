@@ -27,7 +27,6 @@ const getCart = async (req, res) => {
       wishlistCount = wishlist.items.length;
     }
 
-    // Fetch related products (randomly select 4 products from different categories)
     const relatedProducts = await Product.aggregate([
       { $match: { isListed: true, isDeleted: false } },
       { $sample: { size: 4 } }

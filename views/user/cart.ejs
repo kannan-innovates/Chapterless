@@ -90,7 +90,7 @@
           <!-- Shipping -->
           <div class="d-flex justify-content-between mb-3">
             <span>Shipping</span>
-            <span class="fw-semibold">₹99</span>
+            <span class="fw-semibold">₹0</span>
           </div>
           
           <!-- Discount -->
@@ -113,7 +113,7 @@
           <!-- Total -->
           <div class="d-flex justify-content-between align-items-center mb-4">
             <span class="fs-5 fw-bold">Total</span>
-            <span class="fs-5 fw-bold">₹<%= (totalAmount + 99).toFixed(2) %></span>
+            <span class="fs-5 fw-bold">₹<%= totalAmount.toFixed(2) %></span>
           </div>
           
           <!-- Checkout Button -->
@@ -324,24 +324,22 @@
     }
     
     #orderSummary.fixed {
-  position: fixed;
-  top: 80px; /* Adjust based on your header height */
-  z-index: 100;
-  transition: all 0.2s ease;
-}
-
-/* Add some bottom padding to the parent container to prevent content jump */
-.col-lg-4 {
-  position: relative;
-}
-
-/* For better mobile experience */
-@media (max-width: 991.98px) {
-  #orderSummary.fixed {
-    position: static !important;
-    width: 100% !important;
-  }
-}
+      position: fixed;
+      top: 80px;
+      z-index: 100;
+      transition: all 0.2s ease;
+    }
+    
+    .col-lg-4 {
+      position: relative;
+    }
+    
+    @media (max-width: 991.98px) {
+      #orderSummary.fixed {
+        position: static !important;
+        width: 100% !important;
+      }
+    }
     
     .stock-status {
       padding: 0.15rem 0.5rem;
@@ -692,8 +690,7 @@ document.addEventListener('DOMContentLoaded', function () {
     ]);
     
     if (totalElement) {
-      const shippingCost = 99;
-      totalElement.textContent = `₹${(totalAmount + shippingCost).toFixed(2)}`;
+      totalElement.textContent = `₹${totalAmount.toFixed(2)}`;
     }
     
     // Update item counts in the text
@@ -738,8 +735,6 @@ document.addEventListener('DOMContentLoaded', function () {
   
   // Last resort: completely rebuild the order summary
   function rebuildOrderSummary(totalAmount, cartCount) {
-    const shippingCost = 99;
-    
     // Only proceed if the order summary element exists
     if (!orderSummary) {
       return;
@@ -758,7 +753,7 @@ document.addEventListener('DOMContentLoaded', function () {
       <!-- Shipping -->
       <div class="d-flex justify-content-between mb-3">
         <span>Shipping</span>
-        <span class="fw-semibold">₹99</span>
+        <span class="fw-semibold">₹0</span>
       </div>
       
       <!-- Discount -->
@@ -781,11 +776,11 @@ document.addEventListener('DOMContentLoaded', function () {
       <!-- Total -->
       <div class="d-flex justify-content-between align-items-center mb-4">
         <span class="fs-5 fw-bold">Total</span>
-        <span class="fs-5 fw-bold">₹${(totalAmount + shippingCost).toFixed(2)}</span>
+        <span class="fs-5 fw-bold">₹${totalAmount.toFixed(2)}</span>
       </div>
       
       <!-- Checkout Button -->
-      <button class="btn btn-dark w-100 py-3 fw-medium">Proceed to Checkout</button>
+      <a href="/checkout" class="btn btn-dark w-100 py-3 fw-medium">Proceed to Checkout</a>
       
       <!-- Payment Methods -->
       <div class="payment-methods mt-3 text-center">

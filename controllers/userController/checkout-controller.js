@@ -28,10 +28,10 @@ const getCheckout = async (req, res) => {
 
 
       if (cartItems.length !== cart.items.length) {
-        // Update the cart in the database if invalid items were filtered out
+       
         cart.items = cartItems;
         await cart.save();
-        console.log('Cart updated after filtering');
+        
       }
 
       subtotal = cartItems.reduce((sum, item) => sum + (item.quantity * item.priceAtAddition), 0);
