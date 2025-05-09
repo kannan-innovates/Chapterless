@@ -1,5 +1,5 @@
 const Cart = require("../../models/cartSchema");
-const Product = require("../../models/productSchema");
+const Address = require("../../models/addressSchema");
 
 const getCheckout = async (req, res) => {
   try {
@@ -9,8 +9,7 @@ const getCheckout = async (req, res) => {
 
     const userId = req.session.user_id;
     const cart = await Cart.findOne({ user: userId }).populate('items.product');
-
-
+    const addresses = await Address.find({ userId }).sort({ isDefault: -1, updatedAt: -1 });
 
     let cartItems = [];
     let subtotal = 0;
@@ -19,27 +18,21 @@ const getCheckout = async (req, res) => {
     let cartCount = 0;
 
     if (cart && cart.items.length > 0) {
-      // Filter items, relaxing image requirement
       cartItems = cart.items.filter(item => 
         item.product && 
         item.product.isListed && 
         !item.product.isDeleted
       );
 
-
       if (cartItems.length !== cart.items.length) {
-       
         cart.items = cartItems;
         await cart.save();
-        
       }
 
       subtotal = cartItems.reduce((sum, item) => sum + (item.quantity * item.priceAtAddition), 0);
-      tax = subtotal * 0.08; // 8% tax
-      totalAmount = subtotal + tax; // Total includes subtotal and tax
+      tax = subtotal * 0.08;
+      totalAmount = subtotal + tax;
       cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
-    } else {
-      console.log('Cart is empty or not found');
     }
 
     res.render('checkout', {
@@ -48,11 +41,10 @@ const getCheckout = async (req, res) => {
       tax,
       totalAmount,
       cartCount,
+      addresses,
       user: userId ? { id: userId } : null,
       isAuthenticated: true
     });
-
-   
   } catch (error) {
     console.log('Error in rendering checkout page:', error);
     res.status(500).render('error', { message: 'Internal server error' });

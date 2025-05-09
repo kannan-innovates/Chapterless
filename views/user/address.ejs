@@ -126,7 +126,8 @@
       </div>
       <div class="modal-body">
         <form id="addressForm">
-          <input type="hidden" id="addressId" value="" />
+          <input type="hidden" name="returnTo" value="<%= typeof returnTo !== 'undefined' ? returnTo : '' %>">
+          <input type="hidden" id="addressId" name="addressId">
           <div class="row g-3">
             <div class="col-md-6">
               <label for="fullName" class="form-label">Full Name</label>
@@ -443,6 +444,22 @@
     margin-bottom: 0.5rem;
     color: #4a4a4a;
   }
+
+  /* Address card styling for checkout compatibility */
+  .address-card {
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1px solid #dee2e6;
+  }
+
+  .address-card:hover {
+    border-color: #adb5bd;
+  }
+
+  .address-card.selected {
+    border-color: #212529;
+    box-shadow: 0 0 0 1px #212529;
+  }
 </style>
 
 <script>
@@ -607,11 +624,10 @@
   // Reset form
   function resetForm() {
     addressForm.reset();
-    addressIdInput.value = "";
+    document.getElementById("addressId").value = "";
     const isDefaultCheckbox = document.getElementById("isDefault");
-    isDefaultCheckbox.disabled = false; // Re-enable the checkbox
+    isDefaultCheckbox.disabled = false;
 
-    // Clear all validations
     clearValidation(fullNameInput, fullNameError);
     clearValidation(phoneInput, phoneError);
     clearValidation(pincodeInput, pincodeError);
@@ -631,19 +647,16 @@
 
     let isValid = true;
 
-    // Validate fullName
     if (!fullName || !validateFullName(fullName)) {
       setInvalid(fullNameInput, fullNameError, "Valid full name is required");
       isValid = false;
     }
 
-    // Validate phone
     if (!phone || !validatePhoneNumber(phone)) {
       setInvalid(phoneInput, phoneError, "Valid phone number is required");
       isValid = false;
     }
 
-    // Validate pincode
     if (!pincode || !validatePincode(pincode)) {
       setInvalid(
         pincodeInput,
@@ -653,19 +666,16 @@
       isValid = false;
     }
 
-    // Validate district
     if (!district || district.length < 3) {
       setInvalid(districtInput, districtError, "District is required");
       isValid = false;
     }
 
-    // Validate state
     if (!state) {
       setInvalid(stateInput, stateError, "Please select a state");
       isValid = false;
     }
 
-    // Validate street
     if (!street || street.length < 10) {
       setInvalid(streetInput, streetError, "Complete address is required");
       isValid = false;
@@ -685,6 +695,7 @@
       street: streetInput.value.trim(),
       landmark: document.getElementById("landmark").value.trim(),
       isDefault: document.getElementById("isDefault").checked,
+      returnTo: document.querySelector('input[name="returnTo"]').value
     };
   }
 
@@ -777,36 +788,36 @@
   }
 
   // Create address card HTML
-  function createAddressCard(address) {
+  function createAddressCard(address, isSelected = false) {
     return `
       <div class="col-md-6" data-address-id="${address._id}">
-        <div class="card h-100 border shadow-sm">
+        <div class="card h-100 border shadow-sm address-card ${isSelected ? 'selected' : ''}">
           <div class="card-body position-relative">
             ${
               address.isDefault
                 ? '<span class="badge bg-success position-absolute end-0 top-0 mt-3 me-3">Default</span>'
                 : ""
             }
-            <h5 class="mb-3">${address.fullName}</h5>
-            <p class="mb-1">${address.street}</p>
-            <p class="mb-1">${address.district}, ${address.state} - ${
-      address.pincode
-    }</p>
-            ${
-              address.landmark
-                ? `<p class="mb-1">Landmark: ${address.landmark}</p>`
-                : ""
-            }
-            <p class="mb-3">Phone: ${address.phone}</p>
+            <div class="form-check position-absolute start-0 top-0 mt-3 ms-3">
+              <input class="form-check-input" type="radio" name="selectedAddress" id="address${address._id}" value="${address._id}" ${isSelected ? 'checked' : ''}>
+              <label class="form-check-label" for="address${address._id}"></label>
+            </div>
+            <div class="ps-4">
+              <h5 class="mb-3">${address.fullName}</h5>
+              <p class="mb-1">${address.street}</p>
+              <p class="mb-1">${address.district}, ${address.state} - ${address.pincode}</p>
+              ${
+                address.landmark
+                  ? `<p class="mb-1">Landmark: ${address.landmark}</p>`
+                  : ""
+              }
+              <p class="mb-3">Phone: ${address.phone}</p>
+            </div>
             <div class="d-flex mt-auto gap-2">
-              <button class="btn btn-sm btn-outline-dark edit-address-btn" data-address-id="${
-                address._id
-              }">
+              <button class="btn btn-sm btn-outline-dark edit-address-btn" data-address-id="${address._id}">
                 <i class="bi bi-pencil me-1"></i>Edit
               </button>
-              <button class="btn btn-sm btn-outline-danger delete-address-btn" data-address-id="${
-                address._id
-              }">
+              <button class="btn btn-sm btn-outline-danger delete-address-btn" data-address-id="${address._id}">
                 <i class="bi bi-trash me-1"></i>Delete
               </button>
               ${
@@ -838,14 +849,12 @@
     isDefaultCheckbox.checked = address.isDefault;
     addressIdInput.value = address._id;
 
-    // If this is the default address, disable the checkbox to prevent unchecking
     if (address.isDefault) {
       isDefaultCheckbox.disabled = true;
     } else {
       isDefaultCheckbox.disabled = false;
     }
 
-    // Trigger validation
     fullNameInput.dispatchEvent(new Event("input"));
     phoneInput.dispatchEvent(new Event("input"));
     pincodeInput.dispatchEvent(new Event("input"));
@@ -893,7 +902,6 @@
       if (isEditing) {
         result = await updateAddress(addressId, formData);
 
-        // Update the address card in the DOM
         const addressCard = document.querySelector(
           `[data-address-id="${addressId}"]`
         );
@@ -908,43 +916,49 @@
       } else {
         result = await addAddress(formData);
 
-        // Add the new address card to the DOM
-        const addressContainer = document.getElementById("addressContainer");
-        const noAddressesMessage = addressContainer.querySelector(
-          ".col-12.text-center"
-        );
+        if (result.redirect) {
+          Toast.fire({
+            icon: "success",
+            title: "Address added successfully",
+          });
+          setTimeout(() => {
+            window.location.href = result.redirect;
+          }, 1000);
+        } else {
+          const addressContainer = document.getElementById("addressContainer");
+          const noAddressesMessage = addressContainer.querySelector(
+            ".col-12.text-center"
+          );
 
-        if (noAddressesMessage) {
-          // Remove the "No addresses found" message
-          addressContainer.innerHTML = "";
+          if (noAddressesMessage) {
+            addressContainer.innerHTML = "";
+          }
+
+          const addressCardHTML = createAddressCard(result.address, formData.returnTo === 'checkout');
+          addressContainer.insertAdjacentHTML("afterbegin", addressCardHTML);
+
+          Toast.fire({
+            icon: "success",
+            title: "Address added successfully",
+          });
         }
-
-        // Add the new address card
-        const addressCardHTML = createAddressCard(result.address);
-        addressContainer.insertAdjacentHTML("afterbegin", addressCardHTML);
-
-        Toast.fire({
-          icon: "success",
-          title: "Address added successfully",
-        });
       }
 
-      // Close modal and reset form
       const modal = bootstrap.Modal.getInstance(
         document.getElementById("addAddressModal")
       );
       modal.hide();
       resetForm();
 
-      // If the address was set as default (or remains default), refresh the page to update all cards
-      if (formData.isDefault) {
+      if (formData.isDefault && !result.redirect) {
         setTimeout(() => {
           location.reload();
         }, 1000);
       }
 
-      // Add event listeners to the new buttons
-      addEventListenersToButtons();
+      if (!result.redirect) {
+        addEventListenersToButtons();
+      }
     } catch (error) {
       console.error("Address save error:", error);
 
@@ -960,7 +974,6 @@
 
   // Add event listeners to address action buttons
   function addEventListenersToButtons() {
-    // Delete address buttons
     document.querySelectorAll(".delete-address-btn").forEach((button) => {
       button.addEventListener("click", async function () {
         const addressId = this.getAttribute("data-address-id");
@@ -978,7 +991,6 @@
             try {
               await deleteAddress(addressId);
 
-              // Remove the address card from the DOM
               const addressCard = document.querySelector(
                 `[data-address-id="${addressId}"]`
               );
@@ -986,11 +998,9 @@
                 addressCard.remove();
               }
 
-              // Check if there are no more addresses
               const addressContainer =
                 document.getElementById("addressContainer");
               if (addressContainer.children.length === 0) {
-                // Add the "No addresses found" message
                 addressContainer.innerHTML = `
                   <div class="col-12 text-center py-5">
                     <div class="mb-4">
@@ -1020,7 +1030,6 @@
       });
     });
 
-    // Set default address buttons
     document.querySelectorAll(".set-default-btn").forEach((button) => {
       button.addEventListener("click", async function () {
         const addressId = this.getAttribute("data-address-id");
@@ -1028,7 +1037,6 @@
         try {
           await setDefaultAddress(addressId);
 
-          // Refresh the page to update all cards
           Toast.fire({
             icon: "success",
             title: "Address set as default",
@@ -1046,68 +1054,19 @@
       });
     });
 
-    // Edit address buttons
     document.querySelectorAll(".edit-address-btn").forEach((button) => {
       button.addEventListener("click", async function () {
         const addressId = this.getAttribute("data-address-id");
 
         try {
-          // Find the address data from the DOM
-          const addressCard = document.querySelector(
-            `[data-address-id="${addressId}"]`
-          );
-          if (!addressCard) return;
-
-          // Extract data from the card
-          const fullName = addressCard.querySelector("h5").textContent;
-          const paragraphs = addressCard.querySelectorAll("p");
-          const street = paragraphs[0].textContent;
-
-          const locationParts = paragraphs[1].textContent.split(", ");
-          const district = locationParts[0];
-          const statePincodeParts = locationParts[1].split(" - ");
-          const state = statePincodeParts[0];
-          const pincode = statePincodeParts[1];
-
-          let landmark = "";
-          if (
-            paragraphs.length > 3 &&
-            paragraphs[2].textContent.includes("Landmark:")
-          ) {
-            landmark = paragraphs[2].textContent
-              .replace("Landmark:", "")
-              .trim();
-          }
-
-          const phoneParagraph = paragraphs[paragraphs.length - 1];
-          const phone = phoneParagraph.textContent.replace("Phone:", "").trim();
-
-          const isDefault =
-            addressCard.querySelector(".badge.bg-success") !== null;
-
-          // Create a temporary address object
-          const address = {
-            _id: addressId,
-            fullName,
-            phone,
-            pincode,
-            district,
-            state,
-            street,
-            landmark,
-            isDefault,
-          };
-
-          // Fill the form with the address data
+          const address = await getAddressById(addressId);
           fillFormWithAddressData(address);
 
-          // Show the modal
           const modal = new bootstrap.Modal(
             document.getElementById("addAddressModal")
           );
           modal.show();
 
-          // Update the modal title
           document.getElementById("addAddressModalLabel").textContent =
             "Edit Address";
         } catch (error) {
@@ -1123,10 +1082,8 @@
 
   // Initialize event listeners
   document.addEventListener("DOMContentLoaded", function () {
-    // Add event listeners to buttons
     addEventListenersToButtons();
 
-    // Reset form when modal is hidden
     document
       .getElementById("addAddressModal")
       .addEventListener("hidden.bs.modal", function () {

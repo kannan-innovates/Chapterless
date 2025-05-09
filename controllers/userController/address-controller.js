@@ -4,37 +4,27 @@ const User = require('../../models/userSchema');
 // Get address page with user's addresses
 const getAddress = async (req, res) => {
   try {
-    // Get user ID from session
     const userId = req.session.user_id;
-    
-    // Fetch user and addresses
     const user = await User.findById(userId);
     const addresses = await Address.find({ userId }).sort({ isDefault: -1, updatedAt: -1 });
-    
-    res.render('address', { user, addresses });
+    const returnTo = req.query.returnTo || '';
+    res.render('address', { user, addresses, returnTo });
   } catch (error) {
-    console.log('Error in rendering address page', error);
+    console.log('Error in rendering profile addresses', error);
     res.status(500).render('error', { message: 'Internal server error' });
   }
 };
-
 // Add a new address
 const addAddress = async (req, res) => {
   try {
     const userId = req.session.user_id;
-    const { fullName, phone, pincode, district, state, street, landmark, isDefault } = req.body;
-    
-    // Validate required fields
+    const { fullName, phone, pincode, district, state, street, landmark, isDefault, returnTo } = req.body;
     if (!fullName || !phone || !pincode || !district || !state || !street) {
       return res.status(400).json({ success: false, message: 'All required fields must be filled' });
     }
-    
-    // If setting as default, unset any existing default address
     if (isDefault) {
       await Address.updateMany({ userId }, { isDefault: false });
     }
-    
-    // Create new address
     const newAddress = new Address({
       userId,
       fullName,
@@ -46,14 +36,11 @@ const addAddress = async (req, res) => {
       landmark,
       isDefault: isDefault || false
     });
-    
     await newAddress.save();
-    
-    res.status(201).json({ 
-      success: true, 
-      message: 'Address added successfully',
-      address: newAddress
-    });
+    if (returnTo === 'checkout') {
+      return res.status(201).json({ success: true, message: 'Address added successfully', address: newAddress, redirect: '/checkout' });
+    }
+    res.status(201).json({ success: true, message: 'Address added successfully', address: newAddress });
   } catch (error) {
     console.log('Error adding address:', error);
     res.status(500).json({ success: false, message: 'Failed to add address' });

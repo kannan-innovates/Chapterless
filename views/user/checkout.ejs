@@ -133,44 +133,47 @@
           </div>
           <div class="card-body p-4">
             <div class="row g-3" id="addressSelectionContainer">
-              <!-- Default Address -->
-              <div class="col-md-6">
-                <div class="card h-100 border shadow-sm address-card selected">
-                  <div class="card-body position-relative">
-                    <span class="badge bg-success position-absolute end-0 top-0 mt-3 me-3">Default</span>
-                    <div class="form-check position-absolute start-0 top-0 mt-3 ms-3">
-                      <input class="form-check-input" type="radio" name="selectedAddress" id="address1" checked>
-                      <label class="form-check-label" for="address1"></label>
-                    </div>
-                    <div class="ps-4">
-                      <h5 class="mb-3">John Doe</h5>
-                      <p class="mb-1">123 Main Street, Near Central Park</p>
-                      <p class="mb-1">Cityville, State - 123456</p>
-                      <p class="mb-1">Landmark: Shopping Mall</p>
-                      <p class="mb-3">Phone: +91 98765 43210</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              
-              <!-- Regular Address -->
-              <div class="col-md-6">
-                <div class="card h-100 border shadow-sm address-card">
-                  <div class="card-body position-relative">
-                    <div class="form-check position-absolute start-0 top-0 mt-3 ms-3">
-                      <input class="form-check-input" type="radio" name="selectedAddress" id="address2">
-                      <label class="form-check-label" for="address2"></label>
-                    </div>
-                    <div class="ps-4">
-                      <h5 class="mb-3">Jane Smith</h5>
-                      <p class="mb-1">456 Park Avenue, Near City Hospital</p>
-                      <p class="mb-1">Townsville, State - 654321</p>
-                      <p class="mb-1">Landmark: Coffee Shop</p>
-                      <p class="mb-3">Phone: +91 87654 32109</p>
+              <% if (addresses && addresses.length > 0) { %>
+                <% addresses.forEach((address, index) => { %>
+                  <div class="col-md-6" data-address-id="<%= address._id %>">
+                    <div class="card h-100 border shadow-sm address-card <%= index === 0 ? 'selected' : '' %>">
+                      <div class="card-body position-relative">
+                        <% if (address.isDefault) { %>
+                          <span class="badge bg-success position-absolute end-0 top-0 mt-3 me-3">Default</span>
+                        <% } %>
+                        <div class="form-check position-absolute start-0 top-0 mt-3 ms-3">
+                          <input 
+                            class="form-check-input" 
+                            type="radio" 
+                            name="selectedAddress" 
+                            id="address<%= address._id %>" 
+                            value="<%= address._id %>"
+                            <%= index === 0 ? 'checked' : '' %>
+                          >
+                          <label class="form-check-label" for="address<%= address._id %>"></label>
+                        </div>
+                        <div class="ps-4">
+                          <h5 class="mb-3"><%= address.fullName %></h5>
+                          <p class="mb-1"><%= address.street %></p>
+                          <p class="mb-1"><%= address.district %>, <%= address.state %> - <%= address.pincode %></p>
+                          <% if (address.landmark) { %>
+                            <p class="mb-1">Landmark: <%= address.landmark %></p>
+                          <% } %>
+                          <p class="mb-3">Phone: <%= address.phone %></p>
+                        </div>
+                      </div>
                     </div>
                   </div>
+                <% }) %>
+              <% } else { %>
+                <div class="col-12 text-center py-5">
+                  <div class="mb-4">
+                    <i class="bi bi-geo-alt-fill text-muted" style="font-size: 3rem;"></i>
+                  </div>
+                  <h5 class="text-muted mb-3">No addresses found</h5>
+                  <p class="text-muted mb-4">Please add a delivery address to proceed.</p>
                 </div>
-              </div>
+              <% } %>
               
               <!-- Add New Address Card -->
               <div class="col-md-6">
@@ -190,7 +193,7 @@
             <button class="btn btn-outline-dark prev-step" data-prev="1">
               <i class="bi bi-arrow-left me-2"></i>Back to Review
             </button>
-            <button class="btn btn-dark next-step" data-next="3">
+            <button class="btn btn-dark next-step" data-next="3" id="continueToPaymentBtn">
               Continue to Payment<i class="bi bi-arrow-right ms-2"></i>
             </button>
           </div>
@@ -375,7 +378,6 @@
                         </div>
                         <a href="/wallet" class="btn btn-outline-dark btn-sm">Add Money</a>
                       </div>
-                      
                       <div class="alert alert-warning d-flex align-items-center" role="alert">
                         <i class="bi bi-exclamation-triangle-fill me-2"></i>
                         <div>
@@ -411,14 +413,8 @@
                   <h5 class="mb-0">Delivery Address</h5>
                   <button class="btn btn-sm btn-link text-dark p-0" data-step="2">Change</button>
                 </div>
-                <div class="card border">
-                  <div class="card-body">
-                    <h6 class="mb-2">John Doe</h6>
-                    <p class="mb-1">123 Main Street, Near Central Park</p>
-                    <p class="mb-1">Cityville, State - 123456</p>
-                    <p class="mb-1">Landmark: Shopping Mall</p>
-                    <p class="mb-0">Phone: +91 98765 43210</p>
-                  </div>
+                <div class="card border" id="selectedAddressSummary">
+                  <!-- Dynamically populated via JavaScript -->
                 </div>
               </div>
               
@@ -706,7 +702,7 @@
       </div>
       <div class="modal-footer border-0">
         <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
-        <button type="submit" form="addressForm" class="btn btn-dark">
+        <button type="submit" form="addressForm" class="btn btn-dark" id="saveAddressBtn">
           <i class="bi bi-check-circle me-2"></i>Save Address
         </button>
       </div>
@@ -952,262 +948,595 @@
     }
   }
 </style>
+
 <script>
-  document.addEventListener('DOMContentLoaded', function() {
-    // Initialize tooltips
-    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-    tooltipTriggerList.map(function (tooltipTriggerEl) {
-      return new bootstrap.Tooltip(tooltipTriggerEl);
+// Validation helper functions (reused from address page)
+function setInvalid(element, errorElement, message) {
+  element.classList.add("is-invalid");
+  element.classList.remove("is-valid");
+  errorElement.textContent = message;
+}
+
+function setValid(element, errorElement) {
+  element.classList.add("is-valid");
+  element.classList.remove("is-invalid");
+  errorElement.textContent = "";
+}
+
+function clearValidation(element, errorElement) {
+  element.classList.remove("is-invalid", "is-valid");
+  errorElement.textContent = "";
+}
+
+function validateFullName(fullName) {
+  const trimmedName = fullName.trim();
+  if (trimmedName.length < 3) return false;
+  return /^[A-Za-z\s'-]+$/.test(trimmedName);
+}
+
+function validatePhoneNumber(phoneNumber) {
+  const cleanPhone = phoneNumber.replace(/\D/g, "");
+  if (cleanPhone.length !== 10) return false;
+  if (/^(.)\1+$/.test(cleanPhone) || /^0{10}$/.test(cleanPhone) || /^1{10}$/.test(cleanPhone)) return false;
+  return true;
+}
+
+function validatePincode(pincode) {
+  const cleanPincode = pincode.replace(/\D/g, "");
+  return cleanPincode.length === 6 && /^\d+$/.test(cleanPincode);
+}
+
+// Toast configuration
+const Toast = Swal.mixin({
+  toast: true,
+  position: "bottom-end",
+  showConfirmButton: false,
+  timer: 3000,
+  timerProgressBar: true,
+  didOpen: (toast) => {
+    toast.addEventListener("mouseenter", Swal.stopTimer);
+    toast.addEventListener("mouseleave", Swal.resumeTimer);
+  },
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+  // Initialize tooltips
+  const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+  tooltipTriggerList.map(function (tooltipTriggerEl) {
+    return new bootstrap.Tooltip(tooltipTriggerEl);
+  });
+
+  // Checkout steps navigation
+  const checkoutSteps = document.querySelectorAll('.checkout-step');
+  const checkoutStepContents = document.querySelectorAll('.checkout-step-content');
+
+  // Next step buttons
+  document.querySelectorAll('.next-step').forEach(button => {
+    button.addEventListener('click', function() {
+      const nextStep = parseInt(this.getAttribute('data-next'));
+      goToStep(nextStep);
     });
-    
-    // Toast configuration
-    const Toast = Swal.mixin({
-      toast: true,
-      position: "bottom-end",
-      showConfirmButton: false,
-      timer: 3000,
-      timerProgressBar: true,
-      didOpen: (toast) => {
-        toast.addEventListener("mouseenter", Swal.stopTimer);
-        toast.addEventListener("mouseleave", Swal.resumeTimer);
-      },
+  });
+
+  // Previous step buttons
+  document.querySelectorAll('.prev-step').forEach(button => {
+    button.addEventListener('click', function() {
+      const prevStep = parseInt(this.getAttribute('data-prev'));
+      goToStep(prevStep);
     });
-    
-    // Checkout steps navigation
-    const checkoutSteps = document.querySelectorAll('.checkout-step');
-    const checkoutStepContents = document.querySelectorAll('.checkout-step-content');
-    
-    // Next step buttons
-    document.querySelectorAll('.next-step').forEach(button => {
-      button.addEventListener('click', function() {
-        const nextStep = parseInt(this.getAttribute('data-next'));
-        goToStep(nextStep);
-      });
+  });
+
+  // Change buttons in review step
+  document.querySelectorAll('.order-section button').forEach(button => {
+    button.addEventListener('click', function() {
+      const step = parseInt(this.getAttribute('data-step'));
+      goToStep(step);
     });
-    
-    // Previous step buttons
-    document.querySelectorAll('.prev-step').forEach(button => {
-      button.addEventListener('click', function() {
-        const prevStep = parseInt(this.getAttribute('data-prev'));
-        goToStep(prevStep);
-      });
+  });
+
+  // Go to specific step
+  function goToStep(stepNumber) {
+    checkoutStepContents.forEach(content => {
+      content.classList.remove('active');
     });
-    
-    // Change buttons in review step
-    document.querySelectorAll('.order-section button').forEach(button => {
-      button.addEventListener('click', function() {
-        const step = parseInt(this.getAttribute('data-step'));
-        goToStep(step);
-      });
+    document.getElementById(`step-${stepNumber}-content`).classList.add('active');
+    checkoutSteps.forEach((step, index) => {
+      const stepNum = index + 1;
+      if (stepNum < stepNumber) {
+        step.classList.remove('active');
+        step.classList.add('completed');
+      } else if (stepNum === stepNumber) {
+        step.classList.add('active');
+        step.classList.remove('completed');
+      } else {
+        step.classList.remove('active', 'completed');
+      }
     });
-    
-    // Go to specific step
-    function goToStep(stepNumber) {
-      // Hide all step contents
-      checkoutStepContents.forEach(content => {
-        content.classList.remove('active');
-      });
-      
-      // Show the target step content
-      document.getElementById(`step-${stepNumber}-content`).classList.add('active');
-      
-      // Update step indicators
-      checkoutSteps.forEach((step, index) => {
-        const stepNum = index + 1;
-        
-        if (stepNum < stepNumber) {
-          step.classList.remove('active');
-          step.classList.add('completed');
-        } else if (stepNum === stepNumber) {
-          step.classList.add('active');
-          step.classList.remove('completed');
-        } else {
-          step.classList.remove('active', 'completed');
-        }
-      });
-      
-      // Scroll to top of the checkout section
-      window.scrollTo({
-        top: document.querySelector('.checkout-progress').offsetTop - 20,
-        behavior: 'smooth'
-      });
+    window.scrollTo({
+      top: document.querySelector('.checkout-progress').offsetTop - 20,
+      behavior: 'smooth'
+    });
+  }
+
+  // Form validation
+  const addressForm = document.getElementById("addressForm");
+  const fullNameInput = document.getElementById("fullName");
+  const phoneInput = document.getElementById("phone");
+  const pincodeInput = document.getElementById("pincode");
+  const districtInput = document.getElementById("district");
+  const stateInput = document.getElementById("state");
+  const streetInput = document.getElementById("street");
+
+  const fullNameError = document.getElementById("fullNameError");
+  const phoneError = document.getElementById("phoneError");
+  const pincodeError = document.getElementById("pincodeError");
+  const districtError = document.getElementById("districtError");
+  const stateError = document.getElementById("stateError");
+  const streetError = document.getElementById("streetError");
+
+  // Input validation
+  fullNameInput.addEventListener("input", function () {
+    const fullName = this.value.trim();
+    if (!fullName) {
+      clearValidation(this, fullNameError);
+    } else if (!validateFullName(fullName)) {
+      setInvalid(this, fullNameError, "Please enter a valid name (min 3 characters)");
+    } else {
+      setValid(this, fullNameError);
     }
-    
-    // Address selection
-    document.querySelectorAll('.address-card:not(.add-address)').forEach(card => {
-      card.addEventListener('click', function() {
-        // Remove selected class from all cards
-        document.querySelectorAll('.address-card').forEach(c => {
-          c.classList.remove('selected');
-        });
-        
-        // Add selected class to clicked card
-        this.classList.add('selected');
-        
-        // Check the radio button
-        const radio = this.querySelector('input[type="radio"]');
-        if (radio) {
-          radio.checked = true;
-        }
-      });
-    });
-    
-    // Card number formatting
-    const cardNumberInput = document.getElementById('cardNumber');
-    if (cardNumberInput) {
-      cardNumberInput.addEventListener('input', function(e) {
-        let value = e.target.value.replace(/\D/g, '');
-        if (value.length > 16) {
-          value = value.slice(0, 16);
-        }
-        
-        // Add spaces after every 4 digits
-        const formattedValue = value.replace(/(\d{4})(?=\d)/g, '$1 ');
-        e.target.value = formattedValue;
-      });
+  });
+
+  phoneInput.addEventListener("input", function () {
+    const phone = this.value.trim();
+    if (!phone) {
+      clearValidation(this, phoneError);
+    } else if (!validatePhoneNumber(phone)) {
+      setInvalid(this, phoneError, "Please enter a valid 10-digit phone number");
+    } else {
+      setValid(this, phoneError);
     }
-    
-    // Expiry date formatting
-    const expiryDateInput = document.getElementById('expiryDate');
-    if (expiryDateInput) {
-      expiryDateInput.addEventListener('input', function(e) {
-        let value = e.target.value.replace(/\D/g, '');
-        if (value.length > 4) {
-          value = value.slice(0, 4);
-        }
-        
-        if (value.length > 2) {
-          value = value.slice(0, 2) + '/' + value.slice(2);
-        }
-        
-        e.target.value = value;
-      });
+  });
+
+  pincodeInput.addEventListener("input", function () {
+    const pincode = this.value.trim();
+    if (!pincode) {
+      clearValidation(this, pincodeError);
+    } else if (!validatePincode(pincode)) {
+      setInvalid(this, pincodeError, "Please enter a valid 6-digit pincode");
+    } else {
+      setValid(this, pincodeError);
     }
-    
-    // Remove item from cart
-    document.querySelectorAll('.remove-item').forEach(button => {
-      button.addEventListener('click', function() {
-        const productId = this.getAttribute('data-product-id');
-        if (!productId) {
-          Toast.fire({
-            icon: 'error',
-            title: 'Invalid product'
-          });
-          return;
-        }
-        
-        fetch('/cart/remove', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ productId })
-        })
-        .then(response => response.json())
-        .then(data => {
-          if (data.success) {
-            Toast.fire({
-              icon: 'success',
-              title: 'Item removed from cart'
-            });
-            // Reload the page to reflect updated cart
-            setTimeout(() => {
-              window.location.reload();
-            }, 1500);
-          } else {
-            Toast.fire({
-              icon: 'error',
-              title: data.message || 'Failed to remove item'
-            });
-          }
-        })
-        .catch(error => {
-          console.error('Error removing item:', error);
-          Toast.fire({
-            icon: 'error',
-            title: 'Server error'
-          });
-        });
+  });
+
+  districtInput.addEventListener("input", function () {
+    const district = this.value.trim();
+    if (!district) {
+      clearValidation(this, districtError);
+    } else if (district.length < 3) {
+      setInvalid(this, districtError, "District name must be at least 3 characters");
+    } else {
+      setValid(this, districtError);
+    }
+  });
+
+  stateInput.addEventListener("change", function () {
+    const state = this.value;
+    if (!state) {
+      clearValidation(this, stateError);
+    } else {
+      setValid(this, stateError);
+    }
+  });
+
+  streetInput.addEventListener("input", function () {
+    const street = this.value.trim();
+    if (!street) {
+      clearValidation(this, streetError);
+    } else if (street.length < 10) {
+      setInvalid(this, streetError, "Please enter a complete address (min 10 characters)");
+    } else {
+      setValid(this, streetError);
+    }
+  });
+
+  // Validate form
+  function validateForm() {
+    const fullName = fullNameInput.value.trim();
+    const phone = phoneInput.value.trim();
+    const pincode = pincodeInput.value.trim();
+    const district = districtInput.value.trim();
+    const state = stateInput.value;
+    const street = streetInput.value.trim();
+
+    let isValid = true;
+
+    if (!fullName || !validateFullName(fullName)) {
+      setInvalid(fullNameInput, fullNameError, "Valid full name is required");
+      isValid = false;
+    }
+
+    if (!phone || !validatePhoneNumber(phone)) {
+      setInvalid(phoneInput, phoneError, "Valid phone number is required");
+      isValid = false;
+    }
+
+    if (!pincode || !validatePincode(pincode)) {
+      setInvalid(pincodeInput, pincodeError, "Valid 6-digit pincode is required");
+      isValid = false;
+    }
+
+    if (!district || district.length < 3) {
+      setInvalid(districtInput, districtError, "District is required");
+      isValid = false;
+    }
+
+    if (!state) {
+      setInvalid(stateInput, stateError, "Please select a state");
+      isValid = false;
+    }
+
+    if (!street || street.length < 10) {
+      setInvalid(streetInput, streetError, "Complete address is required");
+      isValid = false;
+    }
+
+    return isValid;
+  }
+
+  // Get form data
+  function getFormData() {
+    return {
+      fullName: fullNameInput.value.trim(),
+      phone: phoneInput.value.trim(),
+      pincode: pincodeInput.value.trim(),
+      district: districtInput.value.trim(),
+      state: stateInput.value,
+      street: streetInput.value.trim(),
+      landmark: document.getElementById("landmark").value.trim(),
+      isDefault: document.getElementById("isDefault").checked,
+    };
+  }
+
+  // Create address card HTML
+  function createAddressCard(address, isSelected = false) {
+    return `
+      <div class="col-md-6" data-address-id="${address._id}">
+        <div class="card h-100 border shadow-sm address-card ${isSelected ? 'selected' : ''}">
+          <div class="card-body position-relative">
+            ${address.isDefault ? '<span class="badge bg-success position-absolute end-0 top-0 mt-3 me-3">Default</span>' : ''}
+            <div class="form-check position-absolute start-0 top-0 mt-3 ms-3">
+              <input class="form-check-input" type="radio" name="selectedAddress" id="address${address._id}" value="${address._id}" ${isSelected ? 'checked' : ''}>
+              <label class="form-check-label" for="address${address._id}"></label>
+            </div>
+            <div class="ps-4">
+              <h5 class="mb-3">${address.fullName}</h5>
+              <p class="mb-1">${address.street}</p>
+              <p class="mb-1">${address.district}, ${address.state} - ${address.pincode}</p>
+              ${address.landmark ? `<p class="mb-1">Landmark: ${address.landmark}</p>` : ''}
+              <p class="mb-3">Phone: ${address.phone}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // Update selected address summary
+  function updateSelectedAddressSummary(address) {
+    const summaryContainer = document.getElementById('selectedAddressSummary');
+    summaryContainer.innerHTML = `
+      <div class="card-body">
+        <h6 class="mb-2">${address.fullName}</h6>
+        <p class="mb-1">${address.street}</p>
+        <p class="mb-1">${address.district}, ${address.state} - ${address.pincode}</p>
+        ${address.landmark ? `<p class="mb-1">Landmark: ${address.landmark}</p>` : ''}
+        <p class="mb-0">Phone: ${address.phone}</p>
+      </div>
+    `;
+  }
+
+  // Add new address
+  async function addAddress(formData) {
+    try {
+      const response = await fetch("/address", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
       });
-    });
-    
-    // Apply coupon (non-functional, just UI feedback)
-    const applyCouponBtn = document.getElementById('applyCoupon');
-    if (applyCouponBtn) {
-      applyCouponBtn.addEventListener('click', function() {
-        const couponCode = document.getElementById('couponCode').value.trim();
-        
-        if (!couponCode) {
-          Toast.fire({
-            icon: "error",
-            title: "Please enter a coupon code"
-          });
-          return;
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to add address");
+      }
+
+      return data;
+    } catch (error) {
+      console.error("Error adding address:", error);
+      throw error;
+    }
+  }
+
+  // Reset form
+  function resetForm() {
+    addressForm.reset();
+    clearValidation(fullNameInput, fullNameError);
+    clearValidation(phoneInput, phoneError);
+    clearValidation(pincodeInput, pincodeError);
+    clearValidation(districtInput, districtError);
+    clearValidation(stateInput, stateError);
+    clearValidation(streetInput, streetError);
+  }
+
+  // Form submission
+  addressForm.addEventListener("submit", async function (event) {
+    event.preventDefault();
+
+    if (!validateForm()) return;
+
+    const formData = getFormData();
+    const submitButton = document.getElementById("saveAddressBtn");
+    const originalText = submitButton.innerHTML;
+    submitButton.disabled = true;
+    submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Saving...';
+
+    try {
+      const result = await addAddress(formData);
+
+      // Add the new address card to the DOM
+      const addressContainer = document.getElementById("addressSelectionContainer");
+      const noAddressesMessage = addressContainer.querySelector(".col-12.text-center");
+
+      if (noAddressesMessage) {
+        addressContainer.innerHTML = "";
+      }
+
+      const addressCardHTML = createAddressCard(result.address, true);
+      addressContainer.insertAdjacentHTML("afterbegin", addressCardHTML);
+
+      // Update selected address summary
+      updateSelectedAddressSummary(result.address);
+
+      // Update radio button states
+      document.querySelectorAll('input[name="selectedAddress"]').forEach(radio => {
+        radio.checked = radio.value === result.address._id;
+      });
+
+      // Update visual selection
+      document.querySelectorAll('.address-card').forEach(card => {
+        card.classList.remove('selected');
+        if (card.parentElement.getAttribute('data-address-id') === result.address._id) {
+          card.classList.add('selected');
         }
-        
+      });
+
+      Toast.fire({
+        icon: "success",
+        title: "Address added successfully",
+      });
+
+      // Close modal and reset form
+      const modal = bootstrap.Modal.getInstance(document.getElementById("addAddressModal"));
+      modal.hide();
+      resetForm();
+
+      // Refresh page if set as default
+      if (formData.isDefault) {
+        setTimeout(() => {
+          location.reload();
+        }, 1000);
+      }
+    } catch (error) {
+      Toast.fire({
+        icon: "error",
+        title: error.message || "Server error. Please try again.",
+      });
+    } finally {
+      submitButton.disabled = false;
+      submitButton.innerHTML = originalText;
+    }
+  });
+
+  // Address selection
+  document.querySelectorAll('.address-card:not(.add-address)').forEach(card => {
+    card.addEventListener('click', function() {
+      document.querySelectorAll('.address-card').forEach(c => {
+        c.classList.remove('selected');
+      });
+      this.classList.add('selected');
+      const radio = this.querySelector('input[type="radio"]');
+      if (radio) {
+        radio.checked = true;
+      }
+
+      // Update selected address summary
+      const addressId = this.parentElement.getAttribute('data-address-id');
+      const address = {
+        _id: addressId,
+        fullName: this.querySelector('h5').textContent,
+        street: this.querySelectorAll('p')[0].textContent,
+        district: this.querySelectorAll('p')[1].textContent.split(', ')[0],
+        state: this.querySelectorAll('p')[1].textContent.split(', ')[1].split(' - ')[0],
+        pincode: this.querySelectorAll('p')[1].textContent.split(' - ')[1],
+        phone: this.querySelector('p:last-child').textContent.replace('Phone: ', ''),
+        landmark: this.querySelectorAll('p').length > 3 ? this.querySelectorAll('p')[2].textContent.replace('Landmark: ', '') : ''
+      };
+      updateSelectedAddressSummary(address);
+    });
+  });
+
+  // Initialize selected address summary
+  const selectedAddress = document.querySelector('input[name="selectedAddress"]:checked');
+  if (selectedAddress) {
+    const card = selectedAddress.closest('.address-card');
+    const address = {
+      _id: selectedAddress.value,
+      fullName: card.querySelector('h5').textContent,
+      street: card.querySelectorAll('p')[0].textContent,
+      district: card.querySelectorAll('p')[1].textContent.split(', ')[0],
+      state: card.querySelectorAll('p')[1].textContent.split(', ')[1].split(' - ')[0],
+      pincode: card.querySelectorAll('p')[1].textContent.split(' - ')[1],
+      phone: card.querySelector('p:last-child').textContent.replace('Phone: ', ''),
+      landmark: card.querySelectorAll('p').length > 3 ? card.querySelectorAll('p')[2].textContent.replace('Landmark: ', '') : ''
+    };
+    updateSelectedAddressSummary(address);
+  }
+
+  // Validate address selection before proceeding to payment
+  document.getElementById('continueToPaymentBtn').addEventListener('click', function() {
+    const selectedAddress = document.querySelector('input[name="selectedAddress"]:checked');
+    if (!selectedAddress) {
+      Toast.fire({
+        icon: 'error',
+        title: 'Please select a delivery address or add a new one'
+      });
+      return;
+    }
+    goToStep(3);
+  });
+
+  // Card number formatting
+  const cardNumberInput = document.getElementById('cardNumber');
+  if (cardNumberInput) {
+    cardNumberInput.addEventListener('input', function(e) {
+      let value = e.target.value.replace(/\D/g, '');
+      if (value.length > 16) {
+        value = value.slice(0, 16);
+      }
+      const formattedValue = value.replace(/(\d{4})(?=\d)/g, '$1 ');
+      e.target.value = formattedValue;
+    });
+  }
+
+  // Expiry date formatting
+  const expiryDateInput = document.getElementById('expiryDate');
+  if (expiryDateInput) {
+    expiryDateInput.addEventListener('input', function(e) {
+      let value = e.target.value.replace(/\D/g, '');
+      if (value.length > 4) {
+        value = value.slice(0, 4);
+      }
+      if (value.length > 2) {
+        value = value.slice(0, 2) + '/' + value.slice(2);
+      }
+      e.target.value = value;
+    });
+  }
+
+  // Remove item from cart
+  document.querySelectorAll('.remove-item').forEach(button => {
+    button.addEventListener('click', function() {
+      const productId = this.getAttribute('data-product-id');
+      if (!productId) {
         Toast.fire({
-          icon: "info",
-          title: "Coupon functionality not implemented"
+          icon: 'error',
+          title: 'Invalid product'
         });
-      });
-    }
-    
-    // Place order button
-    const placeOrderBtn = document.getElementById('placeOrderBtn');
-    if (placeOrderBtn) {
-      placeOrderBtn.addEventListener('click', function() {
-        const termsCheck = document.getElementById('termsCheck');
-        const termsCheckError = document.getElementById('termsCheckError');
-        
-        if (!termsCheck.checked) {
-          termsCheckError.textContent = 'You must agree to the terms and conditions';
-          return;
+        return;
+      }
+      fetch('/cart/remove', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ productId })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          Toast.fire({
+            icon: 'success',
+            title: 'Item removed from cart'
+          });
+          setTimeout(() => {
+            window.location.reload();
+          }, 1500);
         } else {
-          termsCheckError.textContent = '';
-        }
-        
-        // Show loading state
-        this.disabled = true;
-        this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...';
-        
-        // Simulate order processing and clear cart
-        fetch('/cart/clear', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        })
-        .then(response => response.json())
-        .then(data => {
-          if (data.success) {
-            // Show success modal
-            const orderSuccessModal = new bootstrap.Modal(document.getElementById('orderSuccessModal'));
-            orderSuccessModal.show();
-            
-            // Reset button state
-            this.disabled = false;
-            this.innerHTML = '<i class="bi bi-bag-check me-2"></i>Place Order';
-          } else {
-            Toast.fire({
-              icon: 'error',
-              title: 'Failed to place order'
-            });
-            this.disabled = false;
-            this.innerHTML = '<i class="bi bi-bag-check me-2"></i>Place Order';
-          }
-        })
-        .catch(error => {
-          console.error('Error placing order:', error);
           Toast.fire({
             icon: 'error',
-            title: 'Server error'
+            title: data.message || 'Failed to remove item'
+          });
+        }
+      })
+      .catch(error => {
+        console.error('Error removing item:', error);
+        Toast.fire({
+          icon: 'error',
+          title: 'Server error'
+        });
+      });
+    });
+  });
+
+  // Apply coupon (non-functional, just UI feedback)
+  const applyCouponBtn = document.getElementById('applyCoupon');
+  if (applyCouponBtn) {
+    applyCouponBtn.addEventListener('click', function() {
+      const couponCode = document.getElementById('couponCode').value.trim();
+      if (!couponCode) {
+        Toast.fire({
+          icon: "error",
+          title: "Please enter a coupon code"
+        });
+        return;
+      }
+      Toast.fire({
+        icon: "info",
+        title: "Coupon functionality not implemented"
+      });
+    });
+  }
+
+  // Place order button
+  const placeOrderBtn = document.getElementById('placeOrderBtn');
+  if (placeOrderBtn) {
+    placeOrderBtn.addEventListener('click', function() {
+      const termsCheck = document.getElementById('termsCheck');
+      const termsCheckError = document.getElementById('termsCheckError');
+      if (!termsCheck.checked) {
+        termsCheckError.textContent = 'You must agree to the terms and conditions';
+        return;
+      } else {
+        termsCheckError.textContent = '';
+      }
+      this.disabled = true;
+      this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...';
+      fetch('/cart/clear', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          const orderSuccessModal = new bootstrap.Modal(document.getElementById('orderSuccessModal'));
+          orderSuccessModal.show();
+          this.disabled = false;
+          this.innerHTML = '<i class="bi bi-bag-check me-2"></i>Place Order';
+        } else {
+          Toast.fire({
+            icon: 'error',
+            title: 'Failed to place order'
           });
           this.disabled = false;
           this.innerHTML = '<i class="bi bi-bag-check me-2"></i>Place Order';
+        }
+      })
+      .catch(error => {
+        console.error('Error placing order:', error);
+        Toast.fire({
+          icon: 'error',
+          title: 'Server error'
         });
+        this.disabled = false;
+        this.innerHTML = '<i class="bi bi-bag-check me-2"></i>Place Order';
       });
-    }
-  })
+    });
+  }
+});
 </script>
 
 <%- include("../partials/user/footer") %>
