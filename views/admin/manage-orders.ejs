@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Orders - Chapterless Admin</title>
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.19/dist/sweetalert2.min.css"
+    />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: 'Inter', sans-serif;
+      }
+
+      body {
+        background-color: #f9fafb;
+        color: #1f2937;
+      }
+
+      .container {
+        display: flex;
+        min-height: 100vh;
+      }
+
+      .main-content {
+        flex: 1;
+        padding: 2rem;
+        margin-left: 250px;
+      }
+
+      .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+      }
+
+      .btn-export {
+        display: flex;
+        align-items: center;
+        background-color: #6f42c1;
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.5rem;
+        font-weight: 600;
+        text-decoration: none;
+        transition: background-color 0.2s;
+      }
+
+      .btn-export i {
+        margin-right: 0.5rem;
+      }
+
+      .btn-export:hover {
+        background-color: #5a32a3;
+      }
+
+      /* New Filters Container Styling */
+      .filters-container {
+        background-color: white;
+        border-radius: 0.5rem;
+        padding: 1.5rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        margin-bottom: 2rem;
+      }
+
+      .filters-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin-bottom: 1.5rem;
+        color: #1f2937;
+      }
+
+      .filters {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1.5rem;
+      }
+
+      .filter-group {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .filter-label {
+        font-size: 1rem;
+        font-weight: 500;
+        margin-bottom: 0.75rem;
+        color: #4b5563;
+      }
+
+      .filter-select,
+      .filter-input {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid #d1d5db;
+        border-radius: 0.375rem;
+        background-color: white;
+        color: #1f2937;
+        font-size: 0.975rem;
+      }
+
+      .filter-date {
+        display: flex;
+        gap: 0.5rem;
+      }
+
+      .filter-date input {
+        flex: 1;
+        padding: 0.75rem;
+        border: 1px solid #d1d5db;
+        border-radius: 0.375rem;
+        background-color: white;
+        color: #1f2937;
+        font-size: 0.975rem;
+      }
+
+      /* Remove the default calendar icon from date inputs */
+      input[type="date"]::-webkit-calendar-picker-indicator {
+        color: #6b7280;
+        opacity: 0.7;
+      }
+
+      .buttons {
+        display: flex;
+        justify-content: flex-end;
+        gap: 1rem;
+        margin-top: 1.5rem;
+      }
+
+      .btn {
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.375rem;
+        font-weight: 500;
+        font-size: 0.975rem;
+        cursor: pointer;
+        transition: background-color 0.2s;
+        border: none;
+      }
+
+      .btn-apply {
+        background-color: #6f42c1;
+        color: white;
+      }
+
+      .btn-apply:hover {
+        background-color: #5a32a3;
+      }
+
+      .btn-reset {
+        background-color: white;
+        color: #4b5563;
+        border: 1px solid #d1d5db;
+      }
+
+      .btn-reset:hover {
+        background-color: #f3f4f6;
+      }
+
+      .table-container {
+        background-color: white;
+        border-radius: 0.5rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        overflow-x: auto;
+        margin-bottom: 2rem;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+
+      thead th {
+        background-color: #f9fafb;
+        text-align: left;
+        padding: 1rem;
+        font-weight: 600;
+        color: #4b5563;
+        font-size: 0.875rem;
+        border-bottom: 1px solid #e5e7eb;
+      }
+
+      tbody td {
+        padding: 1rem;
+        border-bottom: 1px solid #e5e7eb;
+        font-size: 0.875rem;
+        color: #1f2937;
+        vertical-align: middle;
+      }
+
+      tbody tr:hover {
+        background-color: #f9fafb;
+      }
+
+      .text-center {
+        text-align: center;
+      }
+
+      .status-badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+
+      .status-pending,
+      .status-placed {
+        background-color: #fef3c7;
+        color: #92400e;
+      }
+
+      .status-processing {
+        background-color: #e0e7ff;
+        color: #4338ca;
+      }
+
+      .status-shipped {
+        background-color: #c7d2fe;
+        color: #4f46e5;
+      }
+
+      .status-delivered {
+        background-color: #d1fae5;
+        color: #065f46;
+      }
+
+      .status-cancelled {
+        background-color: #fee2e2;
+        color: #b91c1c;
+      }
+
+      .status-returned {
+        background-color: #fef3c7;
+        color: #b45309;
+      }
+
+      .actions {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+      }
+
+      .btn-action {
+        width: 2rem;
+        height: 2rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 0.375rem;
+        background-color: #f3f4f6;
+        color: #4b5563;
+        border: none;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      .btn-view:hover {
+        background-color: #6f42c1;
+        color: white;
+      }
+
+      .btn-invoice:hover {
+        background-color: #3b82f6;
+        color: white;
+      }
+
+      .btn-track:hover {
+        background-color: #10b981;
+        color: white;
+      }
+
+      .pagination-info {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 1.5rem;
+        font-size: 0.875rem;
+        color: #4b5563;
+      }
+
+      .pagination {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .page-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 2rem;
+        height: 2rem;
+        padding: 0 0.5rem;
+        border-radius: 0.375rem;
+        background-color: white;
+        color: #4b5563;
+        border: 1px solid #d1d5db;
+        font-size: 0.875rem;
+        text-decoration: none;
+        transition: all 0.2s;
+      }
+
+      .page-btn:hover:not(.disabled) {
+        background-color: #f3f4f6;
+        color: #1f2937;
+      }
+
+      .page-btn.active {
+        background-color: #6f42c1;
+        color: white;
+        border-color: #6f42c1;
+      }
+
+      .page-btn.disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .prev-btn,
+      .next-btn {
+        display: flex;
+        align-items: center;
+        padding: 0 0.75rem;
+      }
+
+      .prev-btn i,
+      .next-btn i {
+        font-size: 0.75rem;
+      }
+
+      .prev-btn i {
+        margin-right: 0.5rem;
+      }
+
+      .next-btn i {
+        margin-left: 0.5rem;
+      }
+
+      .page-ellipsis {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 2rem;
+        height: 2rem;
+        color: #4b5563;
+      }
+
+      /* Date input icon positioning */
+      .date-input-container {
+        position: relative;
+        flex: 1;
+      }
+
+      .date-input-container .fas {
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        pointer-events: none;
+        color: #6b7280;
+      }
+
+      /* Custom styling for placed status */
+      .status-placed {
+        background-color: #fef3c7;
+        color: #92400e;
+      }
+
+      @media (max-width: 1024px) {
+        .main-content {
+          margin-left: 0;
+        }
+        
+        .header {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 1rem;
+        }
+        
+        .btn-export {
+          align-self: flex-start;
+        }
+        
+        .filters {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+
+      @media (max-width: 768px) {
+        .main-content {
+          padding: 1rem;
+        }
+        
+        .filters {
+          grid-template-columns: 1fr;
+        }
+        
+        .pagination-info {
+          flex-direction: column;
+          gap: 1rem;
+        }
+        
+        .pagination {
+          flex-wrap: wrap;
+          justify-content: center;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <!-- Sidebar partial will be included here -->
+      <%- include('../partials/admin/sidebar') %>
+
+      <div class="main-content">
+        <div class="header">
+          <div>
+            <h1
+              style="
+                font-size: 42px;
+                font-weight: 700;
+                color: #1f2937;
+                margin-bottom: 8px;
+                line-height: 1.2;
+              "
+            >
+              <%= title %>
+            </h1>
+            <p
+              style="
+                font-size: 20px;
+                color: #6b7280;
+                font-weight: 400;
+                margin-top: 0;
+              "
+            >
+              Track, update and manage customer orders
+            </p>
+          </div>
+          <a href="/admin/orders/export" class="btn-export">
+            <i class="fas fa-file-export"></i>
+            Export Orders
+          </a>
+        </div>
+
+        <div class="filters-container">
+          <h2 class="filters-title">Filter Orders</h2>
+          <form id="filter-form" action="/admin/orders" method="GET">
+            <div class="filters">
+              <div class="filter-group">
+                <label class="filter-label">Order Status</label>
+                <select class="filter-select" name="status">
+                  <option value="">All Statuses</option>
+                  <option value="Pending">Pending</option>
+                  <option value="Processing">Processing</option>
+                  <option value="Shipped">Shipped</option>
+                  <option value="Delivered">Delivered</option>
+                  <option value="Cancelled">Cancelled</option>
+                  <option value="Returned">Returned</option>
+                </select>
+              </div>
+
+              <div class="filter-group">
+                <label class="filter-label">Payment Method</label>
+                <select class="filter-select" name="payment">
+                  <option value="">All Methods</option>
+                  <option value="COD">Cash on Delivery</option>
+                  <option value="CARD">Credit/Debit Card</option>
+                  <option value="WALLET">Wallet</option>
+                  <option value="UPI">UPI/Net Banking</option>
+                </select>
+              </div>
+
+              <div class="filter-group">
+                <label class="filter-label">Order Amount</label>
+                <div class="filter-date">
+                  <input
+                    type="number"
+                    placeholder="Min ₹"
+                    class="filter-input"
+                    name="min_amount"
+                  />
+                  <input
+                    type="number"
+                    placeholder="Max ₹"
+                    class="filter-input"
+                    name="max_amount"
+                  />
+                </div>
+              </div>
+
+              <div class="filter-group">
+                <label class="filter-label">Order Date</label>
+                <div class="filter-date">
+                  <div class="date-input-container">
+                    <input type="text" class="filter-input" name="start_date" placeholder="dd/mm/yyyy" onfocus="(this.type='date')" onblur="if(!this.value)this.type='text'" />
+                    <i class="fas fa-calendar"></i>
+                  </div>
+                  <div class="date-input-container">
+                    <input type="text" class="filter-input" name="end_date" placeholder="dd/mm/yyyy" onfocus="(this.type='date')" onblur="if(!this.value)this.type='text'" />
+                    <i class="fas fa-calendar"></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="buttons">
+              <button type="reset" class="btn btn-reset">Reset Filters</button>
+              <button type="submit" class="btn btn-apply">Apply Filters</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Order ID</th>
+                <th>Customer</th>
+                <th>Date</th>
+                <th>Total</th>
+                <th>Payment Method</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% if (orders && orders.length > 0) { %>
+                <% orders.forEach(order => { %>
+                  <tr>
+                    <td>#<%= order.orderNumber %></td>
+                    <td><%= order.customerName %></td>
+                    <td><%= order.formattedDate %></td>
+                    <td><%= order.formattedTotal %></td>
+                    <td><%= order.paymentMethod || 'N/A' %></td>
+                    <td>
+                      <% 
+                        let statusClass = '';
+                        switch(order.orderStatus) {
+                          case 'Pending':
+                          case 'Placed':
+                            statusClass = 'status-placed';
+                            break;
+                          case 'Processing':
+                            statusClass = 'status-processing';
+                            break;
+                          case 'Shipped':
+                            statusClass = 'status-shipped';
+                            break;
+                          case 'Delivered':
+                            statusClass = 'status-delivered';
+                            break;
+                          case 'Cancelled':
+                            statusClass = 'status-cancelled';
+                            break;
+                          case 'Returned':
+                            statusClass = 'status-returned';
+                            break;
+                          default:
+                            statusClass = 'status-placed';
+                        }
+                      %>
+                      <span class="status-badge <%= statusClass %>"><%= order.orderStatus %></span>
+                    </td>
+                    <td>
+                      <div class="actions">
+                        <a href="/admin/orders/<%= order._id %>" class="btn-action btn-view" title="View Order">
+                          <i class="fas fa-eye"></i>
+                        </a>
+                        <% if (order.orderStatus !== 'Cancelled' && order.orderStatus !== 'Pending') { %>
+                        <a href="/admin/orders/<%= order._id %>/invoice" class="btn-action btn-invoice" title="Download Invoice">
+                          <i class="fas fa-file-invoice"></i>
+                        </a>
+                        <% } %>
+                        <% if (order.orderStatus === 'Shipped') { %>
+                        <a href="/admin/orders/<%= order._id %>/track" class="btn-action btn-track" title="Track Order">
+                          <i class="fas fa-truck"></i>
+                        </a>
+                        <% } %>
+                      </div>
+                    </td>
+                  </tr>
+                <% }) %>
+              <% } else { %>
+                <tr>
+                  <td colspan="7" class="text-center">No orders found</td>
+                </tr>
+              <% } %>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination -->
+        <% if (pagination && pagination.totalPages > 0) { %>
+          <div class="pagination-info">
+            <p>Showing <%= orders.length %> of <%= pagination.totalPages * 10 %> orders (Page <%= pagination.currentPage %> of <%= pagination.totalPages %>)</p>
+            <div class="pagination">
+              <a href="?page=<%= pagination.prevPage %>" class="page-btn prev-btn <%= pagination.hasPrev ? '' : 'disabled' %>">
+                <i class="fas fa-chevron-left"></i> Previous
+              </a>
+              
+              <% pagination.pages.forEach(pageNum => { %>
+                <% if (pagination.pages.length <= 7 || 
+                      pageNum === 1 || 
+                      pageNum === pagination.totalPages || 
+                      (pageNum >= pagination.currentPage - 1 && pageNum <= pagination.currentPage + 1)) { %>
+                  <a href="?page=<%= pageNum %>" class="page-btn page-number <%= pagination.currentPage === pageNum ? 'active' : '' %>">
+                    <%= pageNum %>
+                  </a>
+                <% } else if (
+                  (pageNum === 2 && pagination.currentPage > 3) ||
+                  (pageNum === pagination.totalPages - 1 && pagination.currentPage < pagination.totalPages - 2)
+                ) { %>
+                  <span class="page-ellipsis">...</span>
+                <% } %>
+              <% }) %>
+              
+              <a href="?page=<%= pagination.nextPage %>" class="page-btn next-btn <%= pagination.hasNext ? '' : 'disabled' %>">
+                Next <i class="fas fa-chevron-right"></i>
+              </a>
+            </div>
+          </div>
+        <% } %>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.19/dist/sweetalert2.all.min.js"></script>
+    <script>
+      document.addEventListener('DOMContentLoaded', () => {
+        // Date fields are now handled directly with HTML attributes
+
+        // Filter form submission
+        const filterForm = document.getElementById('filter-form');
+        
+        // Reset filters
+        filterForm.addEventListener('reset', function() {
+          setTimeout(() => {
+            Swal.fire({
+              toast: true,
+              position: 'top-end',
+              showConfirmButton: false,
+              timer: 3000,
+              icon: 'info',
+              title: 'Filters have been reset',
+            });
+          }, 100);
+        });
+        
+        // Export Orders
+        document.querySelector('.btn-export').addEventListener('click', function(e) {
+          e.preventDefault();
+          
+          Swal.fire({
+            title: 'Export Orders',
+            text: 'Exporting orders data as CSV',
+            icon: 'info',
+            confirmButtonColor: '#6f42c1',
+            showCancelButton: true,
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Export',
+            cancelButtonText: 'Cancel',
+          }).then((result) => {
+            if (result.isConfirmed) {
+              window.location.href = '/admin/orders/export';
+            }
+          });
+        });
+
+        // Handle view, invoice and track buttons through event delegation
+        document.addEventListener('click', function(e) {
+          // View Order Details
+          if (e.target.closest('.btn-view')) {
+            const viewBtn = e.target.closest('.btn-view');
+            // Let the link handle the navigation naturally
+          }
+          
+          // Download Invoice
+          if (e.target.closest('.btn-invoice')) {
+            const invoiceBtn = e.target.closest('.btn-invoice');
+            // Let the link handle the download naturally
+          }
+          
+          // Track Order
+          if (e.target.closest('.btn-track')) {
+            const trackBtn = e.target.closest('.btn-track');
+            // Let the link handle the navigation naturally
+          }
+        });
+        
+        // Preserve filter parameters in pagination links
+        document.querySelectorAll('.pagination a').forEach(link => {
+          link.addEventListener('click', function(e) {
+            if (this.classList.contains('disabled')) {
+              e.preventDefault();
+              return;
+            }
+            
+            // Get current URL parameters
+            const urlParams = new URLSearchParams(window.location.search);
+            // Get page parameter from link
+            const hrefParams = new URLSearchParams(this.getAttribute('href'));
+            const pageValue = hrefParams.get('page');
+            
+            if (pageValue) {
+              // Set the page parameter
+              urlParams.set('page', pageValue);
+              
+              // Update the link href with all parameters
+              e.preventDefault();
+              window.location.href = `${window.location.pathname}?${urlParams.toString()}`;
+            }
+          });
+        });
+      });
+    </script>
+  </body>
+</html>
