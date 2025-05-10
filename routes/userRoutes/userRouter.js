@@ -26,7 +26,9 @@ const profileController = require('../../controllers/userController/profile-cont
 
 const addressController = require('../../controllers/userController/address-controller');
 
-const checkoutController = require('../../controllers/userController/checkout-controller')
+const checkoutController = require('../../controllers/userController/checkout-controller');
+
+const orderController = require('../../controllers/userController/order-controller');
 
 // Public routes
 router.get("/", userController.loadHomePage);
@@ -102,5 +104,10 @@ router.get('/address/:id', isAuthenticated, addressController.getAddressById);
 // Checkout routes
 router.get('/checkout',checkoutController.getCheckout);
 router.post('/checkout/place-order', isAuthenticated, checkoutController.placeOrder);
+
+router.get('/orders',orderController.getOrders);
+router.get('/orders/:id', isAuthenticated, orderController.getOrderDetails);
+
+router.get('/orders/:id/invoice', orderController.downloadInvoice);
 
 module.exports = router;

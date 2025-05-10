@@ -1,0 +1,307 @@
+<%- include("../partials/user/header") %>
+
+<style>
+  body {
+    font-family: "Inter", sans-serif;
+    color: #1a1a1a;
+    background-color: #f8f9fa;
+  }
+
+  .order-card {
+    background-color: #fff;
+    border-radius: 0.5rem;
+    overflow: hidden;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+  }
+
+  .order-card:hover {
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  }
+
+  .order-header {
+    background-color: #f8f9fa;
+  }
+
+  .order-item-image {
+    min-width: 80px;
+    max-width: 120px;
+  }
+
+  @media (max-width: 767.98px) {
+    .order-header {
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    
+    .order-header > div {
+      flex: 1 1 40%;
+    }
+    
+    .order-item-image {
+      max-width: 80px;
+    }
+  }
+
+  .badge {
+    font-weight: 500;
+    padding: 0.5em 0.75em;
+  }
+
+  .badge.bg-success {
+    background-color: #198754 !important;
+  }
+
+  .badge.bg-primary {
+    background-color: #0d6efd !important;
+  }
+
+  .badge.bg-warning {
+    background-color: #ffc107 !important;
+  }
+
+  .badge.bg-secondary {
+    background-color: #6c757d !important;
+  }
+
+  .badge.bg-info {
+    background-color: #0dcaf0 !important;
+  }
+
+  .badge.bg-danger {
+    background-color: #dc3545 !important;
+  }
+
+  .btn-dark {
+    background-color: #000;
+    border-color: #000;
+  }
+
+  .btn-dark:hover {
+    background-color: #333;
+    border-color: #333;
+  }
+
+  .btn-outline-dark {
+    color: #000;
+    border-color: #dee2e6;
+  }
+
+  .btn-outline-dark:hover {
+    background-color: #f8f9fa;
+    color: #000;
+    border-color: #dee2e6;
+  }
+
+  .btn-outline-danger {
+    color: #dc3545;
+    border-color: #dee2e6;
+  }
+
+  .btn-outline-danger:hover {
+    background-color: #dc3545;
+    color: #fff;
+    border-color: #dc3545;
+  }
+
+  .pagination .page-link {
+    color: #000;
+  }
+
+  .pagination .page-item.active .page-link {
+    background-color: #000;
+    border-color: #000;
+    color: #fff;
+  }
+
+  .dropdown-menu {
+    border-radius: 0.5rem;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    border: 1px solid #dee2e6;
+  }
+
+  .dropdown-item:active {
+    background-color: #000;
+  }
+
+  .dropdown-item.active {
+    background-color: #f8f9fa;
+    color: #000;
+  }
+
+  .profile-sidebar {
+    position: sticky;
+    top: 20px;
+    height: fit-content;
+  }
+</style>
+
+<div class="container py-4">
+  <div class="row">
+    <%- include("../partials/user/accountSidebar") %>
+    
+    <!-- Main Content -->
+    <div class="col-lg-9">
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body p-4">
+          <div class="d-flex justify-content-between align-items-center mb-4">
+            <div class="d-flex align-items-center gap-2">
+              <h2 class="fs-4 fw-bold mb-0 me-3">My Orders</h2>
+              <div class="dropdown">
+                <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" id="filterDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                  <%= currentFilter === 'All' ? 'All Orders' : currentFilter %>
+                </button>
+                <ul class="dropdown-menu" aria-labelledby="filterDropdown">
+                  <li><a class="dropdown-item <%= currentFilter === 'All' ? 'active' : '' %>" href="/orders?sort=<%= currentSort %>">All Orders</a></li>
+                  <li><a class="dropdown-item <%= currentFilter === 'Delivered' ? 'active' : '' %>" href="/orders?filter=Delivered&sort=<%= currentSort %>">Delivered</a></li>
+                  <li><a class="dropdown-item <%= currentFilter === 'Processing' ? 'active' : '' %>" href="/orders?filter=Processing&sort=<%= currentSort %>">Processing</a></li>
+                  <li><a class="dropdown-item <%= currentFilter === 'Cancelled' ? 'active' : '' %>" href="/orders?filter=Cancelled&sort=<%= currentSort %>">Cancelled</a></li>
+                </ul>
+              </div>
+            </div>
+            <div class="dropdown">
+              <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" id="sortDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                <%= sortDisplay %>
+              </button>
+              <ul class="dropdown-menu" aria-labelledby="sortDropdown">
+                <li><a class="dropdown-item <%= currentSort === 'createdAt-desc' ? 'active' : '' %>" href="/orders?filter=<%= currentFilter %>&sort=createdAt-desc">Newest First</a></li>
+                <li><a class="dropdown-item <%= currentSort === 'createdAt-asc' ? 'active' : '' %>" href="/orders?filter=<%= currentFilter %>&sort=createdAt-asc">Oldest First</a></li>
+                <li><a class="dropdown-item <%= currentSort === 'total-desc' ? 'active' : '' %>" href="/orders?filter=<%= currentFilter %>&sort=total-desc">Price: High to Low</a></li>
+                <li><a class="dropdown-item <%= currentSort === 'total-asc' ? 'active' : '' %>" href="/orders?filter=<%= currentFilter %>&sort=total-asc">Price: Low to High</a></li>
+              </ul>
+            </div>
+          </div>
+          
+          <!-- Orders List -->
+          <div class="orders-list">
+            <% if (orders && orders.length > 0) { %>
+              <% orders.forEach(order => { %>
+                <div class="order-card mb-4">
+                  <div class="order-header d-flex justify-content-between align-items-center p-3 border-bottom">
+                    <div>
+                      <p class="mb-0 text-muted small">Order placed</p>
+                      <p class="mb-0 fw-medium"><%= order.formattedDate %></p>
+                    </div>
+                    <div>
+                      <p class="mb-0 text-muted small">Order number</p>
+                      <p class="mb-0 fw-medium"><%= order.orderNumber %></p>
+                    </div>
+                    <div>
+                      <p class="mb-0 text-muted small">Total</p>
+                      <p class="mb-0 fw-medium"><%= order.formattedTotal %></p>
+                    </div>
+                    <div class="d-none d-md-block">
+                      <% if (order.orderStatus === 'Delivered') { %>
+                        <span class="badge bg-success">Delivered</span>
+                      <% } else if (order.orderStatus === 'Shipped') { %>
+                        <span class="badge bg-primary">Shipped</span>
+                      <% } else if (order.orderStatus === 'Processing') { %>
+                        <span class="badge bg-warning text-dark">Processing</span>
+                      <% } else if (order.orderStatus === 'Cancelled') { %>
+                        <span class="badge bg-secondary">Cancelled</span>
+                      <% } else if (order.orderStatus === 'Placed') { %>
+                        <span class="badge bg-info">Placed</span>
+                      <% } else if (order.orderStatus === 'Returned') { %>
+                        <span class="badge bg-danger">Returned</span>
+                      <% } %>
+                    </div>
+                  </div>
+                  <div class="order-body p-3">
+                    <div class="row g-3">
+                      <div class="col-md-8">
+                        <% order.items.forEach(item => { %>
+                          <div class="d-flex flex-column flex-md-row gap-3 <% if (!order.items[order.items.length - 1] === item) { %>mt-3 pt-3 border-top<% } %>">
+                            <div class="order-item-image">
+                              <img 
+                                src="<%= item.image || 'https://via.placeholder.com/120x160' %>" 
+                                alt="<%= item.title || 'Product' %>" 
+                                class="img-fluid rounded"
+                                onerror="this.src='https://via.placeholder.com/120x160'"
+                              >
+                            </div>
+                            <div class="order-item-details">
+                              <h5 class="fs-6 fw-semibold mb-1"><%= item.title || 'Unknown Product' %></h5>
+                              <p class="mb-1">Qty: <%= item.quantity || 1 %></p>
+                              <p class="fw-medium mb-0"><%= item.formattedPrice %></p>
+                              <div class="d-block d-md-none mt-2">
+                                <% if (order.orderStatus === 'Delivered') { %>
+                                  <span class="badge bg-success">Delivered</span>
+                                <% } else if (order.orderStatus === 'Shipped') { %>
+                                  <span class="badge bg-primary">Shipped</span>
+                                <% } else if (order.orderStatus === 'Processing') { %>
+                                  <span class="badge bg-warning text-dark">Processing</span>
+                                <% } else if (order.orderStatus === 'Cancelled') { %>
+                                  <span class="badge bg-secondary">Cancelled</span>
+                                <% } else if (order.orderStatus === 'Placed') { %>
+                                  <span class="badge bg-info">Placed</span>
+                                <% } else if (order.orderStatus === 'Returned') { %>
+                                  <span class="badge bg-danger">Returned</span>
+                                <% } %>
+                              </div>
+                            </div>
+                          </div>
+                        <% }) %>
+                      </div>
+                      <div class="col-md-4">
+                        <div class="order-actions d-flex flex-column gap-2">
+                          <a href="/orders/<%= order._id %>" class="btn btn-dark btn-sm">View Order Details</a>
+                          <% if (['Shipped', 'Delivered'].includes(order.orderStatus)) { %>
+                            <a href="#" class="btn btn-outline-dark btn-sm">Track Package</a>
+                          <% } %>
+                          <a href="/orders/<%= order._id %>/invoice" class="btn btn-outline-dark btn-sm">Download Invoice</a>
+                          <% if (order.orderStatus === 'Delivered') { %>
+                            <a href="#" class="btn btn-outline-dark btn-sm">Write a Review</a>
+                          <% } %>
+                          <% if (['Cancelled', 'Delivered'].includes(order.orderStatus)) { %>
+                            <a href="#" class="btn btn-outline-dark btn-sm">Buy Again</a>
+                          <% } %>
+                          <% if (['Placed', 'Processing'].includes(order.orderStatus)) { %>
+                            <a href="#" class="btn btn-outline-danger btn-sm">Cancel Order</a>
+                          <% } %>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              <% }) %>
+            <% } else { %>
+              <div class="text-center py-5">
+                <i class="bi bi-box-seam text-muted" style="font-size: 3rem;"></i>
+                <h5 class="text-muted mt-3">No orders found</h5>
+                <p class="text-muted mb-4">
+                  <% if (currentFilter === 'All') { %>
+                    You haven't placed any orders yet.
+                  <% } else { %>
+                    No <%= currentFilter.toLowerCase() %> orders found.
+                  <% } %>
+                </p>
+                <a href="/shopPage" class="btn btn-dark">Start Shopping</a>
+              </div>
+            <% } %>
+          </div>
+          
+          <!-- Pagination -->
+          <% if (pagination.totalPages > 1) { %>
+            <nav aria-label="Orders pagination" class="mt-4">
+              <ul class="pagination justify-content-center">
+                <li class="page-item <%= !pagination.hasPrev ? 'disabled' : '' %>">
+                  <a class="page-link" href="/orders?page=<%= pagination.prevPage %>&filter=<%= currentFilter %>&sort=<%= currentSort %>" tabindex="-1" aria-disabled="<%= !pagination.hasPrev %>">Previous</a>
+                </li>
+                <% pagination.pages.forEach(page => { %>
+                  <li class="page-item <%= pagination.currentPage === page ? 'active' : '' %>">
+                    <a class="page-link" href="/orders?page=<%= page %>&filter=<%= currentFilter %>&sort=<%= currentSort %>"><%= page %></a>
+                  </li>
+                <% }) %>
+                <li class="page-item <%= !pagination.hasNext ? 'disabled' : '' %>">
+                  <a class="page-link" href="/orders?page=<%= pagination.nextPage %>&filter=<%= currentFilter %>&sort=<%= currentSort %>" aria-disabled="<%= !pagination.hasNext %>">Next</a>
+                </li>
+              </ul>
+            </nav>
+          <% } %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<%- include("../partials/user/footer") %>

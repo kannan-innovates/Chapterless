@@ -1,0 +1,374 @@
+<%- include("../partials/user/header") %>
+
+<style>
+  body {
+    font-family: "Inter", sans-serif;
+    color: #1a1a1a;
+    background-color: #f8f9fa;
+  }
+
+  .order-card {
+    background-color: #fff;
+    border-radius: 0.5rem;
+    overflow: hidden;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+  }
+
+  .order-header {
+    background-color: #f8f9fa;
+  }
+
+  .order-item-image {
+    min-width: 80px;
+    max-width: 120px;
+    height: auto;
+  }
+
+  .order-timeline {
+    position: relative;
+    padding-left: 30px;
+  }
+
+  .order-timeline::before {
+    content: '';
+    position: absolute;
+    left: 5px;
+    top: 0;
+    height: 100%;
+    width: 2px;
+    background-color: #dee2e6;
+  }
+
+  .timeline-item {
+    position: relative;
+    padding-bottom: 1.5rem;
+  }
+
+  .timeline-item:last-child {
+    padding-bottom: 0;
+  }
+
+  .timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -30px;
+    top: 0;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background-color: #fff;
+    border: 2px solid #0d6efd;
+  }
+
+  .timeline-item.completed::before {
+    background-color: #198754;
+    border-color: #198754;
+  }
+
+  .timeline-item.active::before {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+  }
+
+  .timeline-item.pending::before {
+    background-color: #fff;
+    border-color: #6c757d;
+  }
+
+  .timeline-item.cancelled::before {
+    background-color: #dc3545;
+    border-color: #dc3545;
+  }
+
+  .badge {
+    font-weight: 500;
+    padding: 0.5em 0.75em;
+  }
+
+  .badge.bg-success {
+    background-color: #198754 !important;
+  }
+
+  .badge.bg-primary {
+    background-color: #0d6efd !important;
+  }
+
+  .badge.bg-warning {
+    background-color: #ffc107 !important;
+  }
+
+  .badge.bg-secondary {
+    background-color: #6c757d !important;
+  }
+
+  .badge.bg-info {
+    background-color: #0dcaf0 !important;
+  }
+
+  .badge.bg-danger {
+    background-color: #dc3545 !important;
+  }
+
+  .btn-dark {
+    background-color: #000;
+    border-color: #000;
+  }
+
+  .btn-dark:hover {
+    background-color: #333;
+    border-color: #333;
+  }
+
+  .btn-outline-dark {
+    color: #000;
+    border-color: #dee2e6;
+  }
+
+  .btn-outline-dark:hover {
+    background-color: #f8f9fa;
+    color: #000;
+    border-color: #dee2e6;
+  }
+
+  .btn-outline-danger {
+    color: #dc3545;
+    border-color: #dee2e6;
+  }
+
+  .btn-outline-danger:hover {
+    background-color: #dc3545;
+    color: #fff;
+    border-color: #dc3545;
+  }
+
+  @media (max-width: 767.98px) {
+    .order-item {
+      flex-direction: column;
+    }
+    
+    .order-item-image {
+      margin-bottom: 1rem;
+      max-width: 100px;
+    }
+    
+    .summary-section {
+      flex-direction: column;
+    }
+    
+    .info-container {
+      margin-bottom: 1.5rem;
+    }
+  }
+
+  .profile-sidebar {
+    position: sticky;
+    top: 20px;
+    height: fit-content;
+  }
+  
+  .info-title {
+    font-size: 0.875rem;
+    color: #6c757d;
+    margin-bottom: 0.25rem;
+  }
+  
+  .info-value {
+    font-weight: 500;
+    margin-bottom: 0;
+  }
+  
+  .price-summary dt {
+    font-weight: normal;
+    color: #6c757d;
+  }
+  
+  .price-summary dd {
+    font-weight: 500;
+    text-align: right;
+  }
+  
+  .total-row {
+    border-top: 1px solid #dee2e6;
+    font-weight: 600;
+    padding-top: 0.5rem;
+    margin-top: 0.5rem;
+  }
+</style>
+
+<div class="container py-4">
+  <div class="row">
+    <%- include("../partials/user/accountSidebar") %>
+    
+    <!-- Main Content -->
+    <div class="col-lg-9">
+      <!-- Order Details Header -->
+      <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+        <div class="d-flex align-items-center gap-2 mb-2 mb-md-0">
+          <a href="/orders" class="text-decoration-none">
+            <i class="bi bi-arrow-left me-2"></i>Back to Orders
+          </a>
+        </div>
+        <h2 class="fs-4 fw-bold mb-0">Order Details</h2>
+      </div>
+      
+      <!-- Order Status Card -->
+      <div class="order-card mb-4">
+        <div class="order-header d-flex justify-content-between align-items-center p-3">
+          <div>
+            <p class="mb-0 text-muted small">Order <%= order.orderNumber %></p>
+            <p class="mb-0 fw-medium">Placed on <%= order.formattedDate %></p>
+          </div>
+          <div>
+            <% if (order.orderStatus === 'Delivered') { %>
+              <span class="badge bg-success">Delivered</span>
+            <% } else if (order.orderStatus === 'Shipped') { %>
+              <span class="badge bg-primary">Shipped</span>
+            <% } else if (order.orderStatus === 'Processing') { %>
+              <span class="badge bg-warning text-dark">Processing</span>
+            <% } else if (order.orderStatus === 'Cancelled') { %>
+              <span class="badge bg-secondary">Cancelled</span>
+            <% } else if (order.orderStatus === 'Placed') { %>
+              <span class="badge bg-info">Placed</span>
+            <% } else if (order.orderStatus === 'Returned') { %>
+              <span class="badge bg-danger">Returned</span>
+            <% } %>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Order Timeline -->
+      <div class="order-card mb-4">
+        <div class="card-body p-4">
+          <h5 class="fw-bold mb-3">Order Status</h5>
+          <div class="order-timeline">
+            <% timeline.forEach(item => { %>
+              <div class="timeline-item <%= item.completed ? 'completed' : item.active ? 'active' : item.cancelled ? 'cancelled' : 'pending' %>">
+                <p class="fw-medium mb-0"><%= item.status %></p>
+                <p class="text-muted small mb-0"><%= item.timestamp %></p>
+              </div>
+            <% }) %>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Order Items -->
+      <div class="order-card mb-4">
+        <div class="card-body p-4">
+          <h5 class="fw-bold mb-3">Items in Your Order</h5>
+          
+          <% order.items.forEach(item => { %>
+            <div class="d-flex mb-4 order-item">
+              <div class="order-item-image me-3">
+                <img 
+                  src="<%= item.image || 'https://via.placeholder.com/120x160' %>" 
+                  alt="<%= item.title || 'Product' %>" 
+                  class="img-fluid rounded"
+                  onerror="this.src='https://via.placeholder.com/120x160'"
+                >
+              </div>
+              <div class="flex-grow-1">
+                <div class="d-flex justify-content-between mb-2">
+                  <h6 class="fw-semibold mb-1"><%= item.title || 'Unknown Product' %></h6>
+                  <p class="fw-medium mb-0"><%= item.formattedPrice %></p>
+                </div>
+                <p class="mb-2">Qty: <%= item.quantity || 1 %></p>
+                <% if (order.orderStatus === 'Delivered') { %>
+                  <div class="d-flex flex-wrap gap-2">
+                    <a href="#" class="btn btn-outline-dark btn-sm">Write a Review</a>
+                    <a href="#" class="btn btn-outline-dark btn-sm">Buy Again</a>
+                  </div>
+                <% } %>
+              </div>
+            </div>
+          <% }) %>
+        </div>
+      </div>
+      
+      <!-- Order Summary and Shipping Info -->
+      <div class="row g-4">
+        <!-- Shipping and Billing -->
+        <div class="col-md-7">
+          <div class="order-card h-100">
+            <div class="card-body p-4">
+              <div class="d-flex flex-column flex-md-row gap-4 summary-section">
+                <!-- Shipping Information -->
+                <div class="info-container">
+                  <h5 class="fw-bold mb-3">Shipping Address</h5>
+                  <p class="fw-medium mb-1"><%= order.shippingAddress.fullName || 'N/A' %></p>
+                  <p class="mb-1"><%= order.shippingAddress.street || '' %></p>
+                  <% if (order.shippingAddress.landmark) { %>
+                    <p class="mb-1"><%= order.shippingAddress.landmark %></p>
+                  <% } %>
+                  <p class="mb-1"><%= order.shippingAddress.city || '' %>, <%= order.shippingAddress.state || '' %> <%= order.shippingAddress.pinCode || '' %></p>
+                  <p class="mb-3"><%= order.shippingAddress.country || '' %></p>
+                  <p class="mb-0"><span class="text-muted">Phone:</span> <%= order.shippingAddress.phone || 'N/A' %></p>
+                </div>
+                
+                <!-- Billing Information -->
+                <div class="info-container">
+                  <h5 class="fw-bold mb-3">Payment Method</h5>
+                  <div class="d-flex align-items-center mb-3">
+                    <div class="me-2">
+                      <i class="bi bi-cash-stack"></i>
+                    </div>
+                    <div>
+                      <p class="mb-0 fw-medium"><%= order.paymentMethod || 'Cash on Delivery' %></p>
+                    </div>
+                  </div>
+                  
+                  <h5 class="fw-bold mb-3">Billing Address</h5>
+                  <p class="fw-medium mb-1"><%= order.shippingAddress.fullName || 'N/A' %></p>
+                  <p class="mb-1"><%= order.shippingAddress.street || '' %></p>
+                  <% if (order.shippingAddress.landmark) { %>
+                    <p class="mb-1"><%= order.shippingAddress.landmark %></p>
+                  <% } %>
+                  <p class="mb-1"><%= order.shippingAddress.city || '' %>, <%= order.shippingAddress.state || '' %> <%= order.shippingAddress.pinCode || '' %></p>
+                  <p class="mb-0"><%= order.shippingAddress.country || '' %></p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Order Summary -->
+        <div class="col-md-5">
+          <div class="order-card h-100">
+            <div class="card-body p-4">
+              <h5 class="fw-bold mb-3">Order Summary</h5>
+              
+              <dl class="row price-summary">
+                <dt class="col-7">Items (<%= order.items.length %>):</dt>
+                <dd class="col-5"><%= order.formattedSubtotal %></dd>
+                
+                <dt class="col-7">Tax:</dt>
+                <dd class="col-5"><%= order.formattedTax %></dd>
+                
+                <dt class="col-7 total-row">Order Total:</dt>
+                <dd class="col-5 total-row"><%= order.formattedTotal %></dd>
+              </dl>
+              
+              <hr class="my-3">
+              
+              <div class="mb-3">
+                <p class="info-title">Shipping Method</p>
+                <p class="info-value">Standard Shipping</p>
+              </div>
+              
+              <div>
+                <a href="/orders/<%= order._id %>/invoice" class="btn btn-outline-dark btn-sm mb-2 w-100">Download Invoice</a>
+                <% if (['Placed', 'Processing'].includes(order.orderStatus)) { %>
+                  <a href="#" class="btn btn-outline-danger btn-sm w-100">Cancel Order</a>
+                <% } else { %>
+                  <a href="#" class="btn btn-outline-danger btn-sm w-100">Need Help?</a>
+                <% } %>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<%- include("../partials/user/footer") %>
