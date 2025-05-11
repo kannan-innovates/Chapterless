@@ -1,4 +1,3 @@
-<!-- In login.ejs -->
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -21,10 +20,52 @@
     />
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link rel="stylesheet" href="/styles/user/loginPage.css" />
+    <style>
+      /* Black Circle Loader */
+      .full-page-loader {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(255, 255, 255, 0.9);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+        z-index: 9999;
+      }
+      
+      .circle-loader {
+        border: 6px solid #f3f3f3; /* Light grey background */
+        border-top: 6px solid black; /* Black top */
+        border-radius: 50%;
+        width: 50px;
+        height: 50px;
+        animation: spin 1s linear infinite;
+        margin-bottom: 20px;
+      }
+      
+      .loader-message {
+        font-weight: 500;
+        color: #333;
+      }
+
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+    </style>
   </head>
   <body
     class="paper-texture d-flex align-items-center justify-content-center min-vh-100 py-3"
   >
+    <!-- Full Page Loader -->
+    <div class="full-page-loader" id="fullPageLoader">
+      <div class="circle-loader"></div>
+      <div class="loader-message">Logging in...</div>
+    </div>
+    
     <div class="container">
       <div class="login-container mx-auto bg-white row">
         <div class="col-md-5 p-0 image-side d-none d-md-block">
@@ -158,6 +199,12 @@
         }
       });
 
+      // Show full page loader function
+      function showLoader() {
+        const loader = document.getElementById('fullPageLoader');
+        loader.style.display = 'flex';
+      }
+
       // Form submission
       document.getElementById("userLogin").addEventListener("submit", async (event) => {
         event.preventDefault();
@@ -192,19 +239,18 @@
               body: JSON.stringify({ email, password }),
             });
             const result = await response.json();
-            submitButton.disabled = false;
-            submitButton.textContent = "Log In";
-
+            
             if (result.success) {
-              Swal.fire({
-                icon: "success",
-                title: "Sign In Successful",
-                text: result.message || "Welcome to Chapterless",
-                confirmButtonText: "Proceed to Home Page",
-              }).then(() => {
+              // Show full page loader instead of SweetAlert
+              showLoader();
+              // Redirect after a short delay
+              setTimeout(() => {
                 window.location.href = "/";
-              });
+              }, 1000);
             } else {
+              submitButton.disabled = false;
+              submitButton.textContent = "Log In";
+              
               if (response.status === 403 && result.message.includes("verify")) {
                 Swal.fire({
                   icon: "warning",
