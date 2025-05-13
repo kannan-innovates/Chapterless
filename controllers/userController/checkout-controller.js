@@ -1,6 +1,7 @@
 const Cart = require("../../models/cartSchema");
 const Address = require("../../models/addressSchema");
 const Order = require("../../models/orderSchema");
+const Product = require("../../models/productSchema");
 
 // Generate unique order number
 const generateOrderNumber = () => {
@@ -63,30 +64,30 @@ const placeOrder = async (req, res) => {
   try {
     const userId = req.session.user_id;
     if (!userId) {
-      return res.status(401).json({ success: false, message: 'Please log in to place an order' });
+      throw new Error('Please log in to place an order');
     }
 
     const { addressId, paymentMethod } = req.body;
 
     // Validate inputs
     if (!addressId || !paymentMethod) {
-      return res.status(400).json({ success: false, message: 'Address and payment method are required' });
+      throw new Error('Address and payment method are required');
     }
 
     if (paymentMethod !== 'COD') {
-      return res.status(400).json({ success: false, message: 'Only COD is supported at this time' });
+      throw new Error('Only COD is supported at this time');
     }
 
     // Fetch address
     const address = await Address.findById(addressId);
     if (!address || address.userId.toString() !== userId) {
-      return res.status(400).json({ success: false, message: 'Invalid or unauthorized address' });
+      throw new Error('Invalid or unauthorized address');
     }
 
     // Fetch cart
     const cart = await Cart.findOne({ user: userId }).populate('items.product');
     if (!cart || !cart.items.length) {
-      return res.status(400).json({ success: false, message: 'Cart is empty' });
+      throw new Error('Cart is empty');
     }
 
     // Filter valid cart items
@@ -97,7 +98,7 @@ const placeOrder = async (req, res) => {
     );
 
     if (!cartItems.length) {
-      return res.status(400).json({ success: false, message: 'No valid items in cart' });
+      throw new Error('No valid items in cart');
     }
 
     // Calculate totals
@@ -114,7 +115,32 @@ const placeOrder = async (req, res) => {
       quantity: item.quantity
     }));
 
-    // Create order
+    // Step 1: Validate stock for all products before making any changes
+    const stockUpdates = [];
+    for (const item of orderItems) {
+      const product = await Product.findById(item.product);
+      if (!product) {
+        throw new Error(`Product ${item.title} not found`);
+      }
+
+      const newStock = product.stock - item.quantity;
+      if (newStock < 0) {
+        throw new Error(`Insufficient stock for ${item.title}. Only ${product.stock} items available.`);
+      }
+
+      stockUpdates.push({ productId: item.product, originalStock: product.stock, newStock });
+    }
+
+    // Step 2: Update stock for all products
+    for (const update of stockUpdates) {
+      await Product.findByIdAndUpdate(
+        update.productId,
+        { stock: update.newStock },
+        { new: true }
+      );
+    }
+
+    // Step 3: Create order
     const order = new Order({
       user: userId,
       orderNumber: generateOrderNumber(),
@@ -143,8 +169,11 @@ const placeOrder = async (req, res) => {
 
     await order.save();
 
-    // Clear cart
-    await Cart.findOneAndUpdate({ user: userId }, { items: [] });
+    // Step 4: Clear cart
+    await Cart.findOneAndUpdate(
+      { user: userId },
+      { items: [] }
+    );
 
     res.status(201).json({ 
       success: true, 
@@ -153,8 +182,23 @@ const placeOrder = async (req, res) => {
       orderNumber: order.orderNumber 
     });
   } catch (error) {
-    console.log('Error placing order:', error);
-    res.status(500).json({ success: false, message: 'Failed to place order' });
+    console.log('Error placing order:', error.message);
+
+    // Step 5: Rollback stock updates if an error occurs after stock changes
+    if (error.stockUpdates) {
+      for (const update of error.stockUpdates) {
+        await Product.findByIdAndUpdate(
+          update.productId,
+          { stock: update.originalStock },
+          { new: true }
+        );
+      }
+    }
+
+    res.status(error.message.includes('Insufficient stock') ? 400 : 500).json({ 
+      success: false, 
+      message: error.message || 'Failed to place order' 
+    });
   }
 };
 
