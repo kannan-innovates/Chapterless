@@ -148,6 +148,15 @@ const orderSchema = new mongoose.Schema({
   deliveredAt: {
     type: Date,
   },
+  processedAt: {
+    type: Date,
+  },
+   shippedAt: {
+    type: Date,
+  },
+  deliveredAt: {
+    type: Date,
+  },
   cancelledAt: {
     type: Date,
   },

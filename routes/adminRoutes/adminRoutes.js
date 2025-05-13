@@ -67,7 +67,9 @@ adminRoute.post('/products/:id', upload.fields([{ name: 'mainImage' }, { name: '
 adminRoute.put('/products/:id/soft-delete', productController.softDeleteProduct);
 
 // Order Management
-adminRoute.get('/getOrders',manageOrderController.getManageOrders);
+adminRoute.get('/getOrders', manageOrderController.getManageOrders);
+adminRoute.get('/orders/:id', manageOrderController.getOrderDetails);
 adminRoute.put('/orders/:id/status', manageOrderController.updateOrderStatus);
+adminRoute.get('/orders/:id/invoice', manageOrderController.downloadInvoice);
 
 module.exports = adminRoute;
