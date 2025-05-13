@@ -449,13 +449,16 @@ document.addEventListener('DOMContentLoaded', function () {
         let value = parseInt(quantityInput.value);
         const maxValue = parseInt(quantityInput.getAttribute('max') || '999');
         
-        if (value < maxValue) {
-          quantityInput.value = value + 1;
-          clearTimeout(updateTimeout);
-          updateTimeout = setTimeout(() => {
-            updateCartItem(productId, parseInt(quantityInput.value), item);
-          }, 300);
+        if (value >= maxValue) {
+          showNotification('error', `Only ${maxValue} items in stock`);
+          return;
         }
+
+        quantityInput.value = value + 1;
+        clearTimeout(updateTimeout);
+        updateTimeout = setTimeout(() => {
+          updateCartItem(productId, parseInt(quantityInput.value), item);
+        }, 300);
       });
 
       quantityInput && quantityInput.addEventListener('change', function() {
@@ -467,6 +470,9 @@ document.addEventListener('DOMContentLoaded', function () {
           value = 1;
         } else if (value > maxValue) {
           value = maxValue;
+          this.value = value;
+          showNotification('error', `Only ${maxValue} items in stock`);
+          return;
         }
         
         this.value = value;

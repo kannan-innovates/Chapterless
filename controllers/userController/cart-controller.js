@@ -47,6 +47,7 @@ const getCart = async (req, res) => {
   }
 };
 
+
 const addToCart = async (req, res) => {
   try {
     if (!req.session.user_id) {
@@ -61,12 +62,29 @@ const addToCart = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Product not found or unavailable' });
     }
 
-    if (product.stock < quantity) {
-      return res.status(400).json({ success: false, message: `Only ${product.stock} items in stock` });
+    // Fetch the user's cart to check existing quantity
+    let cart = await Cart.findOne({ user: userId });
+    let existingQuantity = 0;
+
+    if (cart) {
+      const itemIndex = cart.items.findIndex(item => item.product.toString() === productId);
+      if (itemIndex > -1) {
+        existingQuantity = cart.items[itemIndex].quantity;
+      }
     }
 
-    let cart = await Cart.findOne({ user: userId });
+    // Calculate total quantity (existing + new)
+    const totalQuantity = existingQuantity + parseInt(quantity);
 
+    // Check if total quantity exceeds stock
+    if (totalQuantity > product.stock) {
+      return res.status(400).json({
+        success: false,
+        message: `Cannot add ${quantity} more items. Only ${product.stock - existingQuantity} items left in stock.`,
+      });
+    }
+
+    // If cart doesn't exist, create a new one
     if (!cart) {
       cart = new Cart({
         user: userId,
@@ -81,9 +99,11 @@ const addToCart = async (req, res) => {
       const itemIndex = cart.items.findIndex(item => item.product.toString() === productId);
 
       if (itemIndex > -1) {
-        cart.items[itemIndex].quantity += parseInt(quantity);
+        // Update existing item
+        cart.items[itemIndex].quantity = totalQuantity; // Use the calculated total
         cart.items[itemIndex].priceAtAddition = product.salePrice;
       } else {
+        // Add new item
         cart.items.push({
           product: productId,
           quantity: parseInt(quantity),
