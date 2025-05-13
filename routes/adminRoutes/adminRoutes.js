@@ -9,6 +9,8 @@ const manageProductController = require('../../controllers/adminController/manag
 
 const manageOrderController = require('../../controllers/adminController/manage-orders.js')
 
+const couponController = require('../../controllers/adminController/coupon-controller');
+
 // Import admin middleware
 const { isAdminAuthenticated, isAdminNotAuthenticated, preventCache } = require('../../middlewares/adminMiddleware');
 
@@ -71,5 +73,12 @@ adminRoute.get('/getOrders', manageOrderController.getManageOrders);
 adminRoute.get('/orders/:id', manageOrderController.getOrderDetails);
 adminRoute.put('/orders/:id/status', manageOrderController.updateOrderStatus);
 adminRoute.get('/orders/:id/invoice', manageOrderController.downloadInvoice);
+
+// Coupon Management
+adminRoute.get('/coupons', couponController.getCoupons);
+adminRoute.get('/coupons/:id', couponController.getCouponDetails);
+adminRoute.post('/coupons', couponController.createCoupon);
+adminRoute.put('/coupons/:id', couponController.updateCoupon);
+adminRoute.put('/coupons/:id/toggle-status', couponController.toggleCouponStatus);
 
 module.exports = adminRoute;
