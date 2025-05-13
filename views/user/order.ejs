@@ -1,144 +1,18 @@
 <%- include("../partials/user/header") %>
 
-<style>
-  body {
-    font-family: "Inter", sans-serif;
-    color: #1a1a1a;
-    background-color: #f8f9fa;
-  }
+<div class="container py-5">
+  <!-- Breadcrumbs with consistent styling, matching address page -->
+  <nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="/">Home</a></li>
+      <li class="breadcrumb-item"><a href="/profile">My Account</a></li>
+      <li class="breadcrumb-item active" aria-current="page">My Orders</li>
+    </ol>
+  </nav>
 
-  .order-card {
-    background-color: #fff;
-    border-radius: 0.5rem;
-    overflow: hidden;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-    transition: all 0.3s ease;
-  }
-
-  .order-card:hover {
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-  }
-
-  .order-header {
-    background-color: #f8f9fa;
-  }
-
-  .order-item-image {
-    min-width: 80px;
-    max-width: 120px;
-  }
-
-  @media (max-width: 767.98px) {
-    .order-header {
-      flex-wrap: wrap;
-      gap: 0.5rem;
-    }
-    
-    .order-header > div {
-      flex: 1 1 40%;
-    }
-    
-    .order-item-image {
-      max-width: 80px;
-    }
-  }
-
-  .badge {
-    font-weight: 500;
-    padding: 0.5em 0.75em;
-  }
-
-  .badge.bg-success {
-    background-color: #198754 !important;
-  }
-
-  .badge.bg-primary {
-    background-color: #0d6efd !important;
-  }
-
-  .badge.bg-warning {
-    background-color: #ffc107 !important;
-  }
-
-  .badge.bg-secondary {
-    background-color: #6c757d !important;
-  }
-
-  .badge.bg-info {
-    background-color: #0dcaf0 !important;
-  }
-
-  .badge.bg-danger {
-    background-color: #dc3545 !important;
-  }
-
-  .btn-dark {
-    background-color: #000;
-    border-color: #000;
-  }
-
-  .btn-dark:hover {
-    background-color: #333;
-    border-color: #333;
-  }
-
-  .btn-outline-dark {
-    color: #000;
-    border-color: #dee2e6;
-  }
-
-  .btn-outline-dark:hover {
-    background-color: #f8f9fa;
-    color: #000;
-    border-color: #dee2e6;
-  }
-
-  .btn-outline-danger {
-    color: #dc3545;
-    border-color: #dee2e6;
-  }
-
-  .btn-outline-danger:hover {
-    background-color: #dc3545;
-    color: #fff;
-    border-color: #dc3545;
-  }
-
-  .pagination .page-link {
-    color: #000;
-  }
-
-  .pagination .page-item.active .page-link {
-    background-color: #000;
-    border-color: #000;
-    color: #fff;
-  }
-
-  .dropdown-menu {
-    border-radius: 0.5rem;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-    border: 1px solid #dee2e6;
-  }
-
-  .dropdown-item:active {
-    background-color: #000;
-  }
-
-  .dropdown-item.active {
-    background-color: #f8f9fa;
-    color: #000;
-  }
-
-  .profile-sidebar {
-    position: sticky;
-    top: 20px;
-    height: fit-content;
-  }
-</style>
-
-<div class="container py-4">
-  <div class="row">
+  <div class="row g-4">
     <%- include("../partials/user/accountSidebar") %>
+    
     
     <!-- Main Content -->
     <div class="col-lg-9">
@@ -303,5 +177,254 @@
     </div>
   </div>
 </div>
+
+<style>
+  body {
+    font-family: "Inter", sans-serif;
+    color: #1a1a1a;
+    background-color: #f8f9fa;
+  }
+
+  .order-card {
+    background-color: #fff;
+    border-radius: 0.5rem;
+    overflow: hidden;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+  }
+
+  .order-card:hover {
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  }
+
+  .order-header {
+    background-color: #f8f9fa;
+  }
+
+  .order-item-image {
+    min-width: 80px;
+    max-width: 120px;
+  }
+
+  @media (max-width: 767.98px) {
+    .order-header {
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    
+    .order-header > div {
+      flex: 1 1 40%;
+    }
+    
+    .order-item-image {
+      max-width: 80px;
+    }
+  }
+
+  .badge {
+    font-weight: 500;
+    padding: 0.5em 0.75em;
+  }
+
+  .badge.bg-success {
+    background-color: #198754 !important;
+  }
+
+  .badge.bg-primary {
+    background-color: #0d6efd !important;
+  }
+
+  .badge.bg-warning {
+    background-color: #ffc107 !important;
+  }
+
+  .badge.bg-secondary {
+    background-color: #6c757d !important;
+  }
+
+  .badge.bg-info {
+    background-color: #0dcaf0 !important;
+  }
+
+  .badge.bg-danger {
+    background-color: #dc3545 !important;
+  }
+
+  .btn-dark {
+    background-color: #000;
+    border-color: #000;
+  }
+
+  .btn-dark:hover {
+    background-color: #333;
+    border-color: #333;
+  }
+
+  .btn-outline-dark {
+    color: #000;
+    border-color: #dee2e6;
+  }
+
+  .btn-outline-dark:hover {
+    background-color: #f8f9fa;
+    color: #000;
+    border-color: #dee2e6;
+  }
+
+  .btn-outline-danger {
+    color: #dc3545;
+    border-color: #dee2e6;
+  }
+
+  .btn-outline-danger:hover {
+    background-color: #dc3545;
+    color: #fff;
+    border-color: #dc3545;
+  }
+
+  .pagination .page-link {
+    color: #000;
+  }
+
+  .pagination .page-item.active .page-link {
+    background-color: #000;
+    border-color: #000;
+    color: #fff;
+  }
+
+  .dropdown-menu {
+    border-radius: 0.5rem;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    border: 1px solid #dee2e6;
+  }
+
+  .dropdown-item:active {
+    background-color: #000;
+  }
+
+  .dropdown-item.active {
+    background-color: #f8f9fa;
+    color: #000;
+  }
+
+  /* Breadcrumb styling to match address page */
+  .breadcrumb-item + .breadcrumb-item::before {
+    content: "›";
+    font-weight: bold;
+  }
+
+  .breadcrumb a {
+    color: #333;
+    text-decoration: none;
+  }
+
+  .breadcrumb a:hover {
+    color: #000;
+    text-decoration: underline;
+  }
+
+  /* Profile sidebar styling */
+  .profile-image-container {
+    position: relative;
+    width: 120px;
+    height: 120px;
+    margin: 0 auto;
+  }
+
+  .profile-image-container img {
+    width: 120px;
+    height: 120px;
+    object-fit: cover;
+  }
+
+  .profile-image-container .edit-icon {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    background-color: #fff;
+    border-radius: 50%;
+    padding: 5px;
+    cursor: pointer;
+  }
+  
+  .profile-image-container .edit-icon:hover {
+    background-color: #f8f9fa;
+  }
+  
+  .profile-image-container .edit-icon i {
+    font-size: 1.2rem;
+    color: #000;
+  }
+  
+  .profile-image-container .edit-icon i:hover {
+    color: #007bff;
+  }
+  
+  .profile-sidebar {
+    background-color: #fff;
+    border-radius: 0.5rem;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+  }
+  
+  .profile-sidebar h5 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+  }
+  
+  .profile-sidebar ul {
+    list-style: none;
+    padding: 0;
+  }
+  
+  .profile-sidebar ul li {
+    margin-bottom: 1rem;
+  }
+  
+  .profile-sidebar ul li a {
+    text-decoration: none;
+    color: #000;
+    font-weight: 500;
+  }
+  
+  .profile-sidebar ul li a:hover {
+    text-decoration: underline;
+  }
+  
+  .profile-sidebar ul li.active a {
+    color: #007bff;
+    font-weight: 600;
+  }
+  
+  .profile-sidebar ul li.active a:hover {
+    text-decoration: none;
+  }
+  
+  .profile-sidebar ul li.active {
+    background-color: #f8f9fa;
+    border-radius: 0.5rem;
+  }
+  
+  .profile-sidebar ul li.active a {
+    color: #000;
+  }
+  
+  .profile-sidebar ul li.active a:hover {
+    text-decoration: none;
+  }
+   .profile-sidebar {
+    position: sticky;
+    top: 20px;
+    height: fit-content;
+  }
+
+  @media (max-width: 991px) {
+    .profile-sidebar {
+      margin-bottom: 2rem;
+    }
+  }
+</style>
 
 <%- include("../partials/user/footer") %>

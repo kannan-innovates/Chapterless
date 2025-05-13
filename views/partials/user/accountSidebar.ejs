@@ -42,6 +42,347 @@
       <a href="/coupons" class="list-group-item list-group-item-action">
         <i class="bi bi-ticket-perforated me-2"></i> Coupons
       </a>
+      <a href="#" class="list-group-item list-group-item-action" data-bs-toggle="modal" data-bs-target="#passwordChangeModal">
+        <i class="bi bi-lock me-2"></i> Change Password
+      </a>
     </div>
   </div>
 </div>
+
+<!-- Password Change Modal -->
+<div class="modal fade" id="passwordChangeModal" tabindex="-1" aria-labelledby="passwordChangeModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header border-0">
+        <h5 class="modal-title" id="passwordChangeModalLabel">Change Password</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="passwordChangeForm">
+          <div class="mb-3">
+            <label for="currentPassword" class="form-label">Current Password</label>
+            <div class="input-group">
+              <span class="input-group-text bg-light border-end-0">
+                <i class="bi bi-lock"></i>
+              </span>
+              <input 
+                type="password" 
+                class="form-control border-start-0" 
+                id="currentPassword" 
+                name="currentPassword"
+                placeholder="Enter your current password" 
+                required
+              />
+              <button class="btn btn-outline-secondary border-start-0 toggle-password" type="button" tabindex="-1">
+                <i class="bi bi-eye-slash"></i>
+              </button>
+            </div>
+            <div id="currentPasswordError" class="text-danger small mt-1"></div>
+          </div>
+          
+          <div class="mb-3">
+            <label for="newPassword" class="form-label">New Password</label>
+            <div class="input-group">
+              <span class="input-group-text bg-light border-end-0">
+                <i class="bi bi-shield-lock"></i>
+              </span>
+              <input 
+                type="password" 
+                class="form-control border-start-0" 
+                id="newPassword" 
+                name="newPassword"
+                placeholder="Enter your new password" 
+                required
+              />
+              <button class="btn btn-outline-secondary border-start-0 toggle-password" type="button" tabindex="-1">
+                <i class="bi bi-eye-slash"></i>
+              </button>
+            </div>
+            <div id="newPasswordError" class="text-danger small mt-1"></div>
+            <div class="password-strength mt-2 d-none">
+              <div class="progress" style="height: 5px;">
+                <div class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+              </div>
+              <small class="password-feedback text-muted"></small>
+            </div>
+          </div>
+          
+          <div class="mb-3">
+            <label for="confirmPassword" class="form-label">Confirm New Password</label>
+            <div class="input-group">
+              <span class="input-group-text bg-light border-end-0">
+                <i class="bi bi-shield-check"></i>
+              </span>
+              <input 
+                type="password" 
+                class="form-control border-start-0" 
+                id="confirmPassword" 
+                name="confirmPassword"
+                placeholder="Confirm your new password" 
+                required
+              />
+              <button class="btn btn-outline-secondary border-start-0 toggle-password" type="button" tabindex="-1">
+                <i class="bi bi-eye-slash"></i>
+              </button>
+            </div>
+            <div id="confirmPasswordError" class="text-danger small mt-1"></div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer border-0">
+        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+        <button type="submit" form="passwordChangeForm" class="btn btn-dark" id="passwordChangeBtn">
+          <i class="bi bi-check-circle me-2"></i>Update Password
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+  // Password utility functions
+function setInvalid(input, errorElement, message) {
+  input.classList.add('is-invalid');
+  input.classList.remove('is-valid');
+  if (errorElement) errorElement.textContent = message;
+}
+
+function setValid(input, errorElement) {
+  input.classList.remove('is-invalid');
+  input.classList.add('is-valid');
+  if (errorElement) errorElement.textContent = '';
+}
+
+function clearValidation(input, errorElement) {
+  input.classList.remove('is-invalid', 'is-valid');
+  if (errorElement) errorElement.textContent = '';
+}
+
+// Password toggle functionality
+document.querySelectorAll('.toggle-password').forEach(button => {
+  button.addEventListener('click', function() {
+    const input = this.previousElementSibling;
+    const icon = this.querySelector('i');
+    
+    if (input.type === 'password') {
+      input.type = 'text';
+      icon.classList.replace('bi-eye-slash', 'bi-eye');
+    } else {
+      input.type = 'password';
+      icon.classList.replace('bi-eye', 'bi-eye-slash');
+    }
+  });
+});
+
+// Password strength checker
+const newPasswordInput = document.getElementById('newPassword');
+const passwordStrengthBar = document.querySelector('.progress-bar');
+const passwordFeedback = document.querySelector('.password-feedback');
+const passwordStrength = document.querySelector('.password-strength');
+
+newPasswordInput.addEventListener('input', function() {
+  const password = this.value;
+  
+  if (password.length > 0) {
+    passwordStrength.classList.remove('d-none');
+    
+    // Calculate password strength
+    let strength = 0;
+    let feedback = '';
+    
+    // Password length
+    if (password.length >= 8) {
+      strength += 25;
+    }
+    
+    // Contains lowercase letters
+    if (/[a-z]/.test(password)) {
+      strength += 25;
+    }
+    
+    // Contains uppercase letters
+    if (/[A-Z]/.test(password)) {
+      strength += 25;
+    }
+    
+    // Contains numbers or special characters
+    if (/[0-9!@#$%^&*(),.?":{}|<>]/.test(password)) {
+      strength += 25;
+    }
+    
+    // Update progress bar
+    passwordStrengthBar.style.width = strength + '%';
+    
+    // Update color based on strength
+    if (strength < 50) {
+      passwordStrengthBar.className = 'progress-bar bg-danger';
+      feedback = 'Weak password';
+    } else if (strength < 75) {
+      passwordStrengthBar.className = 'progress-bar bg-warning';
+      feedback = 'Medium password';
+    } else {
+      passwordStrengthBar.className = 'progress-bar bg-success';
+      feedback = 'Strong password';
+    }
+    
+    passwordFeedback.textContent = feedback;
+  } else {
+    passwordStrength.classList.add('d-none');
+  }
+});
+
+// Password form validation
+const currentPasswordInput = document.getElementById('currentPassword');
+const confirmPasswordInput = document.getElementById('confirmPassword');
+const currentPasswordError = document.getElementById('currentPasswordError');
+const newPasswordError = document.getElementById('newPasswordError');
+const confirmPasswordError = document.getElementById('confirmPasswordError');
+
+// Validate password
+function validatePassword(password) {
+  // At least 8 characters, 1 uppercase, 1 lowercase, and 1 number or special character
+  const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9!@#$%^&*(),.?":{}|<>]).{8,}$/;
+  return regex.test(password);
+}
+
+newPasswordInput.addEventListener('input', function() {
+  const password = this.value.trim();
+  
+  if (!password) {
+    clearValidation(this, newPasswordError);
+    return;
+  }
+  
+  if (!validatePassword(password)) {
+    setInvalid(this, newPasswordError, 'Password must be at least 8 characters with uppercase, lowercase, and number/special character');
+  } else {
+    setValid(this, newPasswordError);
+    
+    // Check confirmation match if it has a value
+    if (confirmPasswordInput.value.trim()) {
+      if (confirmPasswordInput.value.trim() !== password) {
+        setInvalid(confirmPasswordInput, confirmPasswordError, 'Passwords do not match');
+      } else {
+        setValid(confirmPasswordInput, confirmPasswordError);
+      }
+    }
+  }
+});
+
+confirmPasswordInput.addEventListener('input', function() {
+  const confirmPassword = this.value.trim();
+  const newPassword = newPasswordInput.value.trim();
+  
+  if (!confirmPassword) {
+    clearValidation(this, confirmPasswordError);
+    return;
+  }
+  
+  if (confirmPassword !== newPassword) {
+    setInvalid(this, confirmPasswordError, 'Passwords do not match');
+  } else {
+    setValid(this, confirmPasswordError);
+  }
+});
+
+// Password form submission
+document.getElementById('passwordChangeForm').addEventListener('submit', async function(event) {
+  event.preventDefault();
+  
+  const currentPassword = currentPasswordInput.value.trim();
+  const newPassword = newPasswordInput.value.trim();
+  const confirmPassword = confirmPasswordInput.value.trim();
+  let isValid = true;
+  
+  // Validate current password
+  if (!currentPassword) {
+    setInvalid(currentPasswordInput, currentPasswordError, 'Current password is required');
+    isValid = false;
+  } else {
+    setValid(currentPasswordInput, currentPasswordError);
+  }
+  
+  // Validate new password
+  if (!newPassword) {
+    setInvalid(newPasswordInput, newPasswordError, 'New password is required');
+    isValid = false;
+  } else if (!validatePassword(newPassword)) {
+    setInvalid(newPasswordInput, newPasswordError, 'Password must be at least 8 characters with uppercase, lowercase, and number/special character');
+    isValid = false;
+  } else {
+    setValid(newPasswordInput, newPasswordError);
+  }
+  
+  // Validate confirm password
+  if (!confirmPassword) {
+    setInvalid(confirmPasswordInput, confirmPasswordError, 'Please confirm your new password');
+    isValid = false;
+  } else if (confirmPassword !== newPassword) {
+    setInvalid(confirmPasswordInput, confirmPasswordError, 'Passwords do not match');
+    isValid = false;
+  } else {
+    setValid(confirmPasswordInput, confirmPasswordError);
+  }
+  
+  if (!isValid) return;
+  
+  const submitButton = document.getElementById('passwordChangeBtn');
+  const originalText = submitButton.innerHTML;
+  submitButton.disabled = true;
+  submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Updating...';
+  
+  try {
+    const response = await fetch('/change-password', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        currentPassword,
+        newPassword,
+        confirmPassword
+      }),
+    });
+    
+    const result = await response.json();
+    
+    submitButton.disabled = false;
+    submitButton.innerHTML = originalText;
+    
+    if (result.success) {
+      bootstrap.Modal.getInstance(document.getElementById('passwordChangeModal')).hide();
+      // Reset form
+      this.reset();
+      clearValidation(currentPasswordInput, currentPasswordError);
+      clearValidation(newPasswordInput, newPasswordError);
+      clearValidation(confirmPasswordInput, confirmPasswordError);
+      passwordStrength.classList.add('d-none');
+      
+      Toast.fire({
+        icon: 'success',
+        title: 'Password updated successfully'
+      });
+    } else {
+      // Show specific error based on server response
+      if (result.field === 'currentPassword') {
+        setInvalid(currentPasswordInput, currentPasswordError, result.message || 'Current password is incorrect');
+      } else if (result.field === 'newPassword') {
+        setInvalid(newPasswordInput, newPasswordError, result.message || 'Invalid new password');
+      } else {
+        Toast.fire({
+          icon: 'error',
+          title: result.message || 'Failed to update password'
+        });
+      }
+    }
+  } catch (error) {
+    console.error('Password change error:', error);
+    submitButton.disabled = false;
+    submitButton.innerHTML = originalText;
+    
+    Toast.fire({
+      icon: 'error',
+      title: 'Server error. Please try again.'
+    });
+  }
+});pa
+</script>
