@@ -12,14 +12,18 @@ const formatDateForDisplay = (date) => {
 // Helper to format date for input type="date"
 const formatDateForInput = (date) => {
   if (!date) return '';
-  return new Date(date).toISOString().split('T')[0];
+  const d = new Date(date);
+  const year = d.getFullYear();
+  const month = (`0${d.getMonth() + 1}`).slice(-2);
+  const day = (`0${d.getDate()}`).slice(-2);
+  return `${year}-${month}-${day}`;
 };
 
 
 const getOffers = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
-    const limit = 10; // Offers per page
+    const limit = 10; 
     const skip = (page - 1) * limit;
 
     const query = {};
@@ -43,7 +47,6 @@ const getOffers = async (req, res) => {
       } else if (filters.status === 'inactive') {
         query.isActive = false;
       } else if (filters.status === 'expired') {
-        query.isActive = true; // Could be active but past its end date
         query.endDate = { $lt: now };
       }
     }
@@ -53,24 +56,22 @@ const getOffers = async (req, res) => {
     }
 
     if (filters.application !== 'all') {
-      query.applicableOn = filters.application;
+      query.appliesTo = filters.application; 
     }
 
     const totalOffers = await Offer.countDocuments(query);
-    const offers = await Offer.find(query)
-      .populate({ path: 'category', select: 'name' })
-      .populate({ path: 'product', select: 'title' })
+    const offersData = await Offer.find(query)
+      .populate('applicableCategories', 'name')
+      .populate('applicableProducts', 'title')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
       .lean();
 
-    offers.forEach(offer => {
+    offersData.forEach(offer => {
       offer.displayStartDate = formatDateForDisplay(offer.startDate);
       offer.displayEndDate = formatDateForDisplay(offer.endDate);
-      offer.inputStartDate = formatDateForInput(offer.startDate);
-      offer.inputEndDate = formatDateForInput(offer.endDate);
-
+      
       if (!offer.isActive) {
         offer.currentStatus = 'Inactive';
         offer.statusClass = 'inactive';
@@ -78,17 +79,43 @@ const getOffers = async (req, res) => {
         offer.currentStatus = 'Expired';
         offer.statusClass = 'expired';
       } else if (new Date(offer.startDate) > now) {
-        offer.currentStatus = 'Upcoming'; // Optional: if start date is in future
-        offer.statusClass = 'upcoming'; // You'd need CSS for this
-      }
-      else {
+        offer.currentStatus = 'Upcoming';
+        offer.statusClass = 'upcoming';
+      } else {
         offer.currentStatus = 'Active';
         offer.statusClass = 'active';
       }
+
+      switch (offer.appliesTo) {
+        case 'all_products':
+          offer.appliesToDisplay = 'All Products';
+          break;
+        case 'specific_products':
+          offer.appliesToDisplay = offer.applicableProducts.length > 0 
+            ? `${offer.applicableProducts.length} Product(s)` 
+            : 'Specific Products (None Selected)';
+          if (offer.applicableProducts.length === 1 && offer.applicableProducts[0]) {
+             offer.appliesToDisplay = `${offer.applicableProducts[0].title} (Product)`;
+          }
+          break;
+        case 'all_categories':
+          offer.appliesToDisplay = 'All Categories';
+          break;
+        case 'specific_categories':
+          offer.appliesToDisplay = offer.applicableCategories.length > 0
+            ? `${offer.applicableCategories.length} Categories(s)`
+            : 'Specific Categories (None Selected)';
+           if (offer.applicableCategories.length === 1 && offer.applicableCategories[0]) {
+             offer.appliesToDisplay = `${offer.applicableCategories[0].name} (Category)`;
+          }
+          break;
+        default:
+          offer.appliesToDisplay = 'N/A';
+      }
     });
 
-    const categories = await Category.find({ isListed: true }).lean();
-    const products = await Product.find({ isDeleted: false, isListed: true }).lean(); // Assuming products also have isListed
+    const categories = await Category.find({ isListed: true }).select('name _id').lean();
+    const products = await Product.find({ isDeleted: false, isListed: true }).select('title _id').lean();
 
     const totalPages = Math.ceil(totalOffers / limit);
     const pagination = {
@@ -107,12 +134,12 @@ const getOffers = async (req, res) => {
 
     res.render('offers', {
       title: 'Manage Offers',
-      offers,
+      offers: offersData,
       categories,
       products,
       pagination,
       filters,
-      currentPath: req.path // For sidebar active state
+      currentPath: req.path 
     });
 
   } catch (error) {
@@ -125,21 +152,28 @@ const getOfferDetails = async (req, res) => {
   try {
     const offerId = req.params.id;
     const offer = await Offer.findById(offerId)
-      .populate('category', 'name')
-      .populate('product', 'title')
+      .populate('applicableCategories', 'name _id')
+      .populate('applicableProducts', 'title _id')
       .lean();
 
     if (!offer) {
-      return res.status(404).json({ message: 'Offer not found' });
+      return res.status(404).json({ success: false, message: 'Offer not found' });
     }
-    // Prepare dates for date input fields
+    
     offer.startDate = formatDateForInput(offer.startDate);
     offer.endDate = formatDateForInput(offer.endDate);
     
-    res.status(200).json(offer);
+    if (offer.applicableCategories) {
+        offer.applicableCategories = offer.applicableCategories.map(cat => ({ ...cat, _id: cat._id.toString() }));
+    }
+    if (offer.applicableProducts) {
+        offer.applicableProducts = offer.applicableProducts.map(prod => ({ ...prod, _id: prod._id.toString() }));
+    }
+    
+    res.status(200).json(offer); // Note: no 'success:true' wrapper here, sending data directly
   } catch (error) {
     console.error('Error fetching offer details:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    res.status(500).json({ success: false, message: 'Internal server error', error: error.message });
   }
 };
 
@@ -151,56 +185,52 @@ const createOffer = async (req, res) => {
       description,
       discountType,
       discountValue,
-      applicableOn,
-      category, // ID
-      product,  // ID
+      appliesTo, 
+      applicableProducts, 
+      applicableCategories, 
       startDate,
       endDate,
     } = req.body;
 
-    // Basic Validations
-    if (!title || !discountType || !discountValue || !applicableOn || !startDate || !endDate) {
-      return res.status(400).json({ message: 'Please fill all required fields.' });
-    }
-    if (new Date(startDate) >= new Date(endDate)) {
-      return res.status(400).json({ message: 'End date must be after start date.' });
-    }
-    if (discountType === 'percentage' && (parseFloat(discountValue) <= 0 || parseFloat(discountValue) > 100)) {
-        return res.status(400).json({ message: 'Percentage discount must be between 1 and 100.' });
-    }
-    if (discountType === 'fixed' && parseFloat(discountValue) <= 0) {
-        return res.status(400).json({ message: 'Fixed discount must be greater than 0.' });
-    }
-    if (applicableOn === 'category' && !category) {
-        return res.status(400).json({ message: 'Please select a category.' });
-    }
-    if (applicableOn === 'product' && !product) {
-        return res.status(400).json({ message: 'Please select a product.' });
-    }
-
-    const newOffer = new Offer({
+    const offerData = {
       title,
       description: description || '',
       discountType,
       discountValue: parseFloat(discountValue),
-      applicableOn,
-      category: applicableOn === 'category' ? category : null,
-      product: applicableOn === 'product' ? product : null,
+      appliesTo,
       startDate: new Date(startDate),
       endDate: new Date(endDate),
-      isActive: isActive === 'true' || isActive === true, // Handle string 'true' from form
-      createdByAdmin: req.session.admin ? req.session.admin._id : null, // Assuming admin ID in session
-    });
+      isActive: isActive === 'true' || isActive === true,
+      createdByAdmin: req.session.admin ? req.session.admin._id : null,
+      applicableProducts: (appliesTo === 'specific_products' && applicableProducts) ? applicableProducts : [],
+      applicableCategories: (appliesTo === 'specific_categories' && applicableCategories) ? applicableCategories : [],
+    };
+    
+    const newOffer = new Offer(offerData);
+    await newOffer.save(); 
 
-    await newOffer.save();
     res.status(201).json({ success: true, message: 'Offer created successfully.' });
 
   } catch (error) {
     console.error('Error creating offer:', error);
+
     if (error.name === 'ValidationError') {
-        return res.status(400).json({ message: error.message });
+        const messages = Object.values(error.errors).map(val => val.message).join('. ');
+        return res.status(400).json({ success: false, message: messages });
     }
-    res.status(500).json({ message: 'Internal server error while creating offer.' });
+
+    const customValidationMessages = [
+        'End date must be after start date.',
+        'Percentage discount must be between 1 and 100.',
+        'Fixed discount must be greater than 0.',
+        'Please select at least one product for a product-specific offer.',
+        'Please select at least one category for a category-specific offer.'
+    ];
+    if (customValidationMessages.includes(error.message)) {
+        return res.status(400).json({ success: false, message: error.message });
+    }
+    
+    res.status(500).json({ success: false, message: 'An internal server error occurred while creating the offer.' });
   }
 };
 
@@ -213,57 +243,50 @@ const updateOffer = async (req, res) => {
       description,
       discountType,
       discountValue,
-      applicableOn,
-      category,
-      product,
+      appliesTo,
+      applicableProducts,
+      applicableCategories,
       startDate,
       endDate,
     } = req.body;
 
-    if (!title || !discountType || !discountValue || !applicableOn || !startDate || !endDate) {
-        return res.status(400).json({ message: 'Please fill all required fields.' });
-    }
-    if (new Date(startDate) >= new Date(endDate)) {
-        return res.status(400).json({ message: 'End date must be after start date.' });
-    }
-    if (discountType === 'percentage' && (parseFloat(discountValue) <= 0 || parseFloat(discountValue) > 100)) {
-        return res.status(400).json({ message: 'Percentage discount must be between 1 and 100.' });
-    }
-    if (discountType === 'fixed' && parseFloat(discountValue) <= 0) {
-        return res.status(400).json({ message: 'Fixed discount must be greater than 0.' });
-    }
-    if (applicableOn === 'category' && !category) {
-        return res.status(400).json({ message: 'Please select a category.' });
-    }
-    if (applicableOn === 'product' && !product) {
-        return res.status(400).json({ message: 'Please select a product.' });
-    }
-
     const offerToUpdate = await Offer.findById(offerId);
     if (!offerToUpdate) {
-      return res.status(404).json({ message: 'Offer not found.' });
+      return res.status(404).json({ success: false, message: 'Offer not found.' });
     }
 
     offerToUpdate.title = title;
     offerToUpdate.description = description || '';
     offerToUpdate.discountType = discountType;
     offerToUpdate.discountValue = parseFloat(discountValue);
-    offerToUpdate.applicableOn = applicableOn;
-    offerToUpdate.category = applicableOn === 'category' ? category : null;
-    offerToUpdate.product = applicableOn === 'product' ? product : null;
+    offerToUpdate.appliesTo = appliesTo;
     offerToUpdate.startDate = new Date(startDate);
     offerToUpdate.endDate = new Date(endDate);
     offerToUpdate.isActive = isActive === 'true' || isActive === true;
+    
+    offerToUpdate.applicableProducts = (appliesTo === 'specific_products' && applicableProducts) ? applicableProducts : [];
+    offerToUpdate.applicableCategories = (appliesTo === 'specific_categories' && applicableCategories) ? applicableCategories : [];
 
-    await offerToUpdate.save();
+    await offerToUpdate.save(); 
     res.status(200).json({ success: true, message: 'Offer updated successfully.' });
 
   } catch (error) {
     console.error('Error updating offer:', error);
-    if (error.name === 'ValidationError') {
-        return res.status(400).json({ message: error.message });
+     if (error.name === 'ValidationError') {
+        const messages = Object.values(error.errors).map(val => val.message).join('. ');
+        return res.status(400).json({ success: false, message: messages });
     }
-    res.status(500).json({ message: 'Internal server error while updating offer.' });
+    const customValidationMessages = [
+        'End date must be after start date.',
+        'Percentage discount must be between 1 and 100.',
+        'Fixed discount must be greater than 0.',
+        'Please select at least one product for a product-specific offer.',
+        'Please select at least one category for a category-specific offer.'
+    ];
+    if (customValidationMessages.includes(error.message)) {
+        return res.status(400).json({ success: false, message: error.message });
+    }
+    res.status(500).json({ success: false, message: 'An internal server error occurred while updating the offer.' });
   }
 };
 
@@ -273,33 +296,34 @@ const toggleOfferStatus = async (req, res) => {
     const offer = await Offer.findById(offerId);
 
     if (!offer) {
-      return res.status(404).json({ message: 'Offer not found.' });
+      return res.status(404).json({ success: false, message: 'Offer not found.' });
     }
 
     offer.isActive = !offer.isActive;
     await offer.save();
 
-    // Determine current status text after toggle
     const now = new Date();
     let currentStatusText;
     if (!offer.isActive) {
         currentStatusText = 'Inactive';
     } else if (new Date(offer.endDate) < now) {
         currentStatusText = 'Expired';
+    } else if (new Date(offer.startDate) > now) {
+        currentStatusText = 'Upcoming';
     } else {
         currentStatusText = 'Active';
     }
 
     res.status(200).json({
         success: true,
-        message: `Offer status changed. It is now ${currentStatusText}.`,
+        message: `Offer status changed. It is now ${currentStatusText.toLowerCase()}.`,
         isActive: offer.isActive,
-        currentStatus: currentStatusText // Send back the determined status
+        currentStatus: currentStatusText 
     });
 
   } catch (error) {
     console.error('Error toggling offer status:', error);
-    res.status(500).json({ message: 'Internal server error.' });
+    res.status(500).json({ success: false, message: 'An internal server error occurred while toggling status.' });
   }
 };
 

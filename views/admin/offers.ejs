@@ -39,11 +39,17 @@
           <option value="percentage" <%= filters.type === 'percentage' ? 'selected' : '' %>>Percentage</option>
           <option value="fixed" <%= filters.type === 'fixed' ? 'selected' : '' %>>Fixed Amount</option>
         </select>
+        
+        <!-- MODIFIED applicationFilter -->
         <select class="form-select filter-select" name="application" id="applicationFilter" onchange="this.form.submit()">
           <option value="all" <%= filters.application === 'all' ? 'selected' : '' %>>All Applications</option>
-          <option value="product" <%= filters.application === 'product' ? 'selected' : '' %>>Product Specific</option>
-          <option value="category" <%= filters.application === 'category' ? 'selected' : '' %>>Category Specific</option>
+          <option value="all_products" <%= filters.application === 'all_products' ? 'selected' : '' %>>All Products</option>
+          <option value="specific_products" <%= filters.application === 'specific_products' ? 'selected' : '' %>>Specific Products</option>
+          <option value="all_categories" <%= filters.application === 'all_categories' ? 'selected' : '' %>>All Categories</option>
+          <option value="specific_categories" <%= filters.application === 'specific_categories' ? 'selected' : '' %>>Specific Categories</option>
         </select>
+        <!-- END MODIFIED applicationFilter -->
+
         <input type="hidden" name="search" id="hiddenSearchInput" value="<%= filters.search %>">
       </div>
     </div>
@@ -72,13 +78,7 @@
                   <%= offer.discountValue %><%= offer.discountType === 'percentage' ? '%' : '₹' %> Off
                 </td>
                 <td>
-                  <% if (offer.applicableOn === 'category' && offer.category) { %>
-                    <%= offer.category.name %> (Category)
-                  <% } else if (offer.applicableOn === 'product' && offer.product) { %>
-                    <%= offer.product.title %> (Product)
-                  <% } else { %>
-                    N/A
-                  <% } %>
+                  <%= offer.appliesToDisplay %>
                 </td>
                 <td>
                   <div class="validity-dates">
@@ -94,7 +94,6 @@
                     <button class="btn-icon btn-edit-offer" data-offer-id="<%= offer._id %>" title="Edit">
                       <i class="ri-pencil-line"></i>
                     </button>
-                    <!-- Corrected Toggle Button Logic -->
                     <button class="btn-icon btn-toggle-status" data-offer-id="<%= offer._id %>"
                         title="<%= offer.currentStatus === 'Active' ? 'Deactivate' : 'Activate' %>">
                       <i class="<%= offer.currentStatus === 'Active' ? 'ri-eye-off-line' : 'ri-eye-line' %>"></i>
@@ -157,12 +156,12 @@
         <form id="addOfferForm">
           <div class="row">
             <div class="col-md-6 mb-3">
-              <label for="offerTitle" class="form-label">Offer Title*</label>
-              <input type="text" class="form-control" id="offerTitle" name="title" placeholder="e.g. Summer Sale" required>
+              <label for="addOfferTitle" class="form-label">Offer Title*</label>
+              <input type="text" class="form-control" id="addOfferTitle" name="title" placeholder="e.g. Summer Sale" required>
             </div>
             <div class="col-md-6 mb-3">
-              <label for="offerStatus" class="form-label">Initial Status</label>
-              <select class="form-select" id="offerStatus" name="isActive">
+              <label for="addOfferStatus" class="form-label">Initial Status</label>
+              <select class="form-select" id="addOfferStatus" name="isActive">
                 <option value="true" selected>Active</option>
                 <option value="false">Inactive</option>
               </select>
@@ -170,71 +169,89 @@
           </div>
 
           <div class="mb-3">
-            <label for="offerDescription" class="form-label">Description</label>
-            <textarea class="form-control" id="offerDescription" name="description" rows="2" placeholder="Brief description of the offer"></textarea>
+            <label for="addOfferDescription" class="form-label">Description</label>
+            <textarea class="form-control" id="addOfferDescription" name="description" rows="2" placeholder="Brief description of the offer"></textarea>
           </div>
 
           <div class="row">
             <div class="col-md-6 mb-3">
-              <label for="discountType" class="form-label">Discount Type*</label>
-              <select class="form-select" id="discountType" name="discountType" required>
+              <label for="addDiscountType" class="form-label">Discount Type*</label>
+              <select class="form-select" id="addDiscountType" name="discountType" required>
                 <option value="percentage">Percentage Discount</option>
                 <option value="fixed">Fixed Amount Discount</option>
               </select>
             </div>
             <div class="col-md-6 mb-3">
-              <label for="discountValue" class="form-label">Discount Value*</label>
+              <label for="addDiscountValue" class="form-label">Discount Value*</label>
               <div class="input-group">
-                <span class="input-group-text discount-symbol">%</span>
-                <input type="number" class="form-control" id="discountValue" name="discountValue" min="0.01" step="any" required>
+                <span class="input-group-text add-discount-symbol">%</span>
+                <input type="number" class="form-control" id="addDiscountValue" name="discountValue" min="0.01" step="any" required>
+              </div>
+            </div>
+          </div>
+          
+          <div class="mb-3">
+            <label for="addAppliesTo" class="form-label">Offer Applies To*</label>
+            <select class="form-select" id="addAppliesTo" name="appliesTo" required>
+              <option value="all_products" selected>All Products</option>
+              <option value="specific_products">Specific Products</option>
+              <option value="all_categories">All Categories</option>
+              <option value="specific_categories">Specific Categories</option>
+            </select>
+          </div>
+
+          <!-- Specific Products Selector -->
+          <div class="mb-3 add-specific-products-container d-none">
+            <label class="form-label">Applicable Products*</label>
+            <div class="products-container p-2 border rounded">
+              <div class="product-search mb-2">
+                <input type="text" class="form-control form-control-sm" id="addProductSearch" placeholder="Search products...">
+              </div>
+              <div class="product-checkboxes" id="addProductCheckboxes" style="max-height: 150px; overflow-y: auto;">
+                <% if (products && products.length > 0) { %>
+                  <% products.forEach(product => { %>
+                    <div class="form-check">
+                      <input class="form-check-input product-checkbox" type="checkbox" name="applicableProducts" value="<%= product._id %>" id="addProduct_<%= product._id %>">
+                      <label class="form-check-label" for="addProduct_<%= product._id %>">
+                        <%= product.title %>
+                      </label>
+                    </div>
+                  <% }) %>
+                <% } else { %>
+                  <div class="text-muted fst-italic small">No products available.</div>
+                <% } %>
               </div>
             </div>
           </div>
 
-          <div class="row">
-            <div class="col-md-6 mb-3">
-              <label for="applicableOn" class="form-label">Applicable On*</label>
-              <select class="form-select" id="applicableOn" name="applicableOn" required>
-                <option value="category" selected>Category</option>
-                <option value="product">Product</option>
-              </select>
-            </div>
-            <div class="col-md-6 mb-3 -category-selector"> 
-              <label for="categorySelect" class="form-label">Select Category*</label>
-              <select class="form-select" id="categorySelect" name="category">
-                <option value="">Select a category</option>
-                <% if (typeof categories !== 'undefined' && categories.length > 0) { %>
-                  <% categories.forEach(category => { %>
-                    <option value="<%= category._id %>"><%= category.name %></option>
-                  <% }); %>
-                <% } else { %>
-                  <option value="" disabled>No categories available</option>
-                <% } %>
-              </select>
-            </div>
-            <div class="col-md-6 mb-3 -product-selector d-none"> 
-              <label for="productSelect" class="form-label">Select Product*</label>
-              <select class="form-select" id="productSelect" name="product">
-                <option value="">Select a product</option>
-                 <% if (typeof products !== 'undefined' && products.length > 0) { %>
-                  <% products.forEach(product => { %>
-                    <option value="<%= product._id %>"><%= product.title %></option>
-                  <% }); %>
-                <% } else { %>
-                  <option value="" disabled>No products available</option>
-                <% } %>
-              </select>
+          <!-- Specific Categories Selector -->
+          <div class="mb-3 add-specific-categories-container d-none">
+            <label class="form-label">Applicable Categories*</label>
+            <div class="categories-container p-2 border rounded" style="max-height: 150px; overflow-y: auto;">
+              <% if (categories && categories.length > 0) { %>
+                <% categories.forEach(category => { %>
+                  <div class="form-check">
+                    <input class="form-check-input category-checkbox" type="checkbox" name="applicableCategories" value="<%= category._id %>" id="addCategory_<%= category._id %>">
+                    <label class="form-check-label" for="addCategory_<%= category._id %>">
+                      <%= category.name %>
+                    </label>
+                  </div>
+                <% }) %>
+              <% } else { %>
+                <div class="text-muted fst-italic small">No categories available.</div>
+              <% } %>
             </div>
           </div>
 
+
           <div class="row">
             <div class="col-md-6 mb-3">
-              <label for="startDate" class="form-label">Start Date*</label>
-              <input type="date" class="form-control" id="startDate" name="startDate" required>
+              <label for="addStartDate" class="form-label">Start Date*</label>
+              <input type="date" class="form-control" id="addStartDate" name="startDate" required>
             </div>
             <div class="col-md-6 mb-3">
-              <label for="endDate" class="form-label">End Date*</label>
-              <input type="date" class="form-control" id="endDate" name="endDate" required>
+              <label for="addEndDate" class="form-label">End Date*</label>
+              <input type="date" class="form-control" id="addEndDate" name="endDate" required>
             </div>
           </div>
         </form>
@@ -293,40 +310,57 @@
               </div>
             </div>
           </div>
-          
-          <div class="row">
-            <div class="col-md-6 mb-3">
-              <label for="editApplicableOn" class="form-label">Applicable On*</label>
-              <select class="form-select" id="editApplicableOn" name="applicableOn" required>
-                <option value="category">Category</option>
-                <option value="product">Product</option>
-              </select>
-            </div>
-            <div class="col-md-6 mb-3 edit-category-selector">
-              <label for="editCategorySelect" class="form-label">Select Category*</label>
-              <select class="form-select" id="editCategorySelect" name="category">
-                <option value="">Select a category</option>
-                 <% if (typeof categories !== 'undefined' && categories.length > 0) { %>
-                  <% categories.forEach(category => { %>
-                    <option value="<%= category._id %>"><%= category.name %></option>
-                  <% }); %>
-                <% } else { %>
-                  <option value="" disabled>No categories available</option>
-                <% } %>
-              </select>
-            </div>
-            <div class="col-md-6 mb-3 edit-product-selector d-none">
-              <label for="editProductSelect" class="form-label">Select Product*</label>
-              <select class="form-select" id="editProductSelect" name="product">
-                <option value="">Select a product</option>
-                <% if (typeof products !== 'undefined' && products.length > 0) { %>
+
+          <div class="mb-3">
+            <label for="editAppliesTo" class="form-label">Offer Applies To*</label>
+            <select class="form-select" id="editAppliesTo" name="appliesTo" required>
+              <option value="all_products">All Products</option>
+              <option value="specific_products">Specific Products</option>
+              <option value="all_categories">All Categories</option>
+              <option value="specific_categories">Specific Categories</option>
+            </select>
+          </div>
+
+          <!-- Specific Products Selector for Edit -->
+          <div class="mb-3 edit-specific-products-container d-none">
+            <label class="form-label">Applicable Products*</label>
+            <div class="products-container p-2 border rounded">
+              <div class="product-search mb-2">
+                <input type="text" class="form-control form-control-sm" id="editProductSearch" placeholder="Search products...">
+              </div>
+              <div class="product-checkboxes" id="editProductCheckboxes" style="max-height: 150px; overflow-y: auto;">
+                <% if (products && products.length > 0) { %>
                   <% products.forEach(product => { %>
-                    <option value="<%= product._id %>"><%= product.title %></option>
-                  <% }); %>
+                    <div class="form-check">
+                      <input class="form-check-input edit-product-checkbox" type="checkbox" name="applicableProducts" value="<%= product._id %>" id="editProduct_<%= product._id %>">
+                      <label class="form-check-label" for="editProduct_<%= product._id %>">
+                        <%= product.title %>
+                      </label>
+                    </div>
+                  <% }) %>
                 <% } else { %>
-                  <option value="" disabled>No products available</option>
+                  <div class="text-muted fst-italic small">No products available.</div>
                 <% } %>
-              </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Specific Categories Selector for Edit -->
+          <div class="mb-3 edit-specific-categories-container d-none">
+            <label class="form-label">Applicable Categories*</label>
+            <div class="categories-container p-2 border rounded" style="max-height: 150px; overflow-y: auto;">
+              <% if (categories && categories.length > 0) { %>
+                <% categories.forEach(category => { %>
+                  <div class="form-check">
+                    <input class="form-check-input edit-category-checkbox" type="checkbox" name="applicableCategories" value="<%= category._id %>" id="editCategory_<%= category._id %>">
+                    <label class="form-check-label" for="editCategory_<%= category._id %>">
+                      <%= category.name %>
+                    </label>
+                  </div>
+                <% }) %>
+              <% } else { %>
+                <div class="text-muted fst-italic small">No categories available.</div>
+              <% } %>
             </div>
           </div>
           
@@ -373,8 +407,11 @@
             <div class="detail-value" id="viewOfferDiscount"></div>
           </div>
           <div class="detail-row">
-            <div class="detail-label">Applicable On:</div>
-            <div class="detail-value" id="viewApplicableOn"></div>
+            <div class="detail-label">Applies To:</div>
+            <div class="detail-value" id="viewAppliesTo"></div>
+          </div>
+          <div id="viewApplicableItemsContainer">
+            <!-- Content will be dynamically added here -->
           </div>
           <div class="detail-row">
             <div class="detail-label">Valid From:</div>
@@ -592,6 +629,17 @@
   .detail-value {
     width: 60%;
   }
+  #viewApplicableItemsContainer .detail-row {
+    padding-left: 10px; /* Indent item list */
+  }
+   #viewApplicableItemsContainer .detail-label {
+    width: 30%; /* Adjust for item list */
+  }
+   #viewApplicableItemsContainer .detail-value {
+    width: 70%; /* Adjust for item list */
+    max-height: 100px;
+    overflow-y: auto;
+  }
   
   @media (max-width: 992px) {
     .search-input { width: 180px; }
@@ -603,10 +651,10 @@
     .page-header { flex-direction: column; align-items: flex-start; }
     .page-header > div:last-child { margin-top: 15px; width: 100%; justify-content: space-between; }
     .search-container { flex-grow: 1; }
-    .search-input { width: 100%; } /* Make search input full width inside its container */
-    .page-header .btn-primary { margin-left: auto; /* Push add button to right */ }
+    .search-input { width: 100%; } 
+    .page-header .btn-primary { margin-left: auto; }
   }
-   @media (max-width: 576px) { /* Further adjust for very small screens */
+   @media (max-width: 576px) { 
     .page-header > div:last-child { flex-wrap: wrap; gap:10px }
     .search-container { width: 100%; margin-right:0 !important; margin-bottom: 10px }
     .page-header .btn-primary { width:100%; margin-left:0; }
@@ -614,13 +662,15 @@
 </style>
 
 <script>
+// Within views/admin/offers.ejs <script> tag
+
 document.addEventListener('DOMContentLoaded', function() {
     const showAlert = (icon, title, text = '') => {
         if (typeof Swal !== 'undefined') {
             Swal.fire({ icon, title, text, timer: 2500, showConfirmButton: false, toast: true, position: 'top-end' });
         } else {
             alert(`${title}${text ? ': ' + text : ''}`);
-            if(icon === 'success') window.lastAlertWasSuccess = true; // For fallback reload logic
+            if(icon === 'success') window.lastAlertWasSuccess = true;
         }
     };
     if (typeof Swal === 'undefined') window.lastAlertWasSuccess = false;
@@ -641,7 +691,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const clearSearchBtn = document.getElementById('clearSearchBtn');
 
     const performSearch = () => {
-        if (filterForm && hiddenSearchInput && offerSearchInput) { // ensure offerSearchInput exists
+        if (filterForm && hiddenSearchInput && offerSearchInput) {
             hiddenSearchInput.value = offerSearchInput.value.trim();
             filterForm.submit();
         }
@@ -657,13 +707,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
         offerSearchInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                // To cancel a pending debounced call, you'd typically clear its specific timeout ID
-                // For simplicity, we just perform search immediately. If `debouncedSearch` was very recent, it might still fire.
-                // A more complex debounce would return the timeout ID to be cleared.
-                performSearch();
-            }
+            if (e.key === 'Enter') { e.preventDefault(); performSearch(); }
         });
     }
     if (clearSearchBtn && offerSearchInput && hiddenSearchInput && filterForm) {
@@ -674,70 +718,125 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // --- Add Modal Selectors Setup ---
-    const addApplicableOn = document.getElementById('applicableOn');
-    const addCategorySelectorDiv = document.querySelector('.-category-selector');
-    const addProductSelectorDiv = document.querySelector('.-product-selector');
-    const addCategorySelectInput = addCategorySelectorDiv ? addCategorySelectorDiv.querySelector('select') : null;
-    const addProductSelectInput = addProductSelectorDiv ? addProductSelectorDiv.querySelector('select') : null;
-    const addDiscountTypeSelect = document.getElementById('discountType');
-    const addDiscountSymbol = document.querySelector('.discount-symbol');
-
-    if (addApplicableOn) {
-        addApplicableOn.addEventListener('change', function() {
-            if (this.value === 'category') {
-                if(addCategorySelectorDiv) addCategorySelectorDiv.classList.remove('d-none');
-                if(addProductSelectorDiv) addProductSelectorDiv.classList.add('d-none');
-                if (addProductSelectInput) { addProductSelectInput.value = ''; addProductSelectInput.required = false; }
-                if (addCategorySelectInput) addCategorySelectInput.required = true;
-            } else { 
-                if(addCategorySelectorDiv) addCategorySelectorDiv.classList.add('d-none');
-                if(addProductSelectorDiv) addProductSelectorDiv.classList.remove('d-none');
-                if (addCategorySelectInput) { addCategorySelectInput.value = ''; addCategorySelectInput.required = false; }
-                if (addProductSelectInput) addProductSelectInput.required = true;
-            }
-        });
-        if (addApplicableOn.value) addApplicableOn.dispatchEvent(new Event('change'));
+    function setupDiscountTypeSymbol(modalType) { 
+        const discountTypeSelect = document.getElementById(`${modalType}DiscountType`);
+        const discountSymbolSpan = document.querySelector(`.${modalType}-discount-symbol`);
+        if (discountTypeSelect && discountSymbolSpan) {
+            const updateSymbol = () => {
+                discountSymbolSpan.textContent = discountTypeSelect.value === 'percentage' ? '%' : '₹';
+            };
+            discountTypeSelect.addEventListener('change', updateSymbol);
+            updateSymbol(); 
+        }
     }
-    if (addDiscountTypeSelect && addDiscountSymbol) {
-        addDiscountTypeSelect.addEventListener('change', function() { addDiscountSymbol.textContent = this.value === 'percentage' ? '%' : '₹'; });
-        if (addDiscountTypeSelect.value) addDiscountTypeSelect.dispatchEvent(new Event('change'));
+    setupDiscountTypeSymbol('add');
+    setupDiscountTypeSymbol('edit');
+
+    function setupApplicabilityUI(modalType) { 
+        const appliesToSelect = document.getElementById(`${modalType}AppliesTo`);
+        const specificProductsContainer = document.querySelector(`.${modalType}-specific-products-container`);
+        const specificCategoriesContainer = document.querySelector(`.${modalType}-specific-categories-container`);
+        const productSearchInput = document.getElementById(`${modalType}ProductSearch`);
+        const productCheckboxesContainer = document.getElementById(`${modalType}ProductCheckboxes`);
+
+        if (appliesToSelect) {
+            const updateVisibility = () => {
+                const value = appliesToSelect.value;
+                if (specificProductsContainer) specificProductsContainer.classList.toggle('d-none', value !== 'specific_products');
+                if (specificCategoriesContainer) specificCategoriesContainer.classList.toggle('d-none', value !== 'specific_categories');
+            };
+            appliesToSelect.addEventListener('change', updateVisibility);
+            updateVisibility(); 
+        }
+
+        if (productSearchInput && productCheckboxesContainer) {
+            productSearchInput.addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase();
+                const checkboxes = productCheckboxesContainer.querySelectorAll('.form-check');
+                checkboxes.forEach(div => {
+                    const label = div.querySelector('label').textContent.toLowerCase();
+                    div.style.display = label.includes(searchTerm) ? '' : 'none';
+                });
+            });
+        }
+    }
+    setupApplicabilityUI('add');
+    setupApplicabilityUI('edit');
+
+
+    // --- Client-side validation helper ---
+    function validateOfferForm(formIdPrefix) {
+        const titleInput = document.getElementById(`${formIdPrefix}OfferTitle`);
+        const startDateInput = document.getElementById(`${formIdPrefix}StartDate`);
+        const endDateInput = document.getElementById(`${formIdPrefix}EndDate`);
+        const discountTypeInput = document.getElementById(`${formIdPrefix}DiscountType`);
+        const discountValueInput = document.getElementById(`${formIdPrefix}DiscountValue`);
+        const appliesToInput = document.getElementById(`${formIdPrefix}AppliesTo`);
+
+        if (!titleInput.value.trim()) {
+            showAlert('error', 'Validation Error', 'Offer title is required.');
+            titleInput.focus();
+            return false;
+        }
+        if (!startDateInput.value) {
+            showAlert('error', 'Validation Error', 'Start date is required.');
+            startDateInput.focus();
+            return false;
+        }
+        if (!endDateInput.value) {
+            showAlert('error', 'Validation Error', 'End date is required.');
+            endDateInput.focus();
+            return false;
+        }
+
+        const startDate = new Date(startDateInput.value);
+        const endDate = new Date(endDateInput.value);
+
+        if (startDate >= endDate) {
+            showAlert('error', 'Validation Error', 'End date must be after start date.');
+            endDateInput.focus();
+            return false;
+        }
+
+        const discountValue = parseFloat(discountValueInput.value);
+        if (isNaN(discountValue)) {
+             showAlert('error', 'Validation Error', 'Discount value must be a number.');
+            discountValueInput.focus();
+            return false;
+        }
+
+        if (discountTypeInput.value === 'percentage') {
+            if (discountValue <= 0 || discountValue > 100) {
+                showAlert('error', 'Validation Error', 'Percentage discount must be between 1 and 100.');
+                discountValueInput.focus();
+                return false;
+            }
+        } else if (discountTypeInput.value === 'fixed') {
+            if (discountValue <= 0) {
+                showAlert('error', 'Validation Error', 'Fixed discount must be greater than 0.');
+                discountValueInput.focus();
+                return false;
+            }
+        }
+        
+        if (appliesToInput.value === 'specific_products') {
+            const selectedProducts = Array.from(document.querySelectorAll(`.${formIdPrefix}-specific-products-container .product-checkbox:checked`));
+            if (selectedProducts.length === 0) {
+                showAlert('error', 'Validation Error', 'Please select at least one product for a product-specific offer.');
+                // Potentially focus the product search or container
+                return false;
+            }
+        } else if (appliesToInput.value === 'specific_categories') {
+            const selectedCategories = Array.from(document.querySelectorAll(`.${formIdPrefix}-specific-categories-container .category-checkbox:checked`));
+            if (selectedCategories.length === 0) {
+                showAlert('error', 'Validation Error', 'Please select at least one category for a category-specific offer.');
+                 // Potentially focus the category container
+                return false;
+            }
+        }
+        return true;
     }
     
-    // --- Edit Modal Selectors Setup ---
-    function setupEditModalSelectors() {
-        const applicableOnSelect = document.getElementById('editApplicableOn');
-        const categorySelectorDiv = document.querySelector('.edit-category-selector');
-        const productSelectorDiv = document.querySelector('.edit-product-selector');  
-        const categorySelectInput = categorySelectorDiv ? categorySelectorDiv.querySelector('select') : null;
-        const productSelectInput = productSelectorDiv ? productSelectorDiv.querySelector('select') : null;
-        const discountTypeSelect = document.getElementById('editDiscountType');
-        const discountSymbol = document.querySelector('.edit-discount-symbol');
-
-        if (applicableOnSelect) {
-            applicableOnSelect.addEventListener('change', function() {
-                if (this.value === 'category') {
-                    if(categorySelectorDiv) categorySelectorDiv.classList.remove('d-none');
-                    if(productSelectorDiv) productSelectorDiv.classList.add('d-none');
-                    if (productSelectInput) { productSelectInput.value = ''; productSelectInput.required = false;}
-                    if (categorySelectInput) categorySelectInput.required = true;
-                } else { 
-                    if(categorySelectorDiv) categorySelectorDiv.classList.add('d-none');
-                    if(productSelectorDiv) productSelectorDiv.classList.remove('d-none');
-                    if (categorySelectInput) { categorySelectInput.value = ''; categorySelectInput.required = false;}
-                    if (productSelectInput) productSelectInput.required = true;
-                }
-            });
-             if (applicableOnSelect.value) applicableOnSelect.dispatchEvent(new Event('change'));
-        }
-        if (discountTypeSelect && discountSymbol) {
-            discountTypeSelect.addEventListener('change', function() { discountSymbol.textContent = this.value === 'percentage' ? '%' : '₹'; });
-             if (discountTypeSelect.value) discountTypeSelect.dispatchEvent(new Event('change'));
-        }
-    }
-    setupEditModalSelectors();
-
-
     // --- Add Offer ---
     const addOfferModalEl = document.getElementById('addOfferModal');
     const addOfferModal = addOfferModalEl ? new bootstrap.Modal(addOfferModalEl) : null;
@@ -746,27 +845,53 @@ document.addEventListener('DOMContentLoaded', function() {
 
     if (createOfferBtn && addOfferForm && addOfferModal) {
         createOfferBtn.addEventListener('click', async function() {
-            if(addApplicableOn) addApplicableOn.dispatchEvent(new Event('change'));
-            if (!addOfferForm.checkValidity()) { addOfferForm.reportValidity(); return; }
+            if (!addOfferForm.checkValidity()) { 
+                addOfferForm.reportValidity(); // Use browser's built-in validation UI for required fields
+                return; 
+            }
+            if (!validateOfferForm('add')) { // Our custom validations
+                return;
+            }
+            
             const formData = new FormData(addOfferForm);
-            const data = Object.fromEntries(formData.entries());
-            if (data.applicableOn === 'product') delete data.category; else delete data.product;
+            const data = {};
+            formData.forEach((value, key) => {
+                if (key === 'applicableProducts' || key === 'applicableCategories') {
+                    if (!data[key]) data[key] = [];
+                    data[key].push(value);
+                } else {
+                    data[key] = value;
+                }
+            });
+
+            if (data.appliesTo !== 'specific_products') delete data.applicableProducts;
+            if (data.appliesTo !== 'specific_categories') delete data.applicableCategories;
 
             try {
                 const response = await fetch('/admin/offers', {
                     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data)
                 });
                 const result = await response.json();
-                if (response.ok && result.success) { showAlert('success', 'Offer Created!', result.message); addOfferModal.hide(); } 
-                else { showAlert('error', 'Creation Failed', result.message || 'Could not create offer.'); }
-            } catch (error) { showAlert('error', 'Error', 'An unexpected error occurred.'); console.error('Add offer error:', error); }
+                if (response.ok && result.success) { 
+                    showAlert('success', 'Offer Created!', result.message); 
+                    addOfferModal.hide(); 
+                } else { 
+                    showAlert('error', 'Creation Failed', result.message || 'Could not create offer.'); 
+                }
+            } catch (error) { 
+                showAlert('error', 'Network Error', 'An unexpected error occurred. Please check your connection.'); 
+                console.error('Add offer error:', error); 
+            }
         });
     }
     if (addOfferModalEl && addOfferForm) {
         addOfferModalEl.addEventListener('hidden.bs.modal', () => {
             addOfferForm.reset();
-            if(addApplicableOn) { addApplicableOn.value = 'category'; addApplicableOn.dispatchEvent(new Event('change')); }
-            if(addDiscountTypeSelect) { addDiscountTypeSelect.value = 'percentage'; addDiscountTypeSelect.dispatchEvent(new Event('change')); }
+            const addAppliesTo = document.getElementById('addAppliesTo');
+            if(addAppliesTo) { addAppliesTo.value = 'all_products'; addAppliesTo.dispatchEvent(new Event('change')); }
+            const addDiscountType = document.getElementById('addDiscountType');
+            if(addDiscountType) { addDiscountType.value = 'percentage'; addDiscountType.dispatchEvent(new Event('change')); }
+            
             const successToast = document.querySelector('.swal2-toast-shown .swal2-success');
             if (successToast || (typeof Swal === 'undefined' && window.lastAlertWasSuccess)) {
                 window.location.reload();
@@ -788,7 +913,10 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('editOfferId').value = offerId;
             try {
                 const response = await fetch(`/admin/offers/${offerId}`);
-                if (!response.ok) throw new Error(`Fetch error (${response.status})`);
+                if (!response.ok) {
+                    const errData = await response.json().catch(() => ({message: `Failed to load offer data. Status: ${response.status}`}));
+                    throw new Error(errData.message);
+                }
                 const offer = await response.json();
 
                 document.getElementById('editOfferTitle').value = offer.title;
@@ -796,41 +924,78 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.getElementById('editOfferDescription').value = offer.description || '';
                 document.getElementById('editDiscountType').value = offer.discountType;
                 document.getElementById('editDiscountValue').value = offer.discountValue;
-                const editApplicableOn = document.getElementById('editApplicableOn');
-                editApplicableOn.value = offer.applicableOn;
-                editApplicableOn.dispatchEvent(new Event('change')); 
-                if (offer.applicableOn === 'category' && offer.category) {
-                    const catSel = document.getElementById('editCategorySelect'); if(catSel) catSel.value = offer.category._id || offer.category || '';
-                } else if (offer.applicableOn === 'product' && offer.product) {
-                    const prodSel = document.getElementById('editProductSelect'); if(prodSel) prodSel.value = offer.product._id || offer.product || '';
+                
+                const editAppliesToSelect = document.getElementById('editAppliesTo');
+                editAppliesToSelect.value = offer.appliesTo;
+                editAppliesToSelect.dispatchEvent(new Event('change')); 
+
+                document.querySelectorAll('#editProductCheckboxes .edit-product-checkbox').forEach(cb => cb.checked = false);
+                document.querySelectorAll('#editCategoryCheckboxes .edit-category-checkbox').forEach(cb => cb.checked = false);
+
+                if (offer.appliesTo === 'specific_products' && offer.applicableProducts) {
+                    offer.applicableProducts.forEach(p => {
+                        const checkbox = document.getElementById(`editProduct_${p._id}`);
+                        if (checkbox) checkbox.checked = true;
+                    });
+                } else if (offer.appliesTo === 'specific_categories' && offer.applicableCategories) {
+                    offer.applicableCategories.forEach(c => {
+                        const checkbox = document.getElementById(`editCategory_${c._id}`);
+                        if (checkbox) checkbox.checked = true;
+                    });
                 }
+                
                 document.getElementById('editStartDate').value = offer.startDate; 
                 document.getElementById('editEndDate').value = offer.endDate;   
-                document.getElementById('editDiscountType').dispatchEvent(new Event('change'));
+                document.getElementById('editDiscountType').dispatchEvent(new Event('change')); 
                 editOfferModal.show();
-            } catch (error) { showAlert('error', 'Error', `Load failed. ${error.message}`); console.error('Edit load:', error); }
+            } catch (error) { 
+                showAlert('error', 'Load Error', `Failed to load offer for editing. ${error.message}`); 
+                console.error('Edit load error:', error); 
+            }
         });
     });
 
     if (updateOfferBtn && editOfferForm && editOfferModal) {
         updateOfferBtn.addEventListener('click', async function() {
-            const editApplicableOn = document.getElementById('editApplicableOn');
-            if(editApplicableOn) editApplicableOn.dispatchEvent(new Event('change'));
-            if (!editOfferForm.checkValidity()) { editOfferForm.reportValidity(); return; }
+            if (!editOfferForm.checkValidity()) { 
+                editOfferForm.reportValidity();
+                return; 
+            }
+            if (!validateOfferForm('edit')) { // Our custom validations
+                return;
+            }
+
             const offerId = document.getElementById('editOfferId').value;
             const formData = new FormData(editOfferForm);
-            const data = Object.fromEntries(formData.entries());
-            if (data.applicableOn === 'product') delete data.category; else delete data.product;
+            const data = {};
+            formData.forEach((value, key) => {
+                if (key === 'applicableProducts' || key === 'applicableCategories') {
+                    if (!data[key]) data[key] = [];
+                    data[key].push(value);
+                } else {
+                    data[key] = value;
+                }
+            });
             delete data.offerId; 
+
+            if (data.appliesTo !== 'specific_products') delete data.applicableProducts;
+            if (data.appliesTo !== 'specific_categories') delete data.applicableCategories;
 
             try {
                 const response = await fetch(`/admin/offers/${offerId}`, {
                     method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data)
                 });
                 const result = await response.json();
-                if (response.ok && result.success) { showAlert('success', 'Offer Updated!', result.message); editOfferModal.hide(); } 
-                else { showAlert('error', 'Update Failed', result.message || 'Update error.'); }
-            } catch (error) { showAlert('error', 'Error', 'Unexpected error.'); console.error('Update error:', error); }
+                if (response.ok && result.success) { 
+                    showAlert('success', 'Offer Updated!', result.message); 
+                    editOfferModal.hide(); 
+                } else { 
+                    showAlert('error', 'Update Failed', result.message || 'Could not update offer.'); 
+                }
+            } catch (error) { 
+                showAlert('error', 'Network Error', 'An unexpected error occurred. Please check your connection.'); 
+                console.error('Update offer error:', error); 
+            }
         });
     }
     if (editOfferModalElement) {
@@ -855,16 +1020,45 @@ document.addEventListener('DOMContentLoaded', function() {
             if(btnEditFromView) btnEditFromView.setAttribute('data-offer-id', offerId);
             try {
                 const response = await fetch(`/admin/offers/${offerId}`);
-                if (!response.ok) throw new Error(`Fetch error (${response.status})`);
+                if (!response.ok) {
+                     const errData = await response.json().catch(() => ({message: `Failed to load offer details. Status: ${response.status}`}));
+                    throw new Error(errData.message);
+                }
                 const offer = await response.json();
                 const formatDate = (d) => d ? new Date(d).toLocaleDateString('en-GB', {day:'2-digit',month:'short',year:'numeric'}) : 'N/A';
                 document.getElementById('viewOfferTitle').textContent = offer.title || 'N/A';
                 document.getElementById('viewOfferDescription').textContent = offer.description || 'N/A';
                 document.getElementById('viewOfferDiscount').textContent = `${offer.discountValue||0}${offer.discountType==='percentage'?'%':'₹'} Off`;
-                let appText = 'N/A';
-                if(offer.applicableOn==='category'&&offer.category) appText=`${offer.category.name||'Cat'} (Category)`;
-                else if(offer.applicableOn==='product'&&offer.product) appText=`${offer.product.title||'Prod'} (Product)`;
-                document.getElementById('viewApplicableOn').textContent = appText;
+                
+                let appliesToText = 'N/A';
+                switch(offer.appliesTo) {
+                    case 'all_products': appliesToText = 'All Products'; break;
+                    case 'specific_products': appliesToText = 'Specific Products'; break;
+                    case 'all_categories': appliesToText = 'All Categories'; break;
+                    case 'specific_categories': appliesToText = 'Specific Categories'; break;
+                }
+                document.getElementById('viewAppliesTo').textContent = appliesToText;
+
+                const itemsContainer = document.getElementById('viewApplicableItemsContainer');
+                itemsContainer.innerHTML = ''; 
+                if (offer.appliesTo === 'specific_products' && offer.applicableProducts && offer.applicableProducts.length > 0) {
+                    let productListHTML = '<div class="detail-label">Products:</div><div class="detail-value"><ul>';
+                    offer.applicableProducts.forEach(p => { productListHTML += `<li>${p.title}</li>`; });
+                    productListHTML += '</ul></div>';
+                    const row = document.createElement('div');
+                    row.className = 'detail-row';
+                    row.innerHTML = productListHTML;
+                    itemsContainer.appendChild(row);
+                } else if (offer.appliesTo === 'specific_categories' && offer.applicableCategories && offer.applicableCategories.length > 0) {
+                    let categoryListHTML = '<div class="detail-label">Categories:</div><div class="detail-value"><ul>';
+                    offer.applicableCategories.forEach(c => { categoryListHTML += `<li>${c.name}</li>`; });
+                    categoryListHTML += '</ul></div>';
+                     const row = document.createElement('div');
+                    row.className = 'detail-row';
+                    row.innerHTML = categoryListHTML;
+                    itemsContainer.appendChild(row);
+                }
+
                 document.getElementById('viewStartDate').textContent = formatDate(offer.startDate);
                 document.getElementById('viewEndDate').textContent = formatDate(offer.endDate);
                 const now=new Date(); let sText,sClass;
@@ -876,7 +1070,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.getElementById('viewCreatedAt').textContent = formatDate(offer.createdAt);
                 document.getElementById('viewUpdatedAt').textContent = formatDate(offer.updatedAt);
                 viewOfferModal.show();
-            } catch (error) { showAlert('error', 'Error', `Load failed. ${error.message}`); console.error('View error:', error); }
+            } catch (error) { 
+                showAlert('error', 'Load Error', `Failed to load offer details. ${error.message}`); 
+                console.error('View details error:', error); 
+            }
         });
     });
     if (btnEditFromView && viewOfferModal) {
@@ -899,22 +1096,28 @@ document.addEventListener('DOMContentLoaded', function() {
             if (response.ok && resData.success) {
                 showAlert('success', 'Status Changed!', resData.message);
                 const row = document.querySelector(`tr[data-offer-id="${offerId}"]`);
-                if (!row) return;
+                if (!row) { window.location.reload(); return; } 
+
                 const statusBadge = row.querySelector('.status-badge');
                 if(statusBadge) {
                     statusBadge.textContent = resData.currentStatus;
                     statusBadge.className = 'status-badge ' + (resData.currentStatus ? resData.currentStatus.toLowerCase() : 'inactive');
                 }
-                // Corrected icon/title update logic
-                if (resData.currentStatus === 'Active') {
+                
+                if (resData.currentStatus === 'Active' || resData.currentStatus === 'Upcoming') { 
                     if(iconElement) iconElement.className = 'ri-eye-off-line';
                     if(buttonElement) buttonElement.setAttribute('title', 'Deactivate');
-                } else {
+                } else { 
                     if(iconElement) iconElement.className = 'ri-eye-line';
                     if(buttonElement) buttonElement.setAttribute('title', 'Activate');
                 }
-            } else { showAlert('error', 'Failed', resData.message || 'Toggle error.'); }
-        } catch (error) { showAlert('error', 'Error', 'Unexpected error.'); console.error('Toggle error:', error); }
+            } else { 
+                showAlert('error', 'Toggle Failed', resData.message || 'Could not toggle offer status.'); 
+            }
+        } catch (error) { 
+            showAlert('error', 'Network Error', 'An unexpected error occurred. Please check your connection.'); 
+            console.error('Toggle status error:', error); 
+        }
     }
     document.querySelectorAll('.btn-toggle-status').forEach(button => {
         button.addEventListener('click', async function() {
@@ -932,7 +1135,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // --- Toggle Sidebar ---
     const toggleSidebarBtn = document.querySelector('.toggle-sidebar');
     if (toggleSidebarBtn) {
       toggleSidebarBtn.addEventListener('click', function() {
