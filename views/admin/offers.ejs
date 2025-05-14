@@ -1143,4 +1143,163 @@ document.addEventListener('DOMContentLoaded', function() {
       });
     }
 });
+// This script should be included in your offers.ejs file
+
+document.addEventListener("DOMContentLoaded", () => {
+  // --- Add Offer ---
+  const createOfferBtn = document.getElementById("createOfferBtn")
+  const addOfferForm = document.getElementById("addOfferForm")
+  const addOfferModal = document.getElementById("addOfferModal")
+    ? new bootstrap.Modal(document.getElementById("addOfferModal"))
+    : null
+
+  if (createOfferBtn && addOfferForm && addOfferModal) {
+    createOfferBtn.addEventListener("click", async () => {
+      if (!addOfferForm.checkValidity()) {
+        addOfferForm.reportValidity()
+        return
+      }
+
+      // Get form data
+      const formData = new FormData(addOfferForm)
+      const data = {}
+
+      // Process form data
+      for (const [key, value] of formData.entries()) {
+        // Handle checkboxes for products and categories
+        if (key === "applicableProducts" || key === "applicableCategories") {
+          if (!data[key]) {
+            data[key] = []
+          }
+          data[key].push(value)
+        } else {
+          data[key] = value
+        }
+      }
+
+      // Validate specific products/categories selection
+      const appliesTo = data.appliesTo
+      if (appliesTo === "specific_products" && (!data.applicableProducts || data.applicableProducts.length === 0)) {
+        showAlert("error", "Validation Error", "Please select at least one product for a product-specific offer.")
+        return
+      }
+
+      if (
+        appliesTo === "specific_categories" &&
+        (!data.applicableCategories || data.applicableCategories.length === 0)
+      ) {
+        showAlert("error", "Validation Error", "Please select at least one category for a category-specific offer.")
+        return
+      }
+
+      try {
+        const response = await fetch("/admin/offers", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data),
+        })
+
+        const result = await response.json()
+
+        if (response.ok && result.success) {
+          showAlert("success", "Offer Created!", result.message)
+          addOfferModal.hide()
+          setTimeout(() => window.location.reload(), 1500)
+        } else {
+          showAlert("error", "Creation Failed", result.message || "Could not create offer.")
+        }
+      } catch (error) {
+        console.error("Add offer error:", error)
+        showAlert("error", "Error", "An unexpected error occurred.")
+      }
+    })
+  }
+
+  // --- Edit Offer ---
+  const updateOfferBtn = document.getElementById("updateOfferBtn")
+  const editOfferForm = document.getElementById("editOfferForm")
+  const editOfferModal = document.getElementById("editOfferModal")
+    ? new bootstrap.Modal(document.getElementById("editOfferModal"))
+    : null
+
+  if (updateOfferBtn && editOfferForm && editOfferModal) {
+    updateOfferBtn.addEventListener("click", async () => {
+      if (!editOfferForm.checkValidity()) {
+        editOfferForm.reportValidity()
+        return
+      }
+
+      const offerId = document.getElementById("editOfferId").value
+      const formData = new FormData(editOfferForm)
+      const data = {}
+
+      // Process form data
+      for (const [key, value] of formData.entries()) {
+        // Handle checkboxes for products and categories
+        if (key === "applicableProducts" || key === "applicableCategories") {
+          if (!data[key]) {
+            data[key] = []
+          }
+          data[key].push(value)
+        } else {
+          data[key] = value
+        }
+      }
+
+      // Validate specific products/categories selection
+      const appliesTo = data.appliesTo
+      if (appliesTo === "specific_products" && (!data.applicableProducts || data.applicableProducts.length === 0)) {
+        showAlert("error", "Validation Error", "Please select at least one product for a product-specific offer.")
+        return
+      }
+
+      if (
+        appliesTo === "specific_categories" &&
+        (!data.applicableCategories || data.applicableCategories.length === 0)
+      ) {
+        showAlert("error", "Validation Error", "Please select at least one category for a category-specific offer.")
+        return
+      }
+
+      try {
+        const response = await fetch(`/admin/offers/${offerId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data),
+        })
+
+        const result = await response.json()
+
+        if (response.ok && result.success) {
+          showAlert("success", "Offer Updated!", result.message)
+          editOfferModal.hide()
+          setTimeout(() => window.location.reload(), 1500)
+        } else {
+          showAlert("error", "Update Failed", result.message || "Could not update offer.")
+        }
+      } catch (error) {
+        console.error("Update offer error:", error)
+        showAlert("error", "Error", "An unexpected error occurred.")
+      }
+    })
+  }
+
+  // Helper function to show alerts
+  function showAlert(icon, title, text = "") {
+    if (typeof Swal !== "undefined") {
+      Swal.fire({
+        icon,
+        title,
+        text,
+        timer: 2500,
+        showConfirmButton: false,
+        toast: true,
+        position: "top-end",
+      })
+    } else {
+      alert(`${title}${text ? ": " + text : ""}`)
+    }
+  }
+})
+
 </script>
