@@ -52,33 +52,45 @@
             <button class="btn btn-link text-dark p-0 text-decoration-none" id="clearCartBtn">Clear Cart</button>
           </div>
 
-         <% cartItems.forEach(item => { %>
-  <div class="cart-item bg-white p-4 mb-3 rounded shadow-sm" data-product-id="<%= item.product._id %>">
-    <div class="row align-items-center">
-      <div class="col-md-2 col-4 mb-3 mb-md-0">
-        <div class="position-relative">
-          <img src="<%= item.product.mainImage || '/api/placeholder/150/200' %>" alt="<%= item.product.title %>" class="img-fluid rounded" />
-          <% if (item.product.activeOffer && item.product.discountPercentage > 0) { %>
-            <span class="position-absolute top-0 end-0 offer-badge"><%= item.product.discountPercentage %>% OFF</span>
-          <% } %>
-        </div>
-      </div>
-      <div class="col-md-6 col-8 mb-3 mb-md-0">
-        <h3 class="fs-5 fw-semibold mb-1"><%= item.product.title %></h3>
-        <p class="text-muted small mb-1"><%= item.product.author %></p>
-        <p class="small mb-0"><%= item.product.format || 'Hardcover' %></p>
-        <% if (item.product.activeOffer) { %>
-          <p class="offer-title mt-1"><i class="ri-price-tag-3-line"></i> <%= item.product.activeOffer.title %></p>
-        <% } %>
-        <span class="stock-status <%= item.product.stock > 10 ? 'in-stock' : item.product.stock > 0 ? 'low-stock' : 'out-of-stock' %>">
-          <i class="ri-<%= item.product.stock > 10 ? 'checkbox-circle-line' : item.product.stock > 0 ? 'alert-line' : 'close-circle-line' %> me-1"></i>
-          <%= item.product.stock > 10 ? `In Stock (${item.product.stock} copies available)` : item.product.stock > 0 ? `Low Stock (${item.product.stock} copies left)` : 'Out of Stock' %>
-        </span>
-      </div>
-     
-    </div>
-  </div>
-<% }) %>
+          <% cartItems.forEach(item => { %>
+            <div class="cart-item bg-white p-4 mb-3 rounded shadow-sm" data-product-id="<%= item.product._id %>">
+              <div class="row align-items-center">
+                <div class="col-md-2 col-4 mb-3 mb-md-0">
+                  <div class="position-relative">
+                    <img src="<%= item.product.mainImage || '/api/placeholder/150/200' %>" alt="<%= item.product.title %>" class="img-fluid rounded" />
+                    <% if (item.product.activeOffer && item.product.discountPercentage > 0) { %>
+                      <span class="position-absolute top-0 end-0 offer-badge"><%= item.product.discountPercentage %>% OFF</span>
+                    <% } %>
+                  </div>
+                </div>
+                <div class="col-md-6 col-8 mb-3 mb-md-0">
+                  <h3 class="fs-5 fw-semibold mb-1"><%= item.product.title %></h3>
+                  <p class="text-muted small mb-1"><%= item.product.author %></p>
+                  <p class="small mb-0"><%= item.product.format || 'Hardcover' %></p>
+                  <% if (item.product.activeOffer) { %>
+                    <p class="offer-title mt-1"><i class="ri-price-tag-3-line"></i> <%= item.product.activeOffer.title %></p>
+                  <% } %>
+                  <span class="stock-status <%= item.product.stock > 10 ? 'in-stock' : item.product.stock > 0 ? 'low-stock' : 'out-of-stock' %>">
+                    <i class="ri-<%= item.product.stock > 10 ? 'checkbox-circle-line' : item.product.stock > 0 ? 'alert-line' : 'close-circle-line' %> me-1"></i>
+                    <%= item.product.stock > 10 ? `In Stock (${item.product.stock} copies available)` : item.product.stock > 0 ? `Low Stock (${item.product.stock} copies left)` : 'Out of Stock' %>
+                  </span>
+                </div>
+                <div class="col-md-2 col-6 text-md-center">
+                  <div class="quantity-selector d-flex align-items-center">
+                    <button class="btn btn-sm btn-outline-dark quantity-btn">-</button>
+                    <input type="number" class="form-control form-control-sm mx-2 text-center quantity-input" value="<%= item.quantity %>" min="1" max="<%= item.product.stock %>" style="width: 50px;" />
+                    <button class="btn btn-sm btn-outline-dark quantity-btn">+</button>
+                  </div>
+                </div>
+                <div class="col-md-2 col-6 text-end">
+                  <div class="d-flex flex-column align-items-end">
+                    <span class="fw-bold mb-2">₹<%= (item.quantity * item.priceAtAddition).toFixed(2) %></span>
+                    <button class="btn btn-link text-danger p-0 small text-decoration-none remove-item">Remove</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          <% }) %>
         </div>
 
         <!-- Continue Shopping -->
@@ -154,32 +166,49 @@
     <h2 class="fs-2 fw-bold mb-4">You May Also Like</h2>
     <div class="row g-4">
       <% relatedProducts.forEach(product => { %>
-  <div class="col-6 col-md-3">
-    <div class="product-card bg-white h-100">
-      <div class="product-image-container">
-        <% 
-          const now = new Date();
-          const createdAt = new Date(product.createdAt);
-          const diffDays = (now - createdAt) / (1000 * 60 * 60 * 24);
-          const isNew = diffDays <= 30;
-        %>
-        <% if (isNew) { %>
-          <span class="product-tag">New</span>
-        <% } %>
-        
-        <!-- Add offer badge if there's an active offer -->
-        <% if (product.activeOffer && product.discountPercentage > 0) { %>
-          <span class="position-absolute top-0 end-0 offer-badge"><%= product.discountPercentage %>% OFF</span>
-        <% } %>
-        
-        <a href="/products/<%= product._id %>" class="text-decoration-none">
-          <img src="<%= product.mainImage || '/api/placeholder/600/800' %>" alt="<%= product.title %>" class="product-image" />
-        </a>
-      </div>
-      <!-- Rest of the related product card remains the same -->
-    </div>
-  </div>
-<% }) %>
+        <div class="col-6 col-md-3">
+          <div class="product-card bg-white h-100">
+            <div class="product-image-container">
+              <% 
+                const now = new Date();
+                const createdAt = new Date(product.createdAt);
+                const diffDays = (now - createdAt) / (1000 * 60 * 60 * 24);
+                const isNew = diffDays <= 30;
+              %>
+              <% if (isNew) { %>
+                <span class="product-tag">New</span>
+              <% } %>
+              
+              <!-- Add offer badge if there's an active offer -->
+              <% if (product.activeOffer && product.discountPercentage > 0) { %>
+                <span class="position-absolute top-0 end-0 offer-badge"><%= product.discountPercentage %>% OFF</span>
+              <% } %>
+              
+              <a href="/products/<%= product._id %>" class="text-decoration-none">
+                <img src="<%= product.mainImage || '/api/placeholder/600/800' %>" alt="<%= product.title %>" class="product-image" />
+              </a>
+            </div>
+            <div class="p-3">
+              <h3 class="fs-5 fw-semibold mb-1">
+                <a href="/products/<%= product._id %>" class="text-dark text-decoration-none"><%= product.title %></a>
+              </h3>
+              <p class="text-muted small mb-2"><%= product.author %></p>
+              <div class="d-flex justify-content-between align-items-center">
+                <div>
+                  <span class="fw-bold">₹<%= product.salePrice %></span>
+                  <span class="stock-status <%= product.stock > 10 ? 'in-stock' : product.stock > 0 ? 'low-stock' : 'out-of-stock' %>">
+                    <i class="ri-<%= product.stock > 10 ? 'checkbox-circle-line' : product.stock > 0 ? 'alert-line' : 'close-circle-line' %> me-1"></i>
+                    <%= product.stock > 10 ? 'In Stock' : product.stock > 0 ? 'Low Stock' : 'Out of Stock' %>
+                  </span>
+                </div>
+                <button class="add-to-cart border-0" data-product-id="<%= product._id %>">
+                  <i class="ri-add-line"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      <% }) %>
     </div>
   </div>
 </section>
