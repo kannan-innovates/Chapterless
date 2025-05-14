@@ -1,6 +1,7 @@
 const Cart = require("../../models/cartSchema");
 const Product = require("../../models/productSchema");
 const Wishlist = require("../../models/wishlistSchema");
+const { getActiveOfferForProduct, calculateDiscount } = require("../../utils/offer-helper");
 
 const getCart = async (req, res) => {
   try {
@@ -18,7 +19,25 @@ const getCart = async (req, res) => {
     let wishlistCount = 0;
 
     if (cart && cart.items.length > 0) {
+      // Filter valid products
       cartItems = cart.items.filter(item => item.product && item.product.isListed);
+      
+      // Get active offers for all products in cart
+      for (const item of cartItems) {
+        const offer = await getActiveOfferForProduct(
+          item.product._id, 
+          item.product.category
+        );
+        
+        const { discountPercentage } = calculateDiscount(
+          offer, 
+          item.product.regularPrice
+        );
+        
+        item.product.activeOffer = offer;
+        item.product.discountPercentage = discountPercentage;
+      }
+      
       totalAmount = cartItems.reduce((sum, item) => sum + (item.quantity * item.priceAtAddition), 0);
       cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
     }
@@ -31,6 +50,14 @@ const getCart = async (req, res) => {
       { $match: { isListed: true, isDeleted: false } },
       { $sample: { size: 4 } }
     ]);
+
+    // Get active offers for related products
+    for (const product of relatedProducts) {
+      const offer = await getActiveOfferForProduct(product._id, product.category);
+      const { discountPercentage } = calculateDiscount(offer, product.regularPrice);
+      product.activeOffer = offer;
+      product.discountPercentage = discountPercentage;
+    }
 
     res.render('cart', {
       cartItems,

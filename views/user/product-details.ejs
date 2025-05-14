@@ -35,6 +35,9 @@
           <!-- Main Image -->
           <div class="col-10">
             <div class="mb-3 zoom-container" id="zoomContainer">
+              <% if (product.activeOffer && product.discountPercentage > 0) { %>
+                <span class="offer-badge"><%= product.discountPercentage %>% OFF</span>
+              <% } %>
               <img src="<%= product.mainImage || '/api/placeholder/600/800' %>" alt="<%= product.title %>" class="main-image" id="mainImage" />
             </div>
           </div>
@@ -70,9 +73,20 @@
             <h2 class="fs-3 fw-bold mb-0">₹<%= product.salePrice %></h2>
             <% if (product.regularPrice > product.salePrice) { %>
               <span class="fs-5 original-price">₹<%= product.regularPrice %></span>
-              <span class="discount-badge">
-                <%= Math.round(((product.regularPrice - product.salePrice) / product.regularPrice) * 100) %>% OFF
-              </span>
+              <% if (product.activeOffer) { %>
+                <span class="discount-badge">
+                  <%= product.discountPercentage %>% OFF
+                </span>
+                <div class="offer-details mt-2">
+                  <small class="text-success">
+                    <i class="ri-price-tag-3-line"></i> <%= product.activeOffer.title %>
+                  </small>
+                </div>
+              <% } else { %>
+                <span class="discount-badge">
+                  <%= Math.round(((product.regularPrice - product.salePrice) / product.regularPrice) * 100) %>% OFF
+                </span>
+              <% } %>
             <% } %>
           </div>
           
@@ -222,8 +236,11 @@
         <% if (relatedProducts && relatedProducts.length > 0) { %>
           <% relatedProducts.forEach(relatedProduct => { %>
             <div class="col-sm-6 col-md-4 col-lg-3">
-              <div class="product-card bg-white h-100">
+              <div class="product-card bg-white h-100 related-product">
                 <div class="product-image-container">
+                  <% if (relatedProduct.activeOffer && relatedProduct.discountPercentage > 0) { %>
+                    <span class="offer-badge"><%= relatedProduct.discountPercentage %>% OFF</span>
+                  <% } %>
                   <% 
                     const now = new Date();
                     const createdAt = new Date(relatedProduct.createdAt);
@@ -275,6 +292,27 @@
 
 <!-- Footer -->
 <%- include("../partials/user/footer") %>
+
+<style>
+  /* Add to existing styles */
+  .offer-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background-color: #e53935;
+    color: white;
+    padding: 0.25rem 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    border-radius: 2px;
+    z-index: 1;
+  }
+  
+  .related-product .offer-badge {
+    font-size: 0.75rem;
+    padding: 0.15rem 0.5rem;
+  }
+</style>
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="../../js/product-zoomer.js"></script>
@@ -416,7 +454,7 @@
             title: 'Error managing wishlist',
             showConfirmButton: false,
             timer: 1500
-          });
+            });
         }
       });
     }
@@ -526,4 +564,17 @@
       });
     });
   });
+
+  window.changeImage = function(element, imageUrl) {
+    // Remove active class from all thumbnails
+    document.querySelectorAll('.thumbnail').forEach(thumb => {
+      thumb.classList.remove('active');
+    });
+    
+    // Add active class to clicked thumbnail
+    element.classList.add('active');
+    
+    // Update main image
+    document.getElementById('mainImage').src = imageUrl;
+  };
 </script>

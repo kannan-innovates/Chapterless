@@ -1,5 +1,6 @@
 const Product = require('../../models/productSchema');
 const Category = require('../../models/categorySchema');
+const { getActiveOfferForProduct, calculateDiscount } = require('../../utils/offer-helper');
 
 const shopPage = async (req, res) => {
   try {
@@ -59,6 +60,14 @@ const shopPage = async (req, res) => {
       .sort(sortQuery)
       .skip(skip)
       .limit(limit);
+
+    // Get active offers for all products
+    for (const product of products) {
+      const offer = await getActiveOfferForProduct(product._id, product.category._id);
+      const { discountPercentage } = calculateDiscount(offer, product.regularPrice);
+      product.activeOffer = offer;
+      product.discountPercentage = discountPercentage;
+    }
 
     // Get all categories
     const categories = await Category.find({ isListed: true });
