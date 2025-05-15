@@ -32,6 +32,8 @@ const orderController = require('../../controllers/userController/order-controll
 
 const newPasswordController = require('../../controllers/userController/change-password-controller');
 
+const userCouponController = require('../../controllers/userController/user-coupon-controller');
+
 // Public routes
 router.get("/", userController.loadHomePage);
 router.get("/pageNotFound", userController.pageNotFound);
@@ -113,5 +115,9 @@ router.get('/orders/:id', isAuthenticated, orderController.getOrderDetails);
 router.get('/orders/:id/invoice', orderController.downloadInvoice);
 
 router.post('/change-password', isAuthenticated, newPasswordController.changePassword);
+
+// Coupon routes
+router.get('/user-coupons', isAuthenticated, userCouponController.getUserCoupons);
+
 
 module.exports = router;

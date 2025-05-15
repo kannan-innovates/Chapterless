@@ -1,0 +1,416 @@
+<%- include("../partials/user/header") %>
+
+<div class="container py-5">
+  <!-- Breadcrumbs -->
+  <nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="/">Home</a></li>
+      <li class="breadcrumb-item"><a href="/profile">My Account</a></li>
+      <li class="breadcrumb-item active" aria-current="page">Available Coupons</li>
+    </ol>
+  </nav>
+
+  <div class="row g-4">
+    <%- include("../partials/user/accountSidebar") %>
+
+    <!-- Main Content -->
+    <div class="col-lg-9">
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white p-4 border-0">
+          <h4 class="mb-0">Available Coupons</h4>
+        </div>
+        <div class="card-body p-4">
+          <!-- Available Coupons -->
+          <div class="row g-3">
+            <% if (noCoupons) { %>
+              <!-- No Coupons Message -->
+              <div class="no-coupons-message text-center py-5">
+                <div class="mb-3">
+                  <i class="bi bi-ticket-perforated-fill display-1 text-muted"></i>
+                </div>
+                <h5 class="mb-3">No Coupons Available</h5>
+                <p class="text-muted mb-4">There are no coupons available at this time. Check back later!</p>
+              </div>
+            <% } else { %>
+              <% coupons.forEach(coupon => { %>
+                <div class="col-md-6">
+                  <div class="coupon-card">
+                    <div class="coupon-content">
+                      <div class="discount-badge"><%= coupon.discountDisplay %></div>
+                      <h5 class="coupon-title"><%= coupon.code %></h5>
+                      <p class="coupon-desc"><%= coupon.description || 'No description available' %></p>
+                      <div class="coupon-details">
+                        <div class="coupon-code">
+                          <span class="code"><%= coupon.code %></span>
+                          <button class="btn btn-sm btn-copy" onclick="copyCouponCode('<%= coupon.code %>')">
+                            <i class="bi bi-clipboard"></i>
+                          </button>
+                        </div>
+                        <div class="coupon-validity">
+                          <span class="text-muted small"><%= coupon.validityText %></span>
+                        </div>
+                        <% if (coupon.minOrderText) { %>
+                          <div class="coupon-min-order">
+                            <span class="text-muted small"><%= coupon.minOrderText %></span>
+                          </div>
+                        <% } %>
+                        <% if (coupon.remainingUses) { %>
+                          <div class="coupon-uses">
+                            <span class="text-muted small"><%= coupon.remainingUses %></span>
+                          </div>
+                        <% } %>
+                        <div class="coupon-applicability">
+                          <span class="text-muted small"><%= coupon.applicabilityDisplay %></span>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="coupon-actions">
+                      <button class="btn btn-sm btn-dark apply-coupon-btn" data-coupon-code="<%= coupon.code %>">Apply Now</button>
+                    </div>
+                  </div>
+                </div>
+              <% }) %>
+            <% } %>
+          </div>
+
+          <!-- Pagination Controls -->
+          <% if (!noCoupons && pagination.totalPages > 1) { %>
+            <div class="d-flex justify-content-between align-items-center mt-4">
+              <div class="text-muted small">
+                Showing <%= pagination.start %>-<%= pagination.end %> of <%= pagination.totalCoupons %> coupons
+              </div>
+              <nav aria-label="Coupon pagination">
+                <ul class="pagination mb-0">
+                  <!-- Previous Button -->
+                  <li class="page-item <%= !pagination.hasPrev ? 'disabled' : '' %>">
+                    <a class="page-link" href="?page=<%= pagination.prevPage %>" <%= !pagination.hasPrev ? 'aria-disabled="true"' : '' %>>Previous</a>
+                  </li>
+                  <!-- Page Numbers -->
+                  <% pagination.pages.forEach(pageNum => { %>
+                    <li class="page-item <%= pageNum === pagination.currentPage ? 'active' : '' %>">
+                      <a class="page-link" href="?page=<%= pageNum %>"><%= pageNum %></a>
+                    </li>
+                  <% }) %>
+                  <!-- Next Button -->
+                  <li class="page-item <%= !pagination.hasNext ? 'disabled' : '' %>">
+                    <a class="page-link" href="?page=<%= pagination.nextPage %>" <%= !pagination.hasNext ? 'aria-disabled="true"' : '' %>>Next</a>
+                  </li>
+                </ul>
+              </nav>
+            </div>
+          <% } %>
+        </div>
+      </div>
+
+      <!-- Offer Section -->
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white p-4 border-0">
+          <h4 class="mb-0">Recommended For You</h4>
+        </div>
+        <div class="card-body p-4">
+          <div class="row g-3">
+            <!-- Offer 1 -->
+            <div class="col-md-6">
+              <div class="offer-card bg-light">
+                <div class="offer-content">
+                  <h5 class="mb-2">Refer & Earn</h5>
+                  <p class="mb-3">Refer a friend and get ₹200 off on your next purchase</p>
+                  <button class="btn btn-sm btn-dark">Refer Now</button>
+                </div>
+                <div class="offer-icon">
+                  <i class="bi bi-share"></i>
+                </div>
+              </div>
+            </div>
+            <!-- Offer 2 -->
+            <div class="col-md-6">
+              <div class="offer-card bg-light">
+                <div class="offer-content">
+                  <h5 class="mb-2">Subscribe & Save</h5>
+                  <p class="mb-3">Subscribe to our newsletter for exclusive offers</p>
+                  <button class="btn btn-sm btn-dark">Subscribe</button>
+                </div>
+                <div class="offer-icon">
+                  <i class="bi bi-envelope-paper"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add Bootstrap Icons CDN -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css"/>
+<!-- Add SweetAlert2 CDN -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<style>
+  /* Custom styling */
+  .primary-bg {
+    background-color: #f0f0f0;
+    color: #1a1a1a;
+    font-weight: 500;
+  }
+
+  .primary-bg:hover {
+    background-color: #e5e5e5;
+    color: #000;
+  }
+
+  .breadcrumb-item + .breadcrumb-item::before {
+    content: "›";
+    font-weight: bold;
+  }
+
+  .breadcrumb a {
+    color: #333;
+    text-decoration: none;
+  }
+
+  .breadcrumb a:hover {
+    color: #000;
+    text-decoration: underline;
+  }
+
+  @media (max-width: 991px) {
+    .profile-sidebar {
+      margin-bottom: 2rem;
+    }
+  }
+
+  /* Validation styling */
+  .is-valid {
+    border-color: #198754 !important;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3e%3cpath fill='%23198754' d='M2.3 6.73L.6 4.53c-.4-1.04.46-1.4 1.1-.8l1.1 1.4 3.4-3.8c.6-.63 1.6-.27 1.2.7l-4 4.6c-.43.5-.8.4-1.1.1z'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right calc(0.375em + 0.1875rem) center;
+    background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+    padding-right: calc(1.5em + 0.75rem) !important;
+  }
+
+  .is-invalid {
+    border-color: #dc3545 !important;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' width='12' height='12' fill='none' stroke='%23dc3545'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath stroke-linejoin='round' d='M5.8 3.6h.4L6 6.5z'/%3e%3ccircle cx='6' cy='8.2' r='.6' fill='%23dc3545' stroke='none'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right calc(0.375em + 0.1875rem) center;
+    background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+    padding-right: calc(1.5em + 0.75rem) !important;
+  }
+
+  /* Coupon Card Styling */
+  .coupon-card {
+    position: relative;
+    border: 1px dashed #ddd;
+    border-radius: 12px;
+    padding: 1.5rem;
+    height: 100%;
+    background-color: #fff;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: all 0.3s ease;
+  }
+
+  .coupon-card:hover {
+    box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.08);
+    border-color: #ccc;
+  }
+
+  .discount-badge {
+    position: absolute;
+    top: -10px;
+    right: 15px;
+    background-color: #dc3545;
+    color: white;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 0.8rem;
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+  }
+
+  .coupon-title {
+    margin-top: 0.5rem;
+    margin-bottom: 0.25rem;
+    font-weight: 600;
+  }
+
+  .coupon-desc {
+    color: #666;
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+  }
+
+  .coupon-code {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.5rem;
+  }
+
+  .coupon-code .code {
+    background-color: #f0f0f0;
+    padding: 5px 12px;
+    border-radius: 4px;
+    font-family: monospace;
+    font-weight: 600;
+    letter-spacing: 1px;
+    font-size: 0.9rem;
+  }
+
+  .btn-copy {
+    margin-left: 10px;
+    padding: 2px 8px;
+    color: #666;
+    border: none;
+    background: transparent;
+  }
+
+  .btn-copy:hover {
+    color: #000;
+  }
+
+  .coupon-actions {
+    margin-top: 1rem;
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  /* Offer Card Styling */
+  .offer-card {
+    position: relative;
+    border-radius: 12px;
+    padding: 1.5rem;
+    height: 100%;
+    display: flex;
+    overflow: hidden;
+    transition: all 0.3s ease;
+  }
+
+  .offer-card:hover {
+    box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.08);
+  }
+
+  .offer-content {
+    width: 80%;
+  }
+
+  .offer-icon {
+    position: absolute;
+    right: -15px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 80px;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.1;
+  }
+
+  .offer-icon i {
+    font-size: 4rem;
+  }
+
+  /* Pagination Styling */
+  .pagination .page-link {
+    color: #333;
+    border: none;
+    padding: 0.5rem 1rem;
+    margin: 0 0.25rem;
+    border-radius: 4px;
+  }
+
+  .pagination .page-link:hover {
+    background-color: #f0f0f0;
+    color: #000;
+  }
+
+  .pagination .page-item.active .page-link {
+    background-color: #dc3545;
+    color: white;
+    border: none;
+  }
+
+  .pagination .page-item.disabled .page-link {
+    color: #999;
+    background-color: transparent;
+    cursor: not-allowed;
+  }
+
+  /* Responsive adjustments */
+  @media (max-width: 767px) {
+    .coupon-card {
+      padding: 1.25rem;
+    }
+    
+    .discount-badge {
+      right: 10px;
+    }
+    
+    .offer-content {
+      width: 100%;
+    }
+    
+    .offer-icon {
+      display: none;
+    }
+
+    .pagination {
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .pagination .page-item {
+      margin-bottom: 0.5rem;
+    }
+  }
+</style>
+
+<script>
+// Toast configuration
+const Toast = Swal.mixin({
+  toast: true,
+  position: "bottom-end",
+  showConfirmButton: false,
+  timer: 3000,
+  timerProgressBar: true,
+  didOpen: (toast) => {
+    toast.addEventListener("mouseenter", Swal.stopTimer);
+    toast.addEventListener("mouseleave", Swal.resumeTimer);
+  },
+});
+
+// Copy coupon code to clipboard
+function copyCouponCode(code) {
+  navigator.clipboard.writeText(code).then(
+    function() {
+      Toast.fire({
+        icon: "success",
+        title: "Coupon code copied to clipboard",
+      });
+    },
+    function() {
+      Toast.fire({
+        icon: "error",
+        title: "Failed to copy coupon code",
+      });
+    }
+  );
+}
+
+// Placeholder for Apply Now button (to be implemented later)
+document.querySelectorAll('.apply-coupon-btn').forEach(button => {
+  button.addEventListener('click', function() {
+    const couponCode = this.getAttribute('data-coupon-code');
+    Toast.fire({
+      icon: "info",
+      title: `Apply coupon ${couponCode} functionality to be implemented`,
+    });
+  });
+});
+</script>
+
+<%- include("../partials/user/footer") %>
