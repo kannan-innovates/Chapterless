@@ -6,16 +6,16 @@ const getUserCoupons = async (req, res) => {
     // Check if user is authenticated
     const userId = req.session.user?._id || req.user?._id;
     if (!userId) {
-      return res.status(401).render('error', { message: 'Please log in to view coupons' });
+      return res.status(401).json({ success: false, message: 'Please log in to view coupons' });
     }
 
     // Verify user exists and is not blocked
     const user = await User.findById(userId).lean();
     if (!user) {
-      return res.status(404).render('error', { message: 'User not found' });
+      return res.status(404).json({ success: false, message: 'User not found' });
     }
     if (user.isBlocked) {
-      return res.status(403).render('error', { message: 'Your account is blocked' });
+      return res.status(403).json({ success: false, message: 'Your account is blocked' });
     }
 
     // Pagination parameters
@@ -58,7 +58,7 @@ const getUserCoupons = async (req, res) => {
 
     // Validate page number
     if (page < 1 || (page > totalPages && totalPages > 0)) {
-      return res.status(404).render('error', { message: 'Page not found' });
+      return res.status(404).json({ success: false, message: 'Page not found' });
     }
 
     // Slice coupons for the current page
@@ -114,7 +114,7 @@ const getUserCoupons = async (req, res) => {
     });
   } catch (error) {
     console.error('Error fetching user coupons:', error);
-    res.status(500).render('error', { message: 'Internal server error' });
+    res.status(500).json({ success: false, message: 'Internal server error' });
   }
 };
 

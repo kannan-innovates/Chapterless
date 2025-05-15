@@ -64,9 +64,6 @@
                         </div>
                       </div>
                     </div>
-                    <div class="coupon-actions">
-                      <button class="btn btn-sm btn-dark apply-coupon-btn" data-coupon-code="<%= coupon.code %>">Apply Now</button>
-                    </div>
                   </div>
                 </div>
               <% }) %>
@@ -272,12 +269,6 @@
     color: #000;
   }
 
-  .coupon-actions {
-    margin-top: 1rem;
-    display: flex;
-    justify-content: flex-end;
-  }
-
   /* Offer Card Styling */
   .offer-card {
     position: relative;
@@ -400,17 +391,6 @@ function copyCouponCode(code) {
     }
   );
 }
-
-// Placeholder for Apply Now button (to be implemented later)
-document.querySelectorAll('.apply-coupon-btn').forEach(button => {
-  button.addEventListener('click', function() {
-    const couponCode = this.getAttribute('data-coupon-code');
-    Toast.fire({
-      icon: "info",
-      title: `Apply coupon ${couponCode} functionality to be implemented`,
-    });
-  });
-});
 </script>
 
 <%- include("../partials/user/footer") %>
