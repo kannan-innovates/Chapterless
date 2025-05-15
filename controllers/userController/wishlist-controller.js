@@ -1,60 +1,79 @@
-const Wishlist = require("../../models/wishlistSchema");
-const Product = require("../../models/productSchema");
-const Cart = require("../../models/cartSchema");
+const Wishlist = require("../../models/wishlistSchema")
+const Product = require("../../models/productSchema")
+const Cart = require("../../models/cartSchema")
+const { getActiveOfferForProduct, calculateDiscount } = require("../../utils/offer-helper")
 
 const getWishlist = async (req, res) => {
   try {
     if (!req.session.user_id) {
-      return res.redirect('/login');
+      return res.redirect("/login")
     }
 
-    const userId = req.session.user_id;
-    const page = parseInt(req.query.page) || 1;
-    const limit = 5;
-    const skip = (page - 1) * limit;
+    const userId = req.session.user_id
+    const page = Number.parseInt(req.query.page) || 1
+    const limit = 5
+    const skip = (page - 1) * limit
 
-    const wishlist = await Wishlist.findOne({ user: userId }).populate('items.product');
-    const cart = await Cart.findOne({ user: userId });
+    const wishlist = await Wishlist.findOne({ user: userId }).populate("items.product")
+    const cart = await Cart.findOne({ user: userId })
 
-    let wishlistItems = [];
-    let totalItems = 0;
-    let inStockItems = 0;
-    let lowStockItems = 0;
-    let outOfStockItems = 0;
-    let cartCount = 0;
-    let wishlistCount = 0;
+    let wishlistItems = []
+    let totalItems = 0
+    let inStockItems = 0
+    let lowStockItems = 0
+    let outOfStockItems = 0
+    let cartCount = 0
+    let wishlistCount = 0
 
     if (wishlist && wishlist.items.length > 0) {
-      wishlistItems = wishlist.items.filter(item => item.product && item.product.isListed && !item.product.isDeleted);
-      totalItems = wishlistItems.length;
-      wishlistCount = totalItems;
+      wishlistItems = wishlist.items.filter((item) => item.product && item.product.isListed && !item.product.isDeleted)
+      totalItems = wishlistItems.length
+      wishlistCount = totalItems
 
-      wishlistItems.forEach(item => {
+      // Get active offers for all products in wishlist
+      for (const item of wishlistItems) {
+        const offer = await getActiveOfferForProduct(item.product._id, item.product.category)
+
+        const { discountPercentage } = calculateDiscount(offer, item.product.regularPrice)
+
+        item.product.activeOffer = offer
+        item.product.discountPercentage = discountPercentage
+      }
+
+      wishlistItems.forEach((item) => {
         if (item.product.stock > 10) {
-          inStockItems++;
+          inStockItems++
         } else if (item.product.stock > 0) {
-          lowStockItems++;
+          lowStockItems++
         } else {
-          outOfStockItems++;
+          outOfStockItems++
         }
-      });
+      })
 
-      wishlistItems = wishlistItems.slice(skip, skip + limit);
+      wishlistItems = wishlistItems.slice(skip, skip + limit)
     }
 
     if (cart) {
-      cartCount = cart.items.reduce((sum, item) => sum + item.quantity, 0);
+      cartCount = cart.items.reduce((sum, item) => sum + item.quantity, 0)
     }
 
-    const totalPages = Math.ceil(totalItems / limit);
+    const totalPages = Math.ceil(totalItems / limit)
 
     // Fetch recently viewed products (randomly select 4 products)
     const recentlyViewed = await Product.aggregate([
       { $match: { isListed: true, isDeleted: false } },
-      { $sample: { size: 4 } }
-    ]);
+      { $sample: { size: 4 } },
+    ])
 
-    res.render('wishlist', {
+    // Get active offers for recently viewed products
+    for (const product of recentlyViewed) {
+      const offer = await getActiveOfferForProduct(product._id, product.category)
+      const { discountPercentage } = calculateDiscount(offer, product.regularPrice)
+      product.activeOffer = offer
+      product.discountPercentage = discountPercentage
+    }
+
+    res.render("wishlist", {
       wishlistItems,
       totalItems,
       inStockItems,
@@ -66,13 +85,14 @@ const getWishlist = async (req, res) => {
       cartCount,
       wishlistCount,
       user: userId ? { id: userId } : null,
-      isAuthenticated: true
-    });
+      isAuthenticated: true,
+    })
   } catch (error) {
-    console.log('Error in rendering wishlist:', error);
-    res.status(500).send("Server Error");
+    console.log("Error in rendering wishlist:", error)
+    res.status(500).send("Server Error")
   }
-};
+}
+
 
 const toggleWishlist = async (req, res) => {
   try {
