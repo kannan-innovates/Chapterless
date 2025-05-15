@@ -9,42 +9,39 @@ const productDetails = async (req, res) => {
     const userId = req.session.user_id;
     const productId = req.params.id;
 
-    // Fetch the product with its category
     const product = await Product.findById(productId).populate("category");
     if (!product || !product.isListed || product.isDeleted) {
       return res.status(404).render("pageNotFound");
     }
 
-    // Get active offer for this product
     const activeOffer = await getActiveOfferForProduct(product._id, product.category._id);
     
-    // Calculate discount if offer exists
-    const { discountAmount, discountPercentage } = calculateDiscount(
+    const { discountAmount, discountPercentage, finalPrice } = calculateDiscount(
       activeOffer, 
       product.regularPrice
     );
     
-    // Add offer information to product
     product.activeOffer = activeOffer;
     product.discountAmount = discountAmount;
     product.discountPercentage = discountPercentage;
-    product.finalPrice = product.salePrice;
+    product.finalPrice = finalPrice || product.salePrice; // Use offer price or fallback to salePrice
 
-    // Fetch related products (randomly select 4 products from different categories)
+
     const relatedProducts = await Product.aggregate([
       { $match: { _id: { $ne: product._id }, isListed: true, isDeleted: false } },
       { $sample: { size: 4 } },
     ]);
 
-    // Get active offers for related products
     for (const relatedProduct of relatedProducts) {
       const offer = await getActiveOfferForProduct(relatedProduct._id, relatedProduct.category);
-      const { discountPercentage } = calculateDiscount(offer, relatedProduct.regularPrice);
+      const { discountPercentage, discountAmount, finalPrice } = calculateDiscount(offer, relatedProduct.regularPrice);
       relatedProduct.activeOffer = offer;
       relatedProduct.discountPercentage = discountPercentage;
+      relatedProduct.discountAmount = discountAmount;
+      relatedProduct.finalPrice = finalPrice || relatedProduct.salePrice;
+      
     }
 
-    // Fetch cart and wishlist counts
     let cartCount = 0;
     let wishlistCount = 0;
     let isInCart = false;

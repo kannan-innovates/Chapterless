@@ -70,23 +70,17 @@
           </div>
           
           <div class="price-section">
-            <h2 class="fs-3 fw-bold mb-0">₹<%= product.salePrice %></h2>
-            <% if (product.regularPrice > product.salePrice) { %>
-              <span class="fs-5 original-price">₹<%= product.regularPrice %></span>
-              <% if (product.activeOffer) { %>
-                <span class="discount-badge">
-                  <%= product.discountPercentage %>% OFF
-                </span>
-                <div class="offer-details mt-2">
-                  <small class="text-success">
-                    <i class="ri-price-tag-3-line"></i> <%= product.activeOffer.title %>
-                  </small>
-                </div>
-              <% } else { %>
-                <span class="discount-badge">
-                  <%= Math.round(((product.regularPrice - product.salePrice) / product.regularPrice) * 100) %>% OFF
-                </span>
-              <% } %>
+            <% if (product.activeOffer && product.discountPercentage > 0) { %>
+              <h2 class="fs-3 fw-bold mb-0">₹<%= product.finalPrice.toFixed(2) %></h2>
+              <span class="fs-5 original-price">₹<%= product.regularPrice.toFixed(2) %></span>
+              <span class="discount-badge"><%= product.discountPercentage %>% OFF</span>
+              <div class="offer-details mt-2">
+                <small class="text-success">
+                  <i class="ri-price-tag-3-line"></i> <%= product.activeOffer.title %>
+                </small>
+              </div>
+            <% } else { %>
+              <h2 class="fs-3 fw-bold mb-0">₹<%= product.finalPrice.toFixed(2) %></h2>
             <% } %>
           </div>
           
@@ -222,7 +216,6 @@
                 <button class="btn btn-outline-dark">Write a Review</button>
               </div>
               <p class="text-muted">No reviews yet. Be the first to review this book!</p>
-              <!-- Add dynamic reviews here when implementing review functionality -->
             </div>
           </div>
         </div>
@@ -271,7 +264,12 @@
                   </h3>
                   <p class="text-muted small mb-2"><%= relatedProduct.author %></p>
                   <div class="d-flex justify-content-between align-items-center">
-                    <span class="fw-bold">₹<%= relatedProduct.salePrice %></span>
+                    <% if (relatedProduct.activeOffer && relatedProduct.discountPercentage > 0) { %>
+                      <span class="original-price">₹<%= relatedProduct.regularPrice.toFixed(2) %></span>
+                      <span class="fw-bold">₹<%= relatedProduct.finalPrice.toFixed(2) %></span>
+                    <% } else { %>
+                      <span class="fw-bold">₹<%= relatedProduct.finalPrice.toFixed(2) %></span>
+                    <% } %>
                     <button class="add-to-cart border-0" data-product-id="<%= relatedProduct._id %>" <%= relatedProduct.stock === 0 ? 'disabled' : '' %>>
                       <i class="ri-shopping-cart-line"></i>
                     </button>
@@ -294,7 +292,7 @@
 <%- include("../partials/user/footer") %>
 
 <style>
-  /* Add to existing styles */
+  /* Existing styles, added original-price */
   .offer-badge {
     position: absolute;
     top: 10px;
@@ -311,6 +309,22 @@
   .related-product .offer-badge {
     font-size: 0.75rem;
     padding: 0.15rem 0.5rem;
+  }
+  
+  .original-price {
+    text-decoration: line-through;
+    color: #6b7280;
+    font-size: 0.875rem;
+    margin-right: 0.5rem;
+  }
+  
+  .discount-badge {
+    background-color: #e53935;
+    color: white;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    border-radius: 2px;
+    margin-left: 0.5rem;
   }
 </style>
 
@@ -454,7 +468,7 @@
             title: 'Error managing wishlist',
             showConfirmButton: false,
             timer: 1500
-            });
+          });
         }
       });
     }
@@ -566,15 +580,12 @@
   });
 
   window.changeImage = function(element, imageUrl) {
-    // Remove active class from all thumbnails
     document.querySelectorAll('.thumbnail').forEach(thumb => {
       thumb.classList.remove('active');
     });
     
-    // Add active class to clicked thumbnail
     element.classList.add('active');
     
-    // Update main image
     document.getElementById('mainImage').src = imageUrl;
   };
 </script>
