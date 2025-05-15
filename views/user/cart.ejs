@@ -1,6 +1,6 @@
 <%- include("../partials/user/header") %>
 <style>
-  /* Add to existing styles */
+  /* Existing styles */
   .offer-badge {
     display: inline-block;
     background-color: #e53935;
@@ -15,6 +15,45 @@
   .offer-title {
     font-size: 0.75rem;
     color: #4caf50;
+  }
+
+  .original-price {
+    text-decoration: line-through;
+    color: #6b7280;
+    font-size: 0.875rem;
+    margin-right: 0.5rem;
+  }
+
+  .discounted-price {
+    color: #000;
+    font-weight: bold;
+  }
+
+  /* Spinner styles */
+  .cart-item.updating {
+    opacity: 0.7;
+    pointer-events: none;
+    position: relative;
+  }
+
+  .cart-item.updating::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 24px;
+    height: 24px;
+    border: 3px solid #000;
+    border-top: 3px solid transparent;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    transform: translate(-50%, -50%);
+    z-index: 10;
+  }
+
+  @keyframes spin {
+    0% { transform: translate(-50%, -50%) rotate(0deg); }
+    100% { transform: translate(-50%, -50%) rotate(360deg); }
   }
 </style>
 <!-- Cart Header Section -->
@@ -84,7 +123,12 @@
                 </div>
                 <div class="col-md-2 col-6 text-end">
                   <div class="d-flex flex-column align-items-end">
-                    <span class="fw-bold mb-2">₹<%= (item.quantity * item.priceAtAddition).toFixed(2) %></span>
+                    <% if (item.product.discountPercentage > 0) { %>
+                      <span class="original-price">₹<%= item.product.regularPrice.toFixed(2) %></span>
+                      <span class="discounted-price fw-bold">₹<%= (item.quantity * item.product.finalPrice).toFixed(2) %></span>
+                    <% } else { %>
+                      <span class="fw-bold">₹<%= (item.quantity * item.product.finalPrice).toFixed(2) %></span>
+                    <% } %>
                     <button class="btn btn-link text-danger p-0 small text-decoration-none remove-item">Remove</button>
                   </div>
                 </div>
@@ -109,8 +153,16 @@
           <!-- Subtotal -->
           <div class="d-flex justify-content-between mb-3">
             <span>Subtotal (<%= cartItems.reduce((sum, item) => sum + item.quantity, 0) %> items)</span>
-            <span class="fw-semibold">₹<%= totalAmount.toFixed(2) %></span>
+            <span class="fw-semibold">₹<%= (parseFloat(totalAmount) + parseFloat(totalDiscount)).toFixed(2) %></span>
           </div>
+          
+          <!-- Discount -->
+          <% if (totalDiscount > 0) { %>
+            <div class="d-flex justify-content-between mb-3 text-success">
+              <span>Discount</span>
+              <span class="fw-semibold">-₹<%= totalDiscount %></span>
+            </div>
+          <% } %>
           
           <!-- Shipping -->
           <div class="d-flex justify-content-between mb-3">
@@ -118,27 +170,12 @@
             <span class="fw-semibold">₹0</span>
           </div>
           
-          <!-- Discount -->
-          <div class="d-flex justify-content-between mb-3 text-success">
-            <span>Discount</span>
-            <!-- Placeholder for discount -->
-          </div>
-          
-          <!-- Promo Code -->
-          <div class="promo-code mb-4">
-            <div class="input-group mb-2">
-              <input type="text" class="form-control" placeholder="Enter promo code" aria-label="Promo code">
-              <button class="btn btn-dark" type="button">Apply</button>
-            </div>
-            <!-- Placeholder for applied promo -->
-          </div>
-          
           <hr class="my-3">
           
           <!-- Total -->
           <div class="d-flex justify-content-between align-items-center mb-4">
             <span class="fs-5 fw-bold">Total</span>
-            <span class="fs-5 fw-bold">₹<%= totalAmount.toFixed(2) %></span>
+            <span class="fs-5 fw-bold">₹<%= totalAmount %></span>
           </div>
           
           <!-- Checkout Button -->
@@ -179,7 +216,6 @@
                 <span class="product-tag">New</span>
               <% } %>
               
-              <!-- Add offer badge if there's an active offer -->
               <% if (product.activeOffer && product.discountPercentage > 0) { %>
                 <span class="position-absolute top-0 end-0 offer-badge"><%= product.discountPercentage %>% OFF</span>
               <% } %>
@@ -195,7 +231,12 @@
               <p class="text-muted small mb-2"><%= product.author %></p>
               <div class="d-flex justify-content-between align-items-center">
                 <div>
-                  <span class="fw-bold">₹<%= product.salePrice %></span>
+                  <% if (product.activeOffer && product.discountPercentage > 0) { %>
+                    <span class="original-price">₹<%= product.regularPrice.toFixed(2) %></span>
+                    <span class="fw-bold">₹<%= product.finalPrice.toFixed(2) %></span>
+                  <% } else { %>
+                    <span class="fw-bold">₹<%= product.finalPrice.toFixed(2) %></span>
+                  <% } %>
                   <span class="stock-status <%= product.stock > 10 ? 'in-stock' : product.stock > 0 ? 'low-stock' : 'out-of-stock' %>">
                     <i class="ri-<%= product.stock > 10 ? 'checkbox-circle-line' : product.stock > 0 ? 'alert-line' : 'close-circle-line' %> me-1"></i>
                     <%= product.stock > 10 ? 'In Stock' : product.stock > 0 ? 'Low Stock' : 'Out of Stock' %>
@@ -216,6 +257,7 @@
 <%- include("../partials/user/footer") %>
 
 <style>
+  /* Existing styles unchanged */
   body {
     font-family: "Inter", sans-serif;
     color: #1a1a1a;
@@ -413,8 +455,6 @@ document.addEventListener('DOMContentLoaded', function () {
   window.addEventListener('scroll', handleOrderSummaryPosition);
 
   // Main Functions
-  // =============
-
   async function clearCart() {
     try {
       const response = await fetch('/cart/clear', {
@@ -462,7 +502,7 @@ document.addEventListener('DOMContentLoaded', function () {
       // Preserve initial values
       quantityInput.dataset.previousValue = quantityInput.value;
       
-      // Debounce timer to prevent rapid-fire requests
+      // Debounce timer
       let updateTimeout;
 
       minusBtn && minusBtn.addEventListener('click', function() {
@@ -521,10 +561,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
   async function updateCartItem(productId, quantity, item) {
     try {
-      // Visual feedback that update is in progress
       item.classList.add('updating');
       
-      // Store current value for rollback if needed
       const quantityInput = item.querySelector('.quantity-input');
       const previousValue = quantityInput.dataset.previousValue;
       
@@ -541,64 +579,54 @@ document.addEventListener('DOMContentLoaded', function () {
         })
       });
       
-      // Check HTTP status
       if (!response.ok) {
         throw new Error(`Server responded with ${response.status}: ${response.statusText}`);
       }
       
-      // Parse response
       const result = await response.json();
 
       if (result.success) {
-        // Update was successful
         quantityInput.dataset.previousValue = quantity;
         
-        // Update price display for this item
-        const priceElement = item.querySelector('.fw-bold');
+        // Update price display
+        const priceElement = item.querySelector('.discounted-price') || item.querySelector('.fw-bold');
         if (priceElement) {
           priceElement.textContent = `₹${result.itemTotal.toFixed(2)}`;
         }
         
-        // Update all summary elements using the server's total
+        // Update order summary
         if (typeof result.totalAmount === 'number') {
           updateOrderSummaryDOM(result.totalAmount, result.cartCount);
         }
         
-        // Update cart count if provided
         if (result.cartCount !== undefined) {
           updateCartCount(result.cartCount);
         } else {
-          // Recalculate from visible items if server didn't provide count
           recalculateCartCount();
         }
 
         showNotification('success', result.message || 'Cart updated successfully');
+        
+        // Reload the page to refresh the summary
+        setTimeout(() => {
+          window.location.reload();
+        }, 1000); // Delay to show notification and spinner
       } else {
-        // Server returned success:false
-        console.error('Update failed:', result.message);
-        
-        // Revert to previous value
         quantityInput.value = previousValue;
-        
         showNotification('error', result.message || 'Failed to update cart');
       }
     } catch (error) {
       console.error('Cart update error:', error);
-      
-      // Revert to previous value on exception
       const quantityInput = item.querySelector('.quantity-input');
       quantityInput.value = quantityInput.dataset.previousValue;
-      
       showNotification('error', 'Error communicating with server');
     } finally {
-      // Remove updating class regardless of outcome
       item.classList.remove('updating');
     }
   }
 
   async function removeCartItem(productId, item) {
     try {
-      // Visual feedback
       item.style.opacity = '0.5';
       
       const response = await fetch('/cart/remove', {
@@ -618,20 +646,16 @@ document.addEventListener('DOMContentLoaded', function () {
       const result = await response.json();
 
       if (result.success) {
-        // Fade out and remove
         item.style.opacity = '0';
         setTimeout(() => {
           item.remove();
           
-          // Update order summary with server-provided total
           if (typeof result.totalAmount === 'number') {
             updateOrderSummaryDOM(result.totalAmount, result.cartCount);
           }
           
-          // Update cart count
           updateCartCount(result.cartCount);
 
-          // Check if cart is now empty
           if (document.querySelectorAll('.cart-item').length === 0) {
             emptyCart.classList.remove('d-none');
             cartItemsContainer.classList.add('d-none');
@@ -641,13 +665,11 @@ document.addEventListener('DOMContentLoaded', function () {
           showNotification('success', result.message || 'Item removed from cart');
         }, 300);
       } else {
-        // Restore opacity
         item.style.opacity = '1';
         showNotification('error', result.message || 'Failed to remove item');
       }
     } catch (error) {
       console.error('Remove item error:', error);
-      // Restore opacity
       item.style.opacity = '1';
       showNotification('error', 'Error removing item');
     }
@@ -684,8 +706,6 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   // Helper Functions
-  // ===============
-
   function updateCartCount(count) {
     if (cartCountElement) {
       cartCountElement.textContent = count;
@@ -706,9 +726,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
-  // Direct DOM manipulation for order summary updates
   function updateOrderSummaryDOM(totalAmount, cartCount) {
-    // Find the subtotal element - capture and try multiple selectors
     const subtotalElement = findElement([
       '#orderSummary .d-flex:first-child .fw-semibold',
       '#orderSummary .d-flex:nth-child(1) .fw-semibold',
@@ -719,10 +737,9 @@ document.addEventListener('DOMContentLoaded', function () {
       subtotalElement.textContent = `₹${totalAmount.toFixed(2)}`;
     }
     
-    // Find the total element - try multiple selectors
     const totalElement = findElement([
       '#orderSummary .d-flex:last-of-type .fs-5.fw-bold:last-child', 
-      '#orderSummary .d-flex:nth-child(5) .fs-5.fw-bold',
+      '#orderSummary .d-flex:nth-child(4) .fs-5.fw-bold',
       '#orderSummary .fs-5.fw-bold:last-child'
     ]);
     
@@ -730,7 +747,6 @@ document.addEventListener('DOMContentLoaded', function () {
       totalElement.textContent = `₹${totalAmount.toFixed(2)}`;
     }
     
-    // Update item counts in the text
     if (cartCount !== undefined) {
       const itemCountElement = findElement([
         '#orderSummary .d-flex:first-child span:first-child',
@@ -741,25 +757,21 @@ document.addEventListener('DOMContentLoaded', function () {
         itemCountElement.textContent = `Subtotal (${cartCount} items)`;
       }
       
-      // Update cart items header
       const cartItemsHeader = document.querySelector('.cart-items h2');
       if (cartItemsHeader) {
         cartItemsHeader.textContent = `Items (${cartCount})`;
       }
     }
     
-    // Last resort: force rebuild of entire order summary
     if (!subtotalElement || !totalElement) {
       rebuildOrderSummary(totalAmount, cartCount);
     }
     
-    // Force browser reflow if needed
     orderSummary.style.display = 'none';
-    orderSummary.offsetHeight; // Force reflow
+    orderSummary.offsetHeight;
     orderSummary.style.display = '';
   }
   
-  // Helper function to find an element using multiple selectors
   function findElement(selectors) {
     for (const selector of selectors) {
       const element = document.querySelector(selector);
@@ -770,42 +782,32 @@ document.addEventListener('DOMContentLoaded', function () {
     return null;
   }
   
-  // Last resort: completely rebuild the order summary
   function rebuildOrderSummary(totalAmount, cartCount) {
-    // Only proceed if the order summary element exists
     if (!orderSummary) {
       return;
     }
     
-    // Create HTML for the entire summary
     const summaryHTML = `
       <h2 class="fs-4 fw-bold mb-4">Order Summary</h2>
       
       <!-- Subtotal -->
       <div class="d-flex justify-content-between mb-3">
         <span>Subtotal (${cartCount || 0} items)</span>
-        <span class="fw-semibold">₹${totalAmount.toFixed(2)}</span>
+        <span class="fw-semibold">₹${(totalAmount + (parseFloat(totalDiscount) || 0)).toFixed(2)}</span>
       </div>
+      
+      <!-- Discount -->
+      ${parseFloat(totalDiscount) > 0 ? `
+        <div class="d-flex justify-content-between mb-3 text-success">
+          <span>Discount</span>
+          <span class="fw-semibold">-₹${parseFloat(totalDiscount).toFixed(2)}</span>
+        </div>
+      ` : ''}
       
       <!-- Shipping -->
       <div class="d-flex justify-content-between mb-3">
         <span>Shipping</span>
         <span class="fw-semibold">₹0</span>
-      </div>
-      
-      <!-- Discount -->
-      <div class="d-flex justify-content-between mb-3 text-success">
-        <span>Discount</span>
-        <!-- Placeholder for discount -->
-      </div>
-      
-      <!-- Promo Code -->
-      <div class="promo-code mb-4">
-        <div class="input-group mb-2">
-          <input type="text" class="form-control" placeholder="Enter promo code" aria-label="Promo code">
-          <button class="btn btn-dark" type="button">Apply</button>
-        </div>
-        <!-- Placeholder for applied promo -->
       </div>
       
       <hr class="my-3">
@@ -831,7 +833,6 @@ document.addEventListener('DOMContentLoaded', function () {
       </div>
     `;
     
-    // Replace the content
     orderSummary.innerHTML = summaryHTML;
   }
 
@@ -876,19 +877,4 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 });
-
-// Add this CSS to provide visual feedback for cart updates
-document.head.insertAdjacentHTML('beforeend', `
-  <style>
-    .cart-item.updating {
-      opacity: 0.7;
-      pointer-events: none;
-      transition: opacity 0.2s ease;
-    }
-    
-    .quantity-input:disabled {
-      background-color: #f8f9fa;
-    }
-  </style>
-`);
 </script>
