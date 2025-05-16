@@ -108,6 +108,8 @@ router.get('/address/:id', isAuthenticated, addressController.getAddressById);
 // Checkout routes
 router.get('/checkout',checkoutController.getCheckout);
 router.post('/checkout/place-order', isAuthenticated, checkoutController.placeOrder);
+router.post("/checkout/apply-coupon", isAuthenticated, checkoutController.applyCoupon)
+router.post("/checkout/remove-coupon", isAuthenticated, checkoutController.removeCoupon)
 
 router.get('/orders',orderController.getOrders);
 router.get('/orders/:id', isAuthenticated, orderController.getOrderDetails);
