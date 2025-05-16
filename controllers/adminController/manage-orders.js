@@ -144,8 +144,25 @@ const getOrderDetails = async (req, res) => {
     order.formattedTotal = `₹${order.total.toFixed(2)}`
     order.formattedSubtotal = `₹${order.subtotal.toFixed(2)}`
     order.formattedTax = `₹${order.tax.toFixed(2)}`
+    
+    // Format discount values
+    order.formattedDiscount = order.discount ? `₹${order.discount.toFixed(2)}` : "₹0.00"
+    order.formattedCouponDiscount = order.couponDiscount ? `₹${order.couponDiscount.toFixed(2)}` : "₹0.00"
+
+    // Format item data
     order.items.forEach((item) => {
       item.formattedPrice = `₹${item.price.toFixed(2)}`
+      
+      // Format discounted price if available
+      if (item.discountedPrice) {
+        item.formattedDiscountedPrice = `₹${item.discountedPrice.toFixed(2)}`
+      }
+      
+      // Format offer discount if available
+      if (item.offerDiscount) {
+        item.formattedOfferDiscount = `₹${item.offerDiscount.toFixed(2)}`
+      }
+      
       // Ensure ISBN and author are available
       item.isbn = item.product ? item.product.isbn : "N/A"
       item.author = item.product ? item.product.author : "N/A"
@@ -361,7 +378,6 @@ const updateOrderStatus = async (req, res) => {
   }
 }
 
-// Reuse the user-side downloadInvoice function for admin
 const downloadInvoice = async (req, res) => {
   try {
     const orderId = req.params.id
@@ -391,8 +407,13 @@ const downloadInvoice = async (req, res) => {
     order.formattedTotal = `₹${order.total.toFixed(2)}`
     order.formattedSubtotal = `₹${order.subtotal.toFixed(2)}`
     order.formattedTax = `₹${order.tax.toFixed(2)}`
+    order.formattedDiscount = order.discount ? `₹${order.discount.toFixed(2)}` : "₹0.00"
+    order.formattedCouponDiscount = order.couponDiscount ? `₹${order.couponDiscount.toFixed(2)}` : "₹0.00"
+
     order.items.forEach((item) => {
       item.formattedPrice = `₹${item.price.toFixed(2)}`
+      item.formattedDiscountedPrice = item.discountedPrice ? `₹${item.discountedPrice.toFixed(2)}` : item.formattedPrice
+      item.formattedOfferDiscount = item.offerDiscount ? `₹${item.offerDiscount.toFixed(2)}` : "₹0.00"
     })
 
     // Create PDF with proper margins
@@ -524,13 +545,49 @@ const downloadInvoice = async (req, res) => {
 
     order.items.forEach((item, index) => {
       doc.fillColor("#333")
-      doc.text(item.title || "Unknown Product", colBook + 5, y + 10, { width: colBookWidth - 10 })
-      doc.text(item.formattedPrice, colPrice + 5, y + 10, { width: colPriceWidth - 10, align: "center" })
+
+      // Book title with offer info if applicable
+      if (item.offerTitle) {
+        doc
+          .font("Helvetica-Bold")
+          .text(item.title || "Unknown Product", colBook + 5, y + 5, { width: colBookWidth - 10 })
+        doc
+          .font("Helvetica")
+          .fontSize(9)
+          .fillColor("#d63031")
+          .text(item.offerTitle, colBook + 5, y + 20, { width: colBookWidth - 10 })
+        doc.fontSize(12).fillColor("#333")
+      } else {
+        doc.text(item.title || "Unknown Product", colBook + 5, y + 10, { width: colBookWidth - 10 })
+      }
+
+      // Price with original and discounted if applicable
+      if (item.discountedPrice && item.discountedPrice < item.price) {
+        doc
+          .font("Helvetica")
+          .fontSize(9)
+          .fillColor("#666")
+          .text(item.formattedPrice, colPrice + 5, y + 5, { width: colPriceWidth - 10, align: "center", strike: true })
+        doc
+          .font("Helvetica-Bold")
+          .fontSize(12)
+          .fillColor("#28a745")
+          .text(item.formattedDiscountedPrice, colPrice + 5, y + 18, { width: colPriceWidth - 10, align: "center" })
+      } else {
+        doc.text(item.formattedPrice, colPrice + 5, y + 10, { width: colPriceWidth - 10, align: "center" })
+      }
+
+      // Quantity
+      doc.fillColor("#333").font("Helvetica")
       doc.text(item.quantity.toString() || "1", colQty + 5, y + 10, { width: colQtyWidth - 10, align: "center" })
-      doc.text(`₹${(item.price * item.quantity).toFixed(2)}`, colSubtotal + 5, y + 10, {
+
+      // Subtotal
+      const itemTotal = item.discountedPrice ? item.discountedPrice * item.quantity : item.price * item.quantity
+      doc.text(`₹${itemTotal.toFixed(2)}`, colSubtotal + 5, y + 10, {
         width: colSubtotalWidth - 10,
         align: "right",
       })
+
       y += rowHeight
     })
 
@@ -543,6 +600,34 @@ const downloadInvoice = async (req, res) => {
     doc.text("Subtotal", summaryLabelX, y + 10, { width: colQtyWidth + 20, align: "right" })
     doc.text(order.formattedSubtotal, summaryValueX + 5, y + 10, { width: colSubtotalWidth - 10, align: "right" })
     y += rowHeight
+
+    // Offer Discount row (if applicable)
+    if (order.discount && order.discount > 0) {
+      doc.text("Offer Discount", summaryLabelX, y + 10, { width: colQtyWidth + 20, align: "right" })
+      doc.fillColor("#28a745").text(`-${order.formattedDiscount}`, summaryValueX + 5, y + 10, {
+        width: colSubtotalWidth - 10,
+        align: "right",
+      })
+      doc.fillColor("#333")
+      y += rowHeight
+    }
+
+    // Coupon Discount row (if applicable)
+    if (order.couponDiscount && order.couponDiscount > 0) {
+      doc.text("Coupon Discount", summaryLabelX, y + 10, { width: colQtyWidth + 20, align: "right" })
+      doc.fillColor("#28a745").text(`-${order.formattedCouponDiscount}`, summaryValueX + 5, y + 10, {
+        width: colSubtotalWidth - 10,
+        align: "right",
+      })
+      if (order.couponCode) {
+        doc
+          .fillColor("#666")
+          .fontSize(9)
+          .text(`(Code: ${order.couponCode})`, summaryLabelX - 80, y + 10, { width: colQtyWidth + 20, align: "right" })
+      }
+      doc.fillColor("#333").fontSize(12)
+      y += rowHeight
+    }
 
     // Tax row
     doc.text("Tax", summaryLabelX, y + 10, { width: colQtyWidth + 20, align: "right" })

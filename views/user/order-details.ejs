@@ -331,41 +331,56 @@
           </div>
         </div>
         
-        <!-- Order Summary -->
-        <div class="col-md-5">
-          <div class="order-card h-100">
-            <div class="card-body p-4">
-              <h5 class="fw-bold mb-3">Order Summary</h5>
-              
-              <dl class="row price-summary">
-                <dt class="col-7">Items (<%= order.items.length %>):</dt>
-                <dd class="col-5"><%= order.formattedSubtotal %></dd>
-                
-                <dt class="col-7">Tax:</dt>
-                <dd class="col-5"><%= order.formattedTax %></dd>
-                
-                <dt class="col-7 total-row">Order Total:</dt>
-                <dd class="col-5 total-row"><%= order.formattedTotal %></dd>
-              </dl>
-              
-              <hr class="my-3">
-              
-              <div class="mb-3">
-                <p class="info-title">Shipping Method</p>
-                <p class="info-value">Standard Shipping</p>
-              </div>
-              
-              <div>
-                <a href="/orders/<%= order._id %>/invoice" class="btn btn-outline-dark btn-sm mb-2 w-100">Download Invoice</a>
-                <% if (['Placed', 'Processing'].includes(order.orderStatus)) { %>
-                  <a href="#" class="btn btn-outline-danger btn-sm w-100">Cancel Order</a>
-                <% } else { %>
-                  <a href="#" class="btn btn-outline-danger btn-sm w-100">Need Help?</a>
-                <% } %>
-              </div>
-            </div>
-          </div>
-        </div>
+       <!-- Order Summary -->
+<div class="col-md-5">
+  <div class="order-card h-100">
+    <div class="card-body p-4">
+      <h5 class="fw-bold mb-3">Order Summary</h5>
+      
+      <dl class="row price-summary">
+        <dt class="col-7">Items (<%= order.items.length %>):</dt>
+        <dd class="col-5"><%= order.formattedSubtotal %></dd>
+        
+        <% if (order.discount && order.discount > 0) { %>
+        <dt class="col-7">Offer Discount:</dt>
+        <dd class="col-5 text-success">-<%= order.formattedDiscount %></dd>
+        <% } %>
+        
+        <% if (order.couponDiscount && order.couponDiscount > 0) { %>
+        <dt class="col-7">Coupon Discount<%= order.couponCode ? ` (${order.couponCode})` : '' %>:</dt>
+        <dd class="col-5 text-success">-<%= order.formattedCouponDiscount %></dd>
+        <% } %>
+        
+        <dt class="col-7">Tax:</dt>
+        <dd class="col-5"><%= order.formattedTax %></dd>
+        
+        <dt class="col-7 total-row">Order Total:</dt>
+        <dd class="col-5 total-row"><%= order.formattedTotal %></dd>
+      </dl>
+      
+      <hr class="my-3">
+      
+      <div class="mb-3">
+        <p class="info-title">Payment Method</p>
+        <p class="info-value"><%= order.paymentMethod || 'Cash on Delivery' %></p>
+      </div>
+      
+      <div class="mb-3">
+        <p class="info-title">Payment Status</p>
+        <p class="info-value"><%= order.paymentStatus || 'Pending' %></p>
+      </div>
+      
+      <div>
+        <a href="/orders/<%= order._id %>/invoice" class="btn btn-outline-dark btn-sm mb-2 w-100">Download Invoice</a>
+        <% if (['Placed', 'Processing'].includes(order.orderStatus)) { %>
+          <a href="#" class="btn btn-outline-danger btn-sm w-100">Cancel Order</a>
+        <% } else { %>
+          <a href="#" class="btn btn-outline-danger btn-sm w-100">Need Help?</a>
+        <% } %>
+      </div>
+    </div>
+  </div>
+</div>
       </div>
     </div>
   </div>

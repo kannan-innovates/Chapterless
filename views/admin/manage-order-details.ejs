@@ -499,6 +499,46 @@
         gap: 1rem;
       }
 
+      /* Offer and coupon styles */
+      .offer-badge {
+        display: inline-block;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        background-color: #fee2e2;
+        color: #b91c1c;
+        margin-top: 0.25rem;
+      }
+
+      .price-original {
+        text-decoration: line-through;
+        color: #6b7280;
+        font-size: 0.75rem;
+        margin-right: 0.5rem;
+      }
+
+      .price-discounted {
+        color: #10b981;
+        font-weight: 600;
+      }
+
+      .discount-text {
+        color: #10b981;
+        font-weight: 600;
+      }
+
+      .coupon-code {
+        display: inline-block;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        background-color: #e0e7ff;
+        color: #4338ca;
+        margin-left: 0.5rem;
+      }
+
       /* Responsive */
       @media (max-width: 1024px) {
         .main-content {
@@ -680,6 +720,11 @@
               
               <div class="data-label">Total</div>
               <div class="data-value"><%= order.formattedTotal %></div>
+              
+              <% if (order.couponCode) { %>
+              <div class="data-label">Coupon Applied</div>
+              <div class="data-value"><%= order.couponCode %></div>
+              <% } %>
             </div>
           </div>
         </div>
@@ -731,6 +776,9 @@
                         >
                         <div class="product-details">
                           <div class="product-name"><%= item.title || 'Unknown Product' %></div>
+                          <% if (item.offerTitle) { %>
+                            <div class="offer-badge"><%= item.offerTitle %></div>
+                          <% } %>
                           <div class="product-meta">
                             <div>ISBN: <%= item.isbn || 'N/A' %></div>
                             <div>Author: <%= item.author || 'N/A' %></div>
@@ -738,10 +786,23 @@
                         </div>
                       </div>
                     </td>
-                    <td class="price-cell"><%= item.formattedPrice %></td>
+                    <td class="price-cell">
+                      <% if (item.discountedPrice && item.discountedPrice < item.price) { %>
+                        <span class="price-original"><%= item.formattedPrice %></span>
+                        <span class="price-discounted"><%= item.formattedDiscountedPrice %></span>
+                      <% } else { %>
+                        <%= item.formattedPrice %>
+                      <% } %>
+                    </td>
                     <td><%= item.quantity || 1 %></td>
                     <td class="subtotal-cell" style="text-align: right;">
-                      ₹<%= (item.price * item.quantity).toFixed(2) %>
+                      <% const itemTotal = item.discountedPrice ? item.discountedPrice * item.quantity : item.price * item.quantity %>
+                      ₹<%= itemTotal.toFixed(2) %>
+                      <% if (item.offerDiscount && item.offerDiscount > 0) { %>
+                        <div class="discount-text" style="font-size: 0.75rem;">
+                          Saved: <%= item.formattedOfferDiscount %>
+                        </div>
+                      <% } %>
                     </td>
                   </tr>
                 <% }) %>
@@ -755,14 +816,36 @@
               <span class="summary-label">Subtotal</span>
               <span class="summary-value"><%= order.formattedSubtotal %></span>
             </div>
+            
+            <% if (order.discount && order.discount > 0) { %>
+            <div class="summary-row">
+              <span class="summary-label">Offer Discount</span>
+              <span class="summary-value discount-text">-<%= order.formattedDiscount %></span>
+            </div>
+            <% } %>
+            
+            <% if (order.couponDiscount && order.couponDiscount > 0) { %>
+            <div class="summary-row">
+              <span class="summary-label">
+                Coupon Discount
+                <% if (order.couponCode) { %>
+                  <span class="coupon-code"><%= order.couponCode %></span>
+                <% } %>
+              </span>
+              <span class="summary-value discount-text">-<%= order.formattedCouponDiscount %></span>
+            </div>
+            <% } %>
+            
             <div class="summary-row">
               <span class="summary-label">Shipping</span>
-              <span class="summary-value">₹<%= order.shipping.toFixed(2) %></span>
+              <span class="summary-value">₹<%= order.shipping ? order.shipping.toFixed(2) : '0.00' %></span>
             </div>
+            
             <div class="summary-row">
               <span class="summary-label">Tax</span>
               <span class="summary-value"><%= order.formattedTax %></span>
             </div>
+            
             <div class="total-row">
               <span class="total-label">Total</span>
               <span class="total-value"><%= order.formattedTotal %></span>
