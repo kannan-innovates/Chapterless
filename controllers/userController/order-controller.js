@@ -332,6 +332,109 @@ const getOrderDetails = async (req, res) => {
 };
 
 /**
+ * Get order success page
+ */
+const getOrderSuccess = async (req, res) => {
+  try {
+    if (!req.session.user_id) {
+      return res.redirect('/login');
+    }
+
+    const userId = req.session.user_id;
+    const orderId = req.params.id;
+
+    // Fetch the order
+    const order = await Order.findOne({
+      _id: orderId,
+      user: userId,
+      isDeleted: false
+    }).lean();
+
+    if (!order) {
+      return res.status(404).render('error', {
+        message: 'Order not found or you do not have access to this order',
+        isAuthenticated: true
+      });
+    }
+
+    // Fetch user data
+    const user = await User.findById(userId, 'fullName email profileImage').lean();
+    if (!user) {
+      return res.redirect('/login');
+    }
+
+    res.render('order-success', {
+      orderNumber: order.orderNumber,
+      orderId: order._id,
+      paymentMethod: order.paymentMethod,
+      total: order.total,
+      user: {
+        id: userId,
+        fullName: user.fullName || 'User',
+        email: user.email || '',
+        profileImage: user.profileImage || '/api/placeholder/120/120'
+      },
+      isAuthenticated: true
+    });
+  } catch (error) {
+    console.error('Error rendering order success page:', error);
+    res.status(500).render('error', { 
+      message: 'Internal server error', 
+      isAuthenticated: req.session.user_id ? true : false 
+    });
+  }
+};
+
+/**
+ * Get payment failure page
+ */
+const getPaymentFailure = async (req, res) => {
+  try {
+    if (!req.session.user_id) {
+      return res.redirect('/login');
+    }
+
+    const userId = req.session.user_id;
+    const errorMessage = req.query.error || 'Payment could not be processed';
+    const orderId = req.query.orderId || null;
+
+    // Fetch user data
+    const user = await User.findById(userId, 'fullName email profileImage').lean();
+    if (!user) {
+      return res.redirect('/login');
+    }
+
+    // If orderId is provided, verify it belongs to the user
+    let order = null;
+    if (orderId) {
+      order = await Order.findOne({
+        _id: orderId,
+        user: userId,
+        isDeleted: false
+      }).lean();
+    }
+
+    res.render('payment-failure', {
+      errorMessage,
+      orderId: order ? order._id : null,
+      user: {
+        id: userId,
+        fullName: user.fullName || 'User',
+        email: user.email || '',
+        profileImage: user.profileImage || '/api/placeholder/120/120'
+      },
+      isAuthenticated: true
+    });
+  } catch (error) {
+    console.error('Error rendering payment failure page:', error);
+    res.status(500).render('error', { 
+      message: 'Internal server error', 
+      isAuthenticated: req.session.user_id ? true : false 
+    });
+  }
+};
+
+/**
  * Generate and download invoice for an order
  */
 const downloadInvoice = async (req, res) => {
@@ -996,6 +1099,8 @@ const reorder = async (req, res) => {
 module.exports = {
   getOrders,
   getOrderDetails,
+  getOrderSuccess,
+  getPaymentFailure,
   downloadInvoice,
   cancelOrder,
   returnOrder,

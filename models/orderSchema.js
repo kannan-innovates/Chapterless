@@ -94,7 +94,7 @@ const orderSchema = new mongoose.Schema({
   shippingAddress: addressSchema,
   paymentMethod: {
     type: String,
-    enum: ["COD", "UPI", "Card", "Wallet"],
+    enum: ["COD", "Razorpay", "UPI", "Card", "Wallet"],
     required: true,
   },
   paymentStatus: {
@@ -145,13 +145,16 @@ const orderSchema = new mongoose.Schema({
     required: true,
     min: 0,
   },
-  deliveredAt: {
-    type: Date,
+  razorpayOrderId: {
+    type: String,
+  },
+  razorpayPaymentId: {
+    type: String,
   },
   processedAt: {
     type: Date,
   },
-   shippedAt: {
+  shippedAt: {
     type: Date,
   },
   deliveredAt: {

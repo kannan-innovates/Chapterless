@@ -1,0 +1,106 @@
+<%- include("../partials/user/header") %>
+
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body p-5 text-center">
+          <div class="mb-4">
+            <div class="error-animation">
+              <svg class="error-circle" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                <circle class="error-circle__circle" cx="50" cy="50" r="45" />
+                <path class="error-circle__line error-circle__line--left" d="M32,32 L68,68" />
+                <path class="error-circle__line error-circle__line--right" d="M32,68 L68,32" />
+              </svg>
+            </div>
+          </div>
+          
+          <h2 class="mb-3 fw-bold text-danger">Payment Failed</h2>
+          <p class="text-muted mb-4">
+            We're sorry, but your payment could not be processed. <%= errorMessage || 'Please try again or choose a different payment method.' %>
+          </p>
+          
+          <div class="alert alert-light border p-3 mb-4 text-start">
+            <h6 class="mb-2">Possible reasons for payment failure:</h6>
+            <ul class="mb-0 ps-3">
+              <li>Insufficient funds in your account</li>
+              <li>Incorrect card details</li>
+              <li>Transaction declined by your bank</li>
+              <li>Network or connectivity issues</li>
+              <li>Payment gateway timeout</li>
+            </ul>
+          </div>
+          
+          <div class="d-grid gap-3">
+            <a href="/checkout" class="btn btn-danger">
+              <i class="bi bi-arrow-repeat me-2"></i>Try Again
+            </a>
+            <% if (orderId) { %>
+            <a href="/orders/<%= orderId %>" class="btn btn-outline-dark">
+              <i class="bi bi-box me-2"></i>View Order Details
+            </a>
+            <% } %>
+            <a href="/" class="btn btn-outline-secondary">
+              <i class="bi bi-shop me-2"></i>Continue Shopping
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  /* Error animation */
+  .error-animation {
+    margin: 0 auto;
+    width: 100px;
+    height: 100px;
+  }
+  
+  .error-circle {
+    width: 100px;
+    height: 100px;
+    position: relative;
+  }
+  
+  .error-circle__circle {
+    fill: none;
+    stroke: #FF5252;
+    stroke-width: 5;
+    stroke-dasharray: 283;
+    stroke-dashoffset: 283;
+    animation: circle-draw 1s ease-in-out forwards;
+  }
+  
+  .error-circle__line {
+    fill: none;
+    stroke: #FF5252;
+    stroke-width: 5;
+    stroke-linecap: round;
+    stroke-dasharray: 50;
+    stroke-dashoffset: 50;
+  }
+  
+  .error-circle__line--left {
+    animation: line-draw 0.5s 0.5s ease-in-out forwards;
+  }
+  
+  .error-circle__line--right {
+    animation: line-draw 0.5s 0.7s ease-in-out forwards;
+  }
+  
+  @keyframes circle-draw {
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+  
+  @keyframes line-draw {
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+</style>
+
+<%- include("../partials/user/footer") %>

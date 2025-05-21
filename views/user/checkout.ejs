@@ -294,15 +294,108 @@
           <div class="card-body p-4">
             <div class="payment-methods">
               <div class="accordion" id="paymentAccordion">
-                <!-- UPI Payment -->
+                <!-- Razorpay Payment -->
                 <div class="accordion-item border mb-3 rounded">
                   <h2 class="accordion-header">
                     <button
                       class="accordion-button"
                       type="button"
                       data-bs-toggle="collapse"
-                      data-bs-target="#upiPayment"
+                      data-bs-target="#razorpayPayment"
                       aria-expanded="true"
+                      aria-controls="razorpayPayment"
+                    >
+                      <div class="d-flex align-items-center">
+                        <div class="payment-icon me-3">
+                          <i class="bi bi-credit-card-2-front"></i>
+                        </div>
+                        <div>
+                          <span class="fw-medium">Pay Online</span>
+                          <small class="d-block text-muted"
+                            >Pay using Credit/Debit Card, UPI, Netbanking, or Wallet</small
+                          >
+                        </div>
+                      </div>
+                    </button>
+                  </h2>
+                  <div
+                    id="razorpayPayment"
+                    class="accordion-collapse collapse show"
+                    data-bs-parent="#paymentAccordion"
+                  >
+                    <div class="accordion-body">
+                      <div
+                        class="alert alert-info d-flex align-items-center"
+                        role="alert"
+                      >
+                        <i class="bi bi-info-circle-fill me-2"></i>
+                        <div>
+                          You will be redirected to Razorpay's secure payment gateway to complete your payment.
+                        </div>
+                      </div>
+                      <div class="payment-options mt-4">
+                        <p class="mb-3">Accepted payment methods:</p>
+                        <div class="d-flex flex-wrap gap-3 mb-3">
+                          <div class="payment-option">
+                            <img
+                              src="/api/placeholder/60/40?query=visa"
+                              alt="Visa"
+                              class="img-fluid"
+                            />
+                          </div>
+                          <div class="payment-option">
+                            <img
+                              src="/api/placeholder/60/40?query=mastercard"
+                              alt="Mastercard"
+                              class="img-fluid"
+                            />
+                          </div>
+                          <div class="payment-option">
+                            <img
+                              src="/api/placeholder/60/40?query=rupay"
+                              alt="RuPay"
+                              class="img-fluid"
+                            />
+                          </div>
+                          <div class="payment-option">
+                            <img
+                              src="/api/placeholder/60/40?query=upi"
+                              alt="UPI"
+                              class="img-fluid"
+                            />
+                          </div>
+                          <div class="payment-option">
+                            <img
+                              src="/api/placeholder/60/40?query=netbanking"
+                              alt="Netbanking"
+                              class="img-fluid"
+                            />
+                          </div>
+                        </div>
+                        <div class="form-check mt-3">
+                          <input
+                            class="form-check-input"
+                            type="checkbox"
+                            id="confirmRazorpay"
+                          />
+                          <label class="form-check-label" for="confirmRazorpay">
+                            I agree to the terms and conditions for online payment
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- UPI Payment -->
+                <div class="accordion-item border mb-3 rounded">
+                  <h2 class="accordion-header">
+                    <button
+                      class="accordion-button collapsed"
+                      type="button"
+                      data-bs-toggle="collapse"
+                      data-bs-target="#upiPayment"
+                      aria-expanded="false"
                       aria-controls="upiPayment"
                     >
                       <div class="d-flex align-items-center">
@@ -321,7 +414,7 @@
                   </h2>
                   <div
                     id="upiPayment"
-                    class="accordion-collapse collapse show"
+                    class="accordion-collapse collapse"
                     data-bs-parent="#paymentAccordion"
                   >
                     <div class="accordion-body">
@@ -1178,6 +1271,8 @@
 />
 <!-- Add SweetAlert2 CDN -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<!-- Add Razorpay CDN -->
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 
 <style>
   /* Custom styling */
@@ -1383,6 +1478,16 @@
 
   .apply-coupon-btn {
     white-space: nowrap;
+  }
+
+  /* Payment options */
+  .payment-option {
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   @media (max-width: 767.98px) {
@@ -1750,6 +1855,10 @@
         displayName = 'Wallet';
         details = 'Pay using your wallet balance';
         iconClass = 'bi bi-wallet2';
+      } else if (activePaymentMethod === 'razorpayPayment') {
+        displayName = 'Pay Online';
+        details = 'Pay using Credit/Debit Card, UPI, Netbanking, or Wallet';
+        iconClass = 'bi bi-credit-card-2-front';
       }
 
       paymentMethodText.textContent = displayName;
@@ -2212,6 +2321,138 @@
       });
     });
 
+    // Razorpay integration
+    let razorpayOrderId = '';
+    
+    // Function to create Razorpay order
+    async function createRazorpayOrder() {
+      const selectedAddress = document.querySelector('input[name="selectedAddress"]:checked');
+      
+      if (!selectedAddress) {
+        Toast.fire({
+          icon: 'error',
+          title: 'Please select a delivery address'
+        });
+        return false;
+      }
+      
+      const confirmRazorpay = document.getElementById('confirmRazorpay');
+      if (!confirmRazorpay.checked) {
+        Toast.fire({
+          icon: 'error',
+          title: 'Please agree to the terms and conditions for online payment'
+        });
+        return false;
+      }
+      
+      try {
+        const response = await fetch('/checkout/create-razorpay-order', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            addressId: selectedAddress.value
+          })
+        });
+        
+        const data = await response.json();
+        
+        if (!data.success) {
+          Toast.fire({
+            icon: 'error',
+            title: data.message || 'Failed to create order'
+          });
+          return false;
+        }
+        
+        razorpayOrderId = data.order.id;
+        return data;
+      } catch (error) {
+        console.error('Error creating Razorpay order:', error);
+        Toast.fire({
+          icon: 'error',
+          title: 'Failed to create order'
+        });
+        return false;
+      }
+    }
+
+    // Function to open Razorpay payment form
+    function openRazorpayCheckout(orderData) {
+      const options = {
+        key: orderData.key,
+        amount: orderData.amount,
+        currency: orderData.currency,
+        name: orderData.name,
+        description: orderData.description,
+        order_id: orderData.order.id,
+        prefill: orderData.prefill,
+        theme: {
+          color: '#212529'
+        },
+        modal: {
+          ondismiss: function() {
+            console.log('Payment modal closed');
+          }
+        },
+        handler: function(response) {
+          verifyPayment(response);
+        }
+      };
+      
+      const rzp = new Razorpay(options);
+      rzp.open();
+    }
+
+    // Function to verify payment
+    async function verifyPayment(response) {
+      try {
+        const verifyResponse = await fetch('/checkout/verify-payment', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(response)
+        });
+        
+        const data = await verifyResponse.json();
+        
+        if (data.success) {
+          // Redirect to success page
+          window.location.href = `/order-success/${data.orderId}`;
+        } else {
+          // Handle payment failure
+          handlePaymentFailure(data.message);
+        }
+      } catch (error) {
+        console.error('Error verifying payment:', error);
+        handlePaymentFailure('Failed to verify payment');
+      }
+    }
+
+    // Function to handle payment failure
+    async function handlePaymentFailure(errorMessage) {
+      try {
+        await fetch('/checkout/payment-failure', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            orderId: razorpayOrderId,
+            error: errorMessage
+          })
+        });
+        
+        // Redirect to failure page
+        window.location.href = `/payment-failure?error=${encodeURIComponent(errorMessage)}`;
+      } catch (error) {
+        console.error('Error handling payment failure:', error);
+        window.location.href = '/payment-failure';
+      }
+    }
+
     // Place order button
     const placeOrderBtn = document.getElementById("placeOrderBtn");
     if (placeOrderBtn) {
@@ -2255,6 +2496,8 @@
             return;
           }
           paymentMethodValue = "COD";
+        } else if (paymentMethod === "razorpayPayment") {
+          paymentMethodValue = "Razorpay";
         } else if (paymentMethod === "upiPayment") {
           paymentMethodValue = "UPI";
         } else if (paymentMethod === "cardPayment") {
@@ -2269,48 +2512,64 @@
           return;
         }
 
-        // Handle non-COD methods
-        if (paymentMethodValue !== "COD") {
-          Toast.fire({
-            icon: "info",
-            title: `${paymentMethodValue} payment is not yet implemented. Please use Cash on Delivery.`,
-          });
-          return;
-        }
-
         this.disabled = true;
         this.innerHTML =
           '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...';
 
         try {
-          const response = await fetch("/checkout/place-order", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              addressId: selectedAddress.value,
-              paymentMethod: paymentMethodValue,
-            }),
-          });
+          if (paymentMethodValue === "Razorpay") {
+            // Handle Razorpay payment
+            const orderData = await createRazorpayOrder();
+            if (orderData) {
+              this.disabled = false;
+              this.innerHTML = '<i class="bi bi-bag-check me-2"></i>Place Order';
+              openRazorpayCheckout(orderData);
+            } else {
+              this.disabled = false;
+              this.innerHTML = '<i class="bi bi-bag-check me-2"></i>Place Order';
+            }
+          } else if (paymentMethodValue === "COD") {
+            // Handle COD payment
+            const response = await fetch("/checkout/place-order", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                addressId: selectedAddress.value,
+                paymentMethod: paymentMethodValue,
+              }),
+            });
 
-          const data = await response.json();
+            const data = await response.json();
 
-          if (data.success) {
-            const orderSuccessModal = new bootstrap.Modal(
-              document.getElementById("orderSuccessModal")
-            );
-            const modalBody = document.querySelector(
-              "#orderSuccessModal .modal-body"
-            );
-            modalBody.querySelector(
-              "p"
-            ).textContent = `Your order #${data.orderNumber} has been placed successfully. You will receive a confirmation email shortly.`;
-            orderSuccessModal.show();
+            if (data.success) {
+              const orderSuccessModal = new bootstrap.Modal(
+                document.getElementById("orderSuccessModal")
+              );
+              const modalBody = document.querySelector(
+                "#orderSuccessModal .modal-body"
+              );
+              modalBody.querySelector(
+                "p"
+              ).textContent = `Your order #${data.orderNumber} has been placed successfully. You will receive a confirmation email shortly.`;
+              orderSuccessModal.show();
+              
+              // Redirect to order success page after a delay
+              setTimeout(() => {
+                window.location.href = `/order-success/${data.orderId}`;
+              }, 3000);
+            } else {
+              Toast.fire({
+                icon: "error",
+                title: data.message || "Failed to place order",
+              });
+            }
           } else {
+            // Handle other payment methods (not implemented yet)
             Toast.fire({
-              icon: "error",
-              title: data.message || "Failed to place order",
+              icon: "info",
+              title: `${paymentMethodValue} payment is not yet implemented. Please use Cash on Delivery or Razorpay.`,
             });
           }
         } catch (error) {

@@ -4,7 +4,7 @@ const User = require('../../models/userSchema');
 const getUserCoupons = async (req, res) => {
   try {
     // Check if user is authenticated
-    const userId = req.session.user?._id || req.user?._id;
+    const userId = req.session.user_id; // Changed from req.session.user?._id
     if (!userId) {
       return res.status(401).json({ success: false, message: 'Please log in to view coupons' });
     }
@@ -111,6 +111,7 @@ const getUserCoupons = async (req, res) => {
       pagination,
       title: 'Available Coupons',
       currentPage: 'coupons',
+      isAuthenticated: true // Add this to ensure the view knows the user is authenticated
     });
   } catch (error) {
     console.error('Error fetching user coupons:', error);

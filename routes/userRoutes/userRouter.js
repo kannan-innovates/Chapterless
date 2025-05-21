@@ -106,20 +106,27 @@ router.patch('/address/:id/default', isAuthenticated, addressController.setDefau
 router.get('/address/:id', isAuthenticated, addressController.getAddressById);
 
 // Checkout routes
-router.get('/checkout',checkoutController.getCheckout);
+router.get('/checkout', isAuthenticated, checkoutController.getCheckout);
 router.post('/checkout/place-order', isAuthenticated, checkoutController.placeOrder);
-router.post("/checkout/apply-coupon", isAuthenticated, checkoutController.applyCoupon)
-router.post("/checkout/remove-coupon", isAuthenticated, checkoutController.removeCoupon)
+router.post("/checkout/apply-coupon", isAuthenticated, checkoutController.applyCoupon);
+router.post("/checkout/remove-coupon", isAuthenticated, checkoutController.removeCoupon);
 
-router.get('/orders',orderController.getOrders);
+// Razorpay routes
+router.post('/checkout/create-razorpay-order', isAuthenticated, checkoutController.createRazorpayOrder);
+router.post('/checkout/verify-payment', isAuthenticated, checkoutController.verifyRazorpayPayment);
+router.post('/checkout/payment-failure', isAuthenticated, checkoutController.handlePaymentFailure);
+
+// Order routes
+router.get('/orders', isAuthenticated, orderController.getOrders);
 router.get('/orders/:id', isAuthenticated, orderController.getOrderDetails);
+router.get('/order-success/:id', isAuthenticated, orderController.getOrderSuccess);
+router.get('/payment-failure', isAuthenticated, orderController.getPaymentFailure);
+router.get('/orders/:id/invoice', isAuthenticated, orderController.downloadInvoice);
 
-router.get('/orders/:id/invoice', orderController.downloadInvoice);
-
+// Password change route
 router.post('/change-password', isAuthenticated, newPasswordController.changePassword);
 
 // Coupon routes
 router.get('/user-coupons', isAuthenticated, userCouponController.getUserCoupons);
-
 
 module.exports = router;
