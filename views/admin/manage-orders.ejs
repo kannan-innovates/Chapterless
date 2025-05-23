@@ -416,6 +416,17 @@
         gap: 0.75rem;
       }
 
+      /* Add new status badge styles for return requests */
+      .status-return-requested {
+        background-color: #e0e7ff;
+        color: #4338ca;
+      }
+      
+      .status-partially-return-requested {
+        background-color: #e0e7ff;
+        color: #4338ca;
+      }
+
       @media (max-width: 1024px) {
         .main-content {
           margin-left: 0;
@@ -530,6 +541,10 @@
                   <option value="Delivered" <%= filters.status === 'Delivered' ? 'selected' : '' %>>Delivered</option>
                   <option value="Cancelled" <%= filters.status === 'Cancelled' ? 'selected' : '' %>>Cancelled</option>
                   <option value="Returned" <%= filters.status === 'Returned' ? 'selected' : '' %>>Returned</option>
+                  <option value="Partially Cancelled" <%= filters.status === 'Partially Cancelled' ? 'selected' : '' %>>Partially Cancelled</option>
+                  <option value="Partially Returned" <%= filters.status === 'Partially Returned' ? 'selected' : '' %>>Partially Returned</option>
+                  <option value="Return Requested" <%= filters.status === 'Return Requested' ? 'selected' : '' %>>Return Requested</option>
+                  <option value="Partially Return Requested" <%= filters.status === 'Partially Return Requested' ? 'selected' : '' %>>Partially Return Requested</option>
                 </select>
               </div>
 
@@ -647,6 +662,18 @@
                           case 'Returned':
                             statusClass = 'status-returned';
                             break;
+                          case 'Partially Cancelled':
+                            statusClass = 'status-cancelled';
+                            break;
+                          case 'Partially Returned':
+                            statusClass = 'status-returned';
+                            break;
+                          case 'Return Requested':
+                            statusClass = 'status-return-requested';
+                            break;
+                          case 'Partially Return Requested':
+                            statusClass = 'status-partially-return-requested';
+                            break;
                           default:
                             statusClass = 'status-placed';
                         }
@@ -666,6 +693,10 @@
                             } else if (order.orderStatus === 'Shipped') {
                               allowedStatuses = ['Delivered'];
                             } else if (order.orderStatus === 'Delivered') {
+                              allowedStatuses = ['Returned'];
+                            } else if (order.orderStatus === 'Partially Cancelled') {
+                              allowedStatuses = ['Shipped', 'Cancelled'];
+                            } else if (order.orderStatus === 'Partially Returned') {
                               allowedStatuses = ['Returned'];
                             } else {
                               allowedStatuses = []; // Cancelled or Returned are terminal states

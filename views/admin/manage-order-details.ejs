@@ -453,6 +453,16 @@
         color: #b45309;
       }
 
+      .status-partially-cancelled {
+        background-color: #fee2e2;
+        color: #b91c1c;
+      }
+
+      .status-partially-returned {
+        background-color: #fef3c7;
+        color: #b45309;
+      }
+
       /* Modal style */
       .update-status-modal {
         width: 400px;
@@ -539,6 +549,67 @@
         margin-left: 0.5rem;
       }
 
+      /* Item status badges */
+      .item-status {
+        display: inline-block;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        margin-left: 0.5rem;
+      }
+
+      .item-status.cancelled {
+        background-color: #fee2e2;
+        color: #b91c1c;
+      }
+
+      .item-status.returned {
+        background-color: #fef3c7;
+        color: #b45309;
+      }
+
+      .item-status.active {
+        background-color: #d1fae5;
+        color: #065f46;
+      }
+
+      /* Item action buttons */
+      .item-actions {
+        display: flex;
+        gap: 0.5rem;
+        margin-top: 0.5rem;
+      }
+
+      .btn-item-action {
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      .btn-cancel-item {
+        background-color: #fee2e2;
+        color: #b91c1c;
+        border: 1px solid #fecaca;
+      }
+
+      .btn-cancel-item:hover {
+        background-color: #fecaca;
+      }
+
+      .btn-return-item {
+        background-color: #fef3c7;
+        color: #b45309;
+        border: 1px solid #fde68a;
+      }
+
+      .btn-return-item:hover {
+        background-color: #fde68a;
+      }
+
       /* Responsive */
       @media (max-width: 1024px) {
         .main-content {
@@ -616,7 +687,7 @@
               Order #<%= order.orderNumber %>
             </h1>
             <div style="display: flex; align-items: center; gap: 12px;">
-              <span class="status-badge status-<%= order.orderStatus.toLowerCase() %>">
+              <span class="status-badge status-<%= order.orderStatus.toLowerCase().replace(' ', '-') %>">
                 <%= order.orderStatus %>
               </span>
               <p
@@ -760,6 +831,7 @@
                   <th style="width: 50%;">Product</th>
                   <th>Price</th>
                   <th>Quantity</th>
+                  <th>Status</th>
                   <th style="text-align: right;">Subtotal</th>
                 </tr>
               </thead>
@@ -795,6 +867,24 @@
                       <% } %>
                     </td>
                     <td><%= item.quantity || 1 %></td>
+                    <td>
+                      <% if (item.status === 'Cancelled') { %>
+                        <span class="item-status cancelled">Cancelled</span>
+                      <% } else if (item.status === 'Returned') { %>
+                        <span class="item-status returned">Returned</span>
+                      <% } else { %>
+                        <span class="item-status active">Active</span>
+                        <% if (hasActiveItems && (order.orderStatus === 'Delivered' || order.orderStatus === 'Partially Returned')) { %>
+                          <div class="item-actions">
+                            <button class="btn-item-action btn-return-item" data-item-id="<%= item._id %>" data-order-id="<%= order._id %>">Return</button>
+                          </div>
+                        <% } else if (hasActiveItems && (order.orderStatus === 'Placed' || order.orderStatus === 'Processing' || order.orderStatus === 'Partially Cancelled')) { %>
+                          <div class="item-actions">
+                            <button class="btn-item-action btn-cancel-item" data-item-id="<%= item._id %>" data-order-id="<%= order._id %>">Cancel</button>
+                          </div>
+                        <% } %>
+                      <% } %>
+                    </td>
                     <td class="subtotal-cell" style="text-align: right;">
                       <% const itemTotal = item.discountedPrice ? item.discountedPrice * item.quantity : item.price * item.quantity %>
                       ₹<%= itemTotal.toFixed(2) %>
@@ -853,151 +943,529 @@
           </div>
         </div>
 
+        <!-- Return Requests Section -->
+        <% if (hasReturnRequestedItems) { %>
+        <div class="order-card mb-4">
+          <div class="card-body p-4">
+            <h5 class="fw-bold mb-3">Return Requests</h5>
+            <div class="table-container">
+              <table>
+                <thead>
+                  <tr>
+                    <th style="width: 50%;">Product</th>
+                    <th>Price</th>
+                    <th>Quantity</th>
+                    <th>Return Reason</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% order.items.forEach(item => { %>
+                    <% if (item.status === 'Return Requested') { %>
+                      <tr>
+                        <td>
+                          <div class="product-cell">
+                            <img 
+                              src="<%= item.image || '/api/placeholder/60/75' %>" 
+                              alt="<%= item.title || 'Product' %>" 
+                              class="product-image"
+                              onerror="this.src='/api/placeholder/60/75'"
+                            >
+                            <div class="product-details">
+                              <div class="product-name"><%= item.title || 'Unknown Product' %></div>
+                              <div class="product-meta">
+                                <div>ISBN: <%= item.isbn || 'N/A' %></div>
+                                <div>Author: <%= item.author || 'N/A' %></div>
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                        <td class="price-cell">
+                          <%= item.formattedPrice %>
+                        </td>
+                        <td><%= item.quantity || 1 %></td>
+                        <td><%= item.returnReason || 'No reason provided' %></td>
+                        <td>
+                          <div class="return-actions">
+                            <button class="btn btn-success btn-sm approve-return-btn" data-item-id="<%= item._id %>" data-order-id="<%= order._id %>">
+                              <i class="ri-check-line"></i> Approve
+                            </button>
+                            <button class="btn btn-danger btn-sm reject-return-btn" data-item-id="<%= item._id %>" data-order-id="<%= order._id %>">
+                              <i class="ri-close-line"></i> Reject
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    <% } %>
+                  <% }) %>
+                </tbody>
+              </table>
+            </div>
+            
+            <% if (order.orderStatus === 'Return Requested') { %>
+              <div class="d-flex justify-content-end mt-3">
+                <button class="btn btn-success me-2 approve-all-returns-btn" data-order-id="<%= order._id %>">
+                  <i class="ri-check-double-line"></i> Approve All Returns
+                </button>
+                <button class="btn btn-danger reject-all-returns-btn" data-order-id="<%= order._id %>">
+                  <i class="ri-close-line"></i> Reject All Returns
+                </button>
+              </div>
+            <% } %>
+          </div>
+        </div>
+        <% } %>
+
         <!-- Additional Notes -->
         <div class="note-section">
           <h2 class="section-title">Additional Notes</h2>
           <div class="note-text">
-            No additional notes provided by the customer.
+            <% if (order.cancellationReason) { %>
+              <strong>Cancellation Reason:</strong> <%= order.cancellationReason %><br><br>
+            <% } else if (order.returnReason) { %>
+              <strong>Return Reason:</strong> <%= order.returnReason %><br><br>
+            <% } else { %>
+              No additional notes provided by the customer.
+            <% } %>
           </div>
         </div>
       </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.19/dist/sweetalert2.all.min.js"></script>
-  <script>
-  document.addEventListener('DOMContentLoaded', () => {
-    // Update Status Button Functionality
-    const updateStatusBtn = document.getElementById('update-status-btn');
-    
-    updateStatusBtn.addEventListener('click', function() {
-      // Define allowed status transitions based on current status
-      const currentStatus = '<%= order.orderStatus %>';
-      let allowedStatuses = [];
-      if (currentStatus === 'Placed') {
-        allowedStatuses = ['Processing', 'Cancelled'];
-      } else if (currentStatus === 'Processing') {
-        allowedStatuses = ['Shipped', 'Cancelled'];
-      } else if (currentStatus === 'Shipped') {
-        allowedStatuses = ['Delivered'];
-      } else if (currentStatus === 'Delivered') {
-        allowedStatuses = ['Returned'];
-      } else {
-        allowedStatuses = []; // Cancelled or Returned are terminal states
-      }
+    <script>
+      document.addEventListener('DOMContentLoaded', () => {
+        // Update Status Button Functionality
+        const updateStatusBtn = document.getElementById('update-status-btn');
+        
+        updateStatusBtn.addEventListener('click', function() {
+          // Define allowed status transitions based on current status
+          const currentStatus = '<%= order.orderStatus %>';
+          let allowedStatuses = [];
+          if (currentStatus === 'Placed') {
+            allowedStatuses = ['Processing', 'Cancelled'];
+          } else if (currentStatus === 'Processing') {
+            allowedStatuses = ['Shipped', 'Cancelled'];
+          } else if (currentStatus === 'Shipped') {
+            allowedStatuses = ['Delivered'];
+          } else if (currentStatus === 'Delivered') {
+            allowedStatuses = ['Returned'];
+          } else if (currentStatus === 'Partially Cancelled') {
+            allowedStatuses = ['Shipped', 'Cancelled'];
+          } else if (currentStatus === 'Partially Returned') {
+            allowedStatuses = ['Returned'];
+          } else {
+            allowedStatuses = []; // Cancelled or Returned are terminal states
+          }
 
-      // If no transitions are allowed, show a message
-      if (allowedStatuses.length === 0) {
-        Swal.fire({
-          title: 'Cannot Update Status',
-          text: `The order is in ${currentStatus} state and cannot be updated further.`,
-          icon: 'info',
-          confirmButtonColor: '#6f42c1'
-        });
-        return;
-      }
-
-      // Build the status dropdown options
-      let statusOptions = allowedStatuses.map(status => 
-        `<option value="${status}">${status}</option>`
-      ).join('');
-
-      Swal.fire({
-        title: 'Update Order Status',
-        html: `
-          <div class="form-group">
-            <label class="form-label">New Status</label>
-            <select class="form-select" id="status-select">
-              ${statusOptions}
-            </select>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Status Message (Optional)</label>
-            <textarea class="form-textarea" id="status-message" placeholder="Add details about this status update..."></textarea>
-          </div>
-        `,
-        showCancelButton: true,
-        confirmButtonColor: '#6f42c1',
-        cancelButtonColor: '#d1d5db',
-        confirmButtonText: 'Update Status',
-        cancelButtonText: 'Cancel',
-        customClass: {
-          popup: 'update-status-modal'
-        },
-        focusConfirm: false,
-        preConfirm: () => {
-          const statusSelect = document.getElementById('status-select');
-          const statusMessage = document.getElementById('status-message');
-          
-          return {
-            status: statusSelect.value,
-            message: statusMessage.value
-          };
-        }
-      }).then((result) => {
-        if (result.isConfirmed) {
-          // Send AJAX request to update status
-          fetch(`/admin/orders/<%= order._id %>/status`, {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ status: result.value.status }),
-          })
-          .then(response => {
-            if (!response.ok) {
-              throw new Error('Failed to update order status');
-            }
-            return response.json();
-          })
-          .then(data => {
-            // Success message
+          // If no transitions are allowed, show a message
+          if (allowedStatuses.length === 0) {
             Swal.fire({
-              title: 'Status Updated!',
-              text: `Order status has been updated to ${result.value.status}`,
-              icon: 'success',
+              title: 'Cannot Update Status',
+              text: `The order is in ${currentStatus} state and cannot be updated further.`,
+              icon: 'info',
               confirmButtonColor: '#6f42c1'
-            }).then(() => {
-              // Refresh the page to show updated status
-              window.location.reload();
             });
-          })
-          .catch(error => {
-            // Error message
+            return;
+          }
+
+          // Build the status dropdown options
+          let statusOptions = allowedStatuses.map(status => 
+            `<option value="${status}">${status}</option>`
+          ).join('');
+
+          Swal.fire({
+            title: 'Update Order Status',
+            html: `
+              <div class="form-group">
+                <label class="form-label">New Status</label>
+                <select class="form-select" id="status-select">
+                  ${statusOptions}
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Status Message (Optional)</label>
+                <textarea class="form-textarea" id="status-message" placeholder="Add details about this status update..."></textarea>
+              </div>
+            `,
+            showCancelButton: true,
+            confirmButtonColor: '#6f42c1',
+            cancelButtonColor: '#d1d5db',
+            confirmButtonText: 'Update Status',
+            cancelButtonText: 'Cancel',
+            customClass: {
+              popup: 'update-status-modal'
+            },
+            focusConfirm: false,
+            preConfirm: () => {
+              const statusSelect = document.getElementById('status-select');
+              const statusMessage = document.getElementById('status-message');
+              
+              return {
+                status: statusSelect.value,
+                message: statusMessage.value
+              };
+            }
+          }).then((result) => {
+            if (result.isConfirmed) {
+              // Send AJAX request to update status
+              fetch(`/admin/orders/<%= order._id %>/status`, {
+                method: 'PUT',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ status: result.value.status }),
+              })
+              .then(response => {
+                if (!response.ok) {
+                  throw new Error('Failed to update order status');
+                }
+                return response.json();
+              })
+              .then(data => {
+                // Success message
+                Swal.fire({
+                  title: 'Status Updated!',
+                  text: `Order status has been updated to ${result.value.status}`,
+                  icon: 'success',
+                  confirmButtonColor: '#6f42c1'
+                }).then(() => {
+                  // Refresh the page to show updated status
+                  window.location.reload();
+                });
+              })
+              .catch(error => {
+                // Error message
+                Swal.fire({
+                  title: 'Error!',
+                  text: error.message,
+                  icon: 'error',
+                  confirmButtonColor: '#6f42c1'
+                });
+              });
+            }
+          });
+        });
+        
+        // Item status update functionality
+        document.querySelectorAll('.btn-cancel-item, .btn-return-item').forEach(button => {
+          button.addEventListener('click', function() {
+            const itemId = this.getAttribute('data-item-id');
+            const orderId = this.getAttribute('data-order-id');
+            const action = this.classList.contains('btn-cancel-item') ? 'cancel' : 'return';
+            
             Swal.fire({
-              title: 'Error!',
-              text: error.message,
-              icon: 'error',
-              confirmButtonColor: '#6f42c1'
+              title: `${action === 'cancel' ? 'Cancel' : 'Return'} Item`,
+              html: `
+                <div class="form-group">
+                  <label class="form-label">Reason for ${action === 'cancel' ? 'Cancellation' : 'Return'}</label>
+                  <textarea class="form-textarea" id="reason" placeholder="Please provide a reason..."></textarea>
+                </div>
+              `,
+              showCancelButton: true,
+              confirmButtonColor: '#6f42c1',
+              cancelButtonColor: '#d1d5db',
+              confirmButtonText: `${action === 'cancel' ? 'Cancel' : 'Return'} Item`,
+              cancelButtonText: 'Close',
+              customClass: {
+                popup: 'update-status-modal'
+              },
+              focusConfirm: false,
+              preConfirm: () => {
+                const reason = document.getElementById('reason').value;
+                if (!reason.trim()) {
+                  Swal.showValidationMessage('Please provide a reason');
+                  return false;
+                }
+                return { reason };
+              }
+            }).then((result) => {
+              if (result.isConfirmed) {
+                // Send AJAX request to update item status
+                fetch(`/admin/orders/${orderId}/items/${itemId}/status`, {
+                  method: 'PUT',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({ 
+                    status: action === 'cancel' ? 'Cancelled' : 'Returned',
+                    reason: result.value.reason
+                  }),
+                })
+                .then(response => {
+                  if (!response.ok) {
+                    throw new Error(`Failed to ${action} item`);
+                  }
+                  return response.json();
+                })
+                .then(data => {
+                  // Success message
+                  Swal.fire({
+                    title: 'Item Updated!',
+                    text: data.message,
+                    icon: 'success',
+                    confirmButtonColor: '#6f42c1'
+                  }).then(() => {
+                    // Refresh the page to show updated status
+                    window.location.reload();
+                  });
+                })
+                .catch(error => {
+                  // Error message
+                  Swal.fire({
+                    title: 'Error!',
+                    text: error.message,
+                    icon: 'error',
+                    confirmButtonColor: '#6f42c1'
+                  });
+                });
+              }
+            });
+          });
+        });
+        
+        // Invoice download button
+        document.querySelectorAll('.btn-outline').forEach(btn => {
+          btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            Swal.fire({
+              title: 'Generating Invoice',
+              text: 'Please wait while we generate the invoice...',
+              allowOutsideClick: false,
+              didOpen: () => {
+                Swal.showLoading();
+              }
+            });
+            
+            // Initiate the download
+            window.location.href = this.href;
+            
+            // Close the loader after 2 seconds (assuming download has started)
+            setTimeout(() => {
+              Swal.close();
+            }, 2000);
+          });
+        });
+
+        // Add event listeners for return approval buttons
+        document.querySelectorAll('.approve-return-btn').forEach(button => {
+          button.addEventListener('click', function() {
+            const itemId = this.getAttribute('data-item-id');
+            const orderId = this.getAttribute('data-order-id');
+            
+            Swal.fire({
+              title: 'Approve Return',
+              text: 'Are you sure you want to approve this return request?',
+              icon: 'question',
+              showCancelButton: true,
+              confirmButtonColor: '#28a745',
+              cancelButtonColor: '#d33',
+              confirmButtonText: 'Yes, approve it!'
+            }).then((result) => {
+              if (result.isConfirmed) {
+                // Send AJAX request to approve return
+                fetch(`/admin/orders/${orderId}/return-request`, {
+                  method: 'PUT',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({ 
+                    itemId: itemId,
+                    approved: true
+                  }),
+                })
+                .then(response => {
+                  if (!response.ok) {
+                    throw new Error('Failed to approve return');
+                  }
+                  return response.json();
+                })
+                .then(data => {
+                  Swal.fire({
+                    title: 'Approved!',
+                    text: data.message,
+                    icon: 'success',
+                    confirmButtonColor: '#6f42c1'
+                  }).then(() => {
+                    window.location.reload();
+                  });
+                })
+                .catch(error => {
+                  Swal.fire({
+                    title: 'Error!',
+                    text: error.message,
+                    icon: 'error',
+                    confirmButtonColor: '#6f42c1'
+                  });
+                });
+              }
+            });
+          });
+        });
+        
+        // Reject single return
+        document.querySelectorAll('.reject-return-btn').forEach(button => {
+          button.addEventListener('click', function() {
+            const itemId = this.getAttribute('data-item-id');
+            const orderId = this.getAttribute('data-order-id');
+            
+            Swal.fire({
+              title: 'Reject Return',
+              text: 'Are you sure you want to reject this return request?',
+              icon: 'warning',
+              showCancelButton: true,
+              confirmButtonColor: '#d33',
+              cancelButtonColor: '#3085d6',
+              confirmButtonText: 'Yes, reject it!'
+            }).then((result) => {
+              if (result.isConfirmed) {
+                // Send AJAX request to reject return
+                fetch(`/admin/orders/${orderId}/return-request`, {
+                  method: 'PUT',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({ 
+                    itemId: itemId,
+                    approved: false
+                  }),
+                })
+                .then(response => {
+                  if (!response.ok) {
+                    throw new Error('Failed to reject return');
+                  }
+                  return response.json();
+                })
+                .then(data => {
+                  Swal.fire({
+                    title: 'Rejected!',
+                    text: data.message,
+                    icon: 'success',
+                    confirmButtonColor: '#6f42c1'
+                  }).then(() => {
+                    window.location.reload();
+                  });
+                })
+                .catch(error => {
+                  Swal.fire({
+                    title: 'Error!',
+                    text: error.message,
+                    icon: 'error',
+                    confirmButtonColor: '#6f42c1'
+                  });
+                });
+              }
+            });
+          });
+        });
+        
+        // Approve all returns
+        const approveAllBtn = document.querySelector('.approve-all-returns-btn');
+        if (approveAllBtn) {
+          approveAllBtn.addEventListener('click', function() {
+            const orderId = this.getAttribute('data-order-id');
+            
+            Swal.fire({
+              title: 'Approve All Returns',
+              text: 'Are you sure you want to approve all return requests for this order?',
+              icon: 'question',
+              showCancelButton: true,
+              confirmButtonColor: '#28a745',
+              cancelButtonColor: '#d33',
+              confirmButtonText: 'Yes, approve all!'
+            }).then((result) => {
+              if (result.isConfirmed) {
+                // Send AJAX request to approve all returns
+                fetch(`/admin/orders/${orderId}/return-request`, {
+                  method: 'PUT',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({ approved: true }),
+                })
+                .then(response => {
+                  if (!response.ok) {
+                    throw new Error('Failed to approve returns');
+                  }
+                  return response.json();
+                })
+                .then(data => {
+                  Swal.fire({
+                    title: 'Approved!',
+                    text: data.message,
+                    icon: 'success',
+                    confirmButtonColor: '#6f42c1'
+                  }).then(() => {
+                    window.location.reload();
+                  });
+                })
+                .catch(error => {
+                  Swal.fire({
+                    title: 'Error!',
+                    text: error.message,
+                    icon: 'error',
+                    confirmButtonColor: '#6f42c1'
+                  });
+                });
+              }
+            });
+          });
+        }
+        
+        // Reject all returns
+        const rejectAllBtn = document.querySelector('.reject-all-returns-btn');
+        if (rejectAllBtn) {
+          rejectAllBtn.addEventListener('click', function() {
+            const orderId = this.getAttribute('data-order-id');
+            
+            Swal.fire({
+              title: 'Reject All Returns',
+              text: 'Are you sure you want to reject all return requests for this order?',
+              icon: 'warning',
+              showCancelButton: true,
+              confirmButtonColor: '#d33',
+              cancelButtonColor: '#3085d6',
+              confirmButtonText: 'Yes, reject all!'
+            }).then((result) => {
+              if (result.isConfirmed) {
+                // Send AJAX request to reject all returns
+                fetch(`/admin/orders/${orderId}/return-request`, {
+                  method: 'PUT',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({ approved: false }),
+                })
+                .then(response => {
+                  if (!response.ok) {
+                    throw new Error('Failed to reject returns');
+                  }
+                  return response.json();
+                })
+                .then(data => {
+                  Swal.fire({
+                    title: 'Rejected!',
+                    text: data.message,
+                    icon: 'success',
+                    confirmButtonColor: '#6f42c1'
+                  }).then(() => {
+                    window.location.reload();
+                  });
+                })
+                .catch(error => {
+                  Swal.fire({
+                    title: 'Error!',
+                    text: error.message,
+                    icon: 'error',
+                    confirmButtonColor: '#6f42c1'
+                  });
+                });
+              }
             });
           });
         }
       });
-    });
-    
-    // Invoice download button
-    document.querySelectorAll('.btn-outline').forEach(btn => {
-      btn.addEventListener('click', function(e) {
-        e.preventDefault();
-        
-        Swal.fire({
-          title: 'Generating Invoice',
-          text: 'Please wait while we generate the invoice...',
-          allowOutsideClick: false,
-          didOpen: () => {
-            Swal.showLoading();
-          }
-        });
-        
-        // Initiate the download
-        window.location.href = this.href;
-        
-        // Close the loader after 2 seconds (assuming download has started)
-        setTimeout(() => {
-          Swal.close();
-        }, 2000);
-      });
-    });
-  });
-</script>
+    </script>
   </body>
 </html>

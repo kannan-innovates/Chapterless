@@ -75,6 +75,7 @@ adminRoute.get('/getOrders', manageOrderController.getManageOrders);
 adminRoute.get('/orders/:id', manageOrderController.getOrderDetails);
 adminRoute.put('/orders/:id/status', manageOrderController.updateOrderStatus);
 adminRoute.get('/orders/:id/invoice', manageOrderController.downloadInvoice);
+adminRoute.put('/orders/:id/return-request', manageOrderController.approveReturnRequest);
 
 // Coupon Management
 adminRoute.get('/coupons', couponController.getCoupons);

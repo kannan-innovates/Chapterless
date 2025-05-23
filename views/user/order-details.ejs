@@ -81,6 +81,11 @@
     border-color: #dc3545;
   }
 
+  .timeline-item.returned::before {
+    background-color: #ffc107;
+    border-color: #ffc107;
+  }
+
   .badge {
     font-weight: 500;
     padding: 0.5em 0.75em;
@@ -194,6 +199,112 @@
     padding-top: 0.5rem;
     margin-top: 0.5rem;
   }
+
+  /* Styles for item status */
+  .item-status {
+    display: inline-block;
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    margin-left: 0.5rem;
+  }
+
+  .item-status.cancelled {
+    background-color: #f8d7da;
+    color: #842029;
+  }
+
+  .item-status.returned {
+    background-color: #fff3cd;
+    color: #664d03;
+  }
+
+  .item-status.active {
+    background-color: #d1e7dd;
+    color: #0f5132;
+  }
+
+  /* Styles for modal */
+  .modal-content {
+    border-radius: 0.5rem;
+  }
+
+  .modal-header {
+    border-bottom: 1px solid #dee2e6;
+    padding: 1rem 1.5rem;
+  }
+
+  .modal-body {
+    padding: 1.5rem;
+  }
+
+  .modal-footer {
+    border-top: 1px solid #dee2e6;
+    padding: 1rem 1.5rem;
+  }
+
+  .form-label {
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+  }
+
+  .form-control {
+    border-radius: 0.375rem;
+    border: 1px solid #dee2e6;
+    padding: 0.75rem;
+  }
+
+  .form-control:focus {
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+  }
+  
+  /* Toast notification styles */
+  .toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+  }
+  
+  .toast {
+    min-width: 300px;
+  }
+  
+  .toast-success {
+    background-color: #d1e7dd;
+    color: #0f5132;
+    border-color: #badbcc;
+  }
+  
+  .toast-error {
+    background-color: #f8d7da;
+    color: #842029;
+    border-color: #f5c2c7;
+  }
+  
+  .toast-warning {
+    background-color: #fff3cd;
+    color: #664d03;
+    border-color: #ffecb5;
+  }
+  
+  .toast-info {
+    background-color: #cff4fc;
+    color: #055160;
+    border-color: #b6effb;
+  }
+
+  /* Add this for the new return requested status */
+  .item-status.return-requested {
+    background-color: #e2e3fe;
+    color: #4338ca;
+  }
+  
+  .timeline-item.return-requested::before {
+    background-color: #818cf8;
+    border-color: #4338ca;
+  }
 </style>
 
 <div class="container py-4">
@@ -228,10 +339,14 @@
               <span class="badge bg-warning text-dark">Processing</span>
             <% } else if (order.orderStatus === 'Cancelled') { %>
               <span class="badge bg-secondary">Cancelled</span>
+            <% } else if (order.orderStatus === 'Partially Cancelled') { %>
+              <span class="badge bg-secondary">Partially Cancelled</span>
             <% } else if (order.orderStatus === 'Placed') { %>
               <span class="badge bg-info">Placed</span>
             <% } else if (order.orderStatus === 'Returned') { %>
               <span class="badge bg-danger">Returned</span>
+            <% } else if (order.orderStatus === 'Partially Returned') { %>
+              <span class="badge bg-danger">Partially Returned</span>
             <% } %>
           </div>
         </div>
@@ -242,8 +357,30 @@
         <div class="card-body p-4">
           <h5 class="fw-bold mb-3">Order Status</h5>
           <div class="order-timeline">
+            <% if (order.orderStatus === 'Return Requested' || order.orderStatus === 'Partially Return Requested' || order.returnRequestedAt) { %>
+              <% timeline.push({
+                status: order.orderStatus === 'Partially Return Requested' ? 'Partially Return Requested' : 'Return Requested',
+                timestamp: order.returnRequestedAt 
+                  ? new Date(order.returnRequestedAt).toLocaleString('en-US', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })
+                  : new Date().toLocaleString('en-US', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    }),
+                completed: true,
+                return_requested: true
+              }); %>
+            <% } %>
             <% timeline.forEach(item => { %>
-              <div class="timeline-item <%= item.completed ? 'completed' : item.active ? 'active' : item.cancelled ? 'cancelled' : 'pending' %>">
+              <div class="timeline-item <%= item.completed ? 'completed' : item.active ? 'active' : item.cancelled ? 'cancelled' : item.returned ? 'returned' : item.return_requested ? 'return-requested' : 'pending' %>">
                 <p class="fw-medium mb-0"><%= item.status %></p>
                 <p class="text-muted small mb-0"><%= item.timestamp %></p>
               </div>
@@ -269,18 +406,128 @@
               </div>
               <div class="flex-grow-1">
                 <div class="d-flex justify-content-between mb-2">
-                  <h6 class="fw-semibold mb-1"><%= item.title || 'Unknown Product' %></h6>
+                  <h6 class="fw-semibold mb-1">
+                    <%= item.title || 'Unknown Product' %>
+                    <% if (item.status === 'Cancelled') { %>
+                      <span class="item-status cancelled">Cancelled</span>
+                    <% } else if (item.status === 'Returned') { %>
+                      <span class="item-status returned">Returned</span>
+                    <% } else if (item.status === 'Return Requested') { %>
+                      <span class="item-status return-requested">Return Requested</span>
+                    <% } else if (item.status === 'Active') { %>
+                      <span class="item-status active">Active</span>
+                    <% } %>
+                  </h6>
                   <p class="fw-medium mb-0"><%= item.formattedPrice %></p>
                 </div>
                 <p class="mb-2">Qty: <%= item.quantity || 1 %></p>
-                <% if (order.orderStatus === 'Delivered') { %>
-                  <div class="d-flex flex-wrap gap-2">
+                <div class="d-flex flex-wrap gap-2">
+                  <% if (order.orderStatus === 'Delivered' && item.status === 'Active') { %>
                     <a href="#" class="btn btn-outline-dark btn-sm">Write a Review</a>
-                    <a href="#" class="btn btn-outline-dark btn-sm">Buy Again</a>
-                  </div>
-                <% } %>
+                    <a href="#" class="btn btn-outline-dark btn-sm" onclick="reorder('<%= order._id %>')">Buy Again</a>
+                    <button 
+                      class="btn btn-outline-danger btn-sm" 
+                      data-bs-toggle="modal" 
+                      data-bs-target="#returnItemModal<%= item.product %>"
+                    >
+                      Return Item
+                    </button>
+                  <% } else if (['Placed', 'Processing'].includes(order.orderStatus) && item.status === 'Active') { %>
+                    <button 
+                      class="btn btn-outline-danger btn-sm" 
+                      data-bs-toggle="modal" 
+                      data-bs-target="#cancelItemModal<%= item.product %>"
+                    >
+                      Cancel Item
+                    </button>
+                  <% } %>
+                </div>
               </div>
             </div>
+
+            <!-- Cancel Item Modal -->
+            <% if (['Placed', 'Processing'].includes(order.orderStatus) && item.status === 'Active') { %>
+              <div class="modal fade" id="cancelItemModal<%= item.product %>" tabindex="-1" aria-labelledby="cancelItemModalLabel<%= item.product %>" aria-hidden="true">
+                <div class="modal-dialog">
+                  <div class="modal-content">
+                    <div class="modal-header">
+                      <h5 class="modal-title" id="cancelItemModalLabel<%= item.product %>">Cancel Item</h5>
+                      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                      <p>Are you sure you want to cancel this item?</p>
+                      <p><strong><%= item.title %></strong></p>
+                      <p>Quantity: <%= item.quantity %></p>
+                      <p>Price: <%= item.formattedPrice %></p>
+                      
+                      <form id="cancelItemForm<%= item.product %>">
+                        <div class="mb-3">
+                          <label for="cancelItemReason<%= item.product %>" class="form-label">Reason for Cancellation</label>
+                          <select class="form-control" id="cancelItemReason<%= item.product %>" required>
+                            <option value="">Select a reason</option>
+                            <option value="Changed my mind">Changed my mind</option>
+                            <option value="Found a better price elsewhere">Found a better price elsewhere</option>
+                            <option value="Ordered by mistake">Ordered by mistake</option>
+                            <option value="Shipping time is too long">Shipping time is too long</option>
+                            <option value="Other">Other</option>
+                          </select>
+                        </div>
+                        <div class="mb-3" id="otherReasonDiv<%= item.product %>" style="display: none;">
+                          <label for="otherReason<%= item.product %>" class="form-label">Please specify</label>
+                          <textarea class="form-control" id="otherReason<%= item.product %>" rows="3"></textarea>
+                        </div>
+                      </form>
+                    </div>
+                    <div class="modal-footer">
+                      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                      <button type="button" class="btn btn-danger" onclick="cancelItem('<%= order._id %>', '<%= item.product %>')">Cancel Item</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            <% } %>
+
+            <!-- Return Item Modal -->
+            <% if (order.orderStatus === 'Delivered' && item.status === 'Active') { %>
+              <div class="modal fade" id="returnItemModal<%= item.product %>" tabindex="-1" aria-labelledby="returnItemModalLabel<%= item.product %>" aria-hidden="true">
+                <div class="modal-dialog">
+                  <div class="modal-content">
+                    <div class="modal-header">
+                      <h5 class="modal-title" id="returnItemModalLabel<%= item.product %>">Return Item</h5>
+                      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                      <p>Are you sure you want to return this item?</p>
+                      <p><strong><%= item.title %></strong></p>
+                      <p>Quantity: <%= item.quantity %></p>
+                      <p>Price: <%= item.formattedPrice %></p>
+                      
+                      <form id="returnItemForm<%= item.product %>">
+                        <div class="mb-3">
+                          <label for="returnItemReason<%= item.product %>" class="form-label">Reason for Return</label>
+                          <select class="form-control" id="returnItemReason<%= item.product %>" required>
+                            <option value="">Select a reason</option>
+                            <option value="Item damaged">Item damaged</option>
+                            <option value="Item defective">Item defective</option>
+                            <option value="Wrong item received">Wrong item received</option>
+                            <option value="Item does not match description">Item does not match description</option>
+                            <option value="Other">Other</option>
+                          </select>
+                        </div>
+                        <div class="mb-3" id="otherReturnReasonDiv<%= item.product %>" style="display: none;">
+                          <label for="otherReturnReason<%= item.product %>" class="form-label">Please specify</label>
+                          <textarea class="form-control" id="otherReturnReason<%= item.product %>" rows="3"></textarea>
+                        </div>
+                      </form>
+                    </div>
+                    <div class="modal-footer">
+                      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                      <button type="button" class="btn btn-danger" onclick="returnItem('<%= order._id %>', '<%= item.product %>')">Return Item</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            <% } %>
           <% }) %>
         </div>
       </div>
@@ -332,58 +579,539 @@
         </div>
         
        <!-- Order Summary -->
-<div class="col-md-5">
-  <div class="order-card h-100">
-    <div class="card-body p-4">
-      <h5 class="fw-bold mb-3">Order Summary</h5>
-      
-      <dl class="row price-summary">
-        <dt class="col-7">Items (<%= order.items.length %>):</dt>
-        <dd class="col-5"><%= order.formattedSubtotal %></dd>
-        
-        <% if (order.discount && order.discount > 0) { %>
-        <dt class="col-7">Offer Discount:</dt>
-        <dd class="col-5 text-success">-<%= order.formattedDiscount %></dd>
-        <% } %>
-        
-        <% if (order.couponDiscount && order.couponDiscount > 0) { %>
-        <dt class="col-7">Coupon Discount<%= order.couponCode ? ` (${order.couponCode})` : '' %>:</dt>
-        <dd class="col-5 text-success">-<%= order.formattedCouponDiscount %></dd>
-        <% } %>
-        
-        <dt class="col-7">Tax:</dt>
-        <dd class="col-5"><%= order.formattedTax %></dd>
-        
-        <dt class="col-7 total-row">Order Total:</dt>
-        <dd class="col-5 total-row"><%= order.formattedTotal %></dd>
-      </dl>
-      
-      <hr class="my-3">
-      
-      <div class="mb-3">
-        <p class="info-title">Payment Method</p>
-        <p class="info-value"><%= order.paymentMethod || 'Cash on Delivery' %></p>
+      <div class="col-md-5">
+        <div class="order-card h-100">
+          <div class="card-body p-4">
+            <h5 class="fw-bold mb-3">Order Summary</h5>
+            
+            <dl class="row price-summary">
+              <dt class="col-7">Items (<%= order.items.length %>):</dt>
+              <dd class="col-5"><%= order.formattedSubtotal %></dd>
+              
+              <% if (order.discount && order.discount > 0) { %>
+              <dt class="col-7">Offer Discount:</dt>
+              <dd class="col-5 text-success">-<%= order.formattedDiscount %></dd>
+              <% } %>
+              
+              <% if (order.couponDiscount && order.couponDiscount > 0) { %>
+              <dt class="col-7">Coupon Discount<%= order.couponCode ? ` (${order.couponCode})` : '' %>:</dt>
+              <dd class="col-5 text-success">-<%= order.formattedCouponDiscount %></dd>
+              <% } %>
+              
+              <dt class="col-7">Tax:</dt>
+              <dd class="col-5"><%= order.formattedTax %></dd>
+              
+              <dt class="col-7 total-row">Order Total:</dt>
+              <dd class="col-5 total-row"><%= order.formattedTotal %></dd>
+            </dl>
+            
+            <hr class="my-3">
+            
+            <div class="mb-3">
+              <p class="info-title">Payment Method</p>
+              <p class="info-value"><%= order.paymentMethod || 'Cash on Delivery' %></p>
+            </div>
+            
+            <div class="mb-3">
+              <p class="info-title">Payment Status</p>
+              <p class="info-value"><%= order.paymentStatus || 'Pending' %></p>
+            </div>
+            
+            <div>
+              <a href="/orders/<%= order._id %>/invoice" class="btn btn-outline-dark btn-sm mb-2 w-100">Download Invoice</a>
+              <% if (['Placed', 'Processing'].includes(order.orderStatus)) { %>
+                <button 
+                  class="btn btn-outline-danger btn-sm w-100" 
+                  data-bs-toggle="modal" 
+                  data-bs-target="#cancelOrderModal"
+                >
+                  Cancel Order
+                </button>
+              <% } else if (order.orderStatus === 'Delivered') { %>
+                <button 
+                  class="btn btn-outline-danger btn-sm w-100" 
+                  data-bs-toggle="modal" 
+                  data-bs-target="#returnOrderModal"
+                >
+                  Return Order
+                </button>
+              <% } else { %>
+                <a href="#" class="btn btn-outline-danger btn-sm w-100">Need Help?</a>
+              <% } %>
+            </div>
+          </div>
+        </div>
       </div>
-      
-      <div class="mb-3">
-        <p class="info-title">Payment Status</p>
-        <p class="info-value"><%= order.paymentStatus || 'Pending' %></p>
-      </div>
-      
-      <div>
-        <a href="/orders/<%= order._id %>/invoice" class="btn btn-outline-dark btn-sm mb-2 w-100">Download Invoice</a>
-        <% if (['Placed', 'Processing'].includes(order.orderStatus)) { %>
-          <a href="#" class="btn btn-outline-danger btn-sm w-100">Cancel Order</a>
-        <% } else { %>
-          <a href="#" class="btn btn-outline-danger btn-sm w-100">Need Help?</a>
-        <% } %>
       </div>
     </div>
   </div>
 </div>
+
+<!-- Toast container for notifications -->
+<div class="toast-container"></div>
+
+<!-- Cancel Order Modal -->
+<% if (['Placed', 'Processing'].includes(order.orderStatus)) { %>
+<div class="modal fade" id="cancelOrderModal" tabindex="-1" aria-labelledby="cancelOrderModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="cancelOrderModalLabel">Cancel Order</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p>Are you sure you want to cancel this entire order?</p>
+        <p><strong>Order #<%= order.orderNumber %></strong></p>
+        <p>Total: <%= order.formattedTotal %></p>
+        
+        <form id="cancelOrderForm">
+          <div class="mb-3">
+            <label for="cancelOrderReason" class="form-label">Reason for Cancellation</label>
+            <select class="form-control" id="cancelOrderReason" required>
+              <option value="">Select a reason</option>
+              <option value="Changed my mind">Changed my mind</option>
+              <option value="Found a better price elsewhere">Found a better price elsewhere</option>
+              <option value="Ordered by mistake">Ordered by mistake</option>
+              <option value="Shipping time is too long">Shipping time is too long</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div class="mb-3" id="otherOrderReasonDiv" style="display: none;">
+            <label for="otherOrderReason" class="form-label">Please specify</label>
+            <textarea class="form-control" id="otherOrderReason" rows="3"></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-danger" onclick="cancelOrder('<%= order._id %>')">Cancel Order</button>
       </div>
     </div>
   </div>
 </div>
+<% } %>
+
+<!-- Return Order Modal -->
+<% if (order.orderStatus === 'Delivered') { %>
+<div class="modal fade" id="returnOrderModal" tabindex="-1" aria-labelledby="returnOrderModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="returnOrderModalLabel">Return Order</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p>Are you sure you want to return this entire order?</p>
+        <p><strong>Order #<%= order.orderNumber %></strong></p>
+        <p>Total: <%= order.formattedTotal %></p>
+        
+        <form id="returnOrderForm">
+          <div class="mb-3">
+            <label for="returnOrderReason" class="form-label">Reason for Return</label>
+            <select class="form-control" id="returnOrderReason" required>
+              <option value="">Select a reason</option>
+              <option value="Items damaged">Items damaged</option>
+              <option value="Items defective">Items defective</option>
+              <option value="Wrong items received">Wrong items received</option>
+              <option value="Items do not match description">Items do not match description</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div class="mb-3" id="otherReturnOrderReasonDiv" style="display: none;">
+            <label for="otherReturnOrderReason" class="form-label">Please specify</label>
+            <textarea class="form-control" id="otherReturnOrderReason" rows="3"></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-danger" onclick="returnOrder('<%= order._id %>')">Return Order</button>
+      </div>
+    </div>
+  </div>
+</div>
+<% } %>
+
+<script>
+  // Toast notification function
+  function showToast(message, type = 'info') {
+    const toastContainer = document.querySelector('.toast-container');
+    
+    // Create toast element
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type} show`;
+    toast.setAttribute('role', 'alert');
+    toast.setAttribute('aria-live', 'assertive');
+    toast.setAttribute('aria-atomic', 'true');
+    
+    // Create toast header
+    const toastHeader = document.createElement('div');
+    toastHeader.className = 'toast-header';
+    
+    // Create toast title based on type
+    let title = 'Notification';
+    let icon = 'info-circle';
+    
+    if (type === 'success') {
+      title = 'Success';
+      icon = 'check-circle';
+    } else if (type === 'error') {
+      title = 'Error';
+      icon = 'exclamation-circle';
+    } else if (type === 'warning') {
+      title = 'Warning';
+      icon = 'exclamation-triangle';
+    }
+    
+    toastHeader.innerHTML = `
+      <i class="bi bi-${icon} me-2"></i>
+      <strong class="me-auto">${title}</strong>
+      <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+    `;
+    
+    // Create toast body
+    const toastBody = document.createElement('div');
+    toastBody.className = 'toast-body';
+    toastBody.textContent = message;
+    
+    // Append header and body to toast
+    toast.appendChild(toastHeader);
+    toast.appendChild(toastBody);
+    
+    // Append toast to container
+    toastContainer.appendChild(toast);
+    
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+      toast.remove();
+    }, 5000);
+    
+    // Add click event to close button
+    const closeButton = toast.querySelector('.btn-close');
+    closeButton.addEventListener('click', () => {
+      toast.remove();
+    });
+  }
+
+  // Handle "Other" selection in cancellation reason dropdowns
+  document.addEventListener('DOMContentLoaded', function() {
+    // For order cancellation
+    const cancelOrderReason = document.getElementById('cancelOrderReason');
+    const otherOrderReasonDiv = document.getElementById('otherOrderReasonDiv');
+    
+    if (cancelOrderReason) {
+      cancelOrderReason.addEventListener('change', function() {
+        if (this.value === 'Other') {
+          otherOrderReasonDiv.style.display = 'block';
+        } else {
+          otherOrderReasonDiv.style.display = 'none';
+        }
+      });
+    }
+    
+    // For order return
+    const returnOrderReason = document.getElementById('returnOrderReason');
+    const otherReturnOrderReasonDiv = document.getElementById('otherReturnOrderReasonDiv');
+    
+    if (returnOrderReason) {
+      returnOrderReason.addEventListener('change', function() {
+        if (this.value === 'Other') {
+          otherReturnOrderReasonDiv.style.display = 'block';
+        } else {
+          otherReturnOrderReasonDiv.style.display = 'none';
+        }
+      });
+    }
+    
+    // For item cancellations
+    <% order.items.forEach(item => { %>
+      const cancelItemReason<%= item.product %> = document.getElementById('cancelItemReason<%= item.product %>');
+      const otherReasonDiv<%= item.product %> = document.getElementById('otherReasonDiv<%= item.product %>');
+      
+      if (cancelItemReason<%= item.product %>) {
+        cancelItemReason<%= item.product %>.addEventListener('change', function() {
+          if (this.value === 'Other') {
+            otherReasonDiv<%= item.product %>.style.display = 'block';
+          } else {
+            otherReasonDiv<%= item.product %>.style.display = 'none';
+          }
+        });
+      }
+      
+      // For item returns
+      const returnItemReason<%= item.product %> = document.getElementById('returnItemReason<%= item.product %>');
+      const otherReturnReasonDiv<%= item.product %> = document.getElementById('otherReturnReasonDiv<%= item.product %>');
+      
+      if (returnItemReason<%= item.product %>) {
+        returnItemReason<%= item.product %>.addEventListener('change', function() {
+          if (this.value === 'Other') {
+            otherReturnReasonDiv<%= item.product %>.style.display = 'block';
+          } else {
+            otherReturnReasonDiv<%= item.product %>.style.display = 'none';
+          }
+        });
+      }
+    <% }); %>
+  });
+
+  // Cancel entire order
+  function cancelOrder(orderId) {
+    const selectElement = document.getElementById('cancelOrderReason');
+    const otherReasonElement = document.getElementById('otherOrderReason');
+    
+    let reason = selectElement.value;
+    
+    if (reason === '') {
+      showToast('Please select a reason for cancellation', 'warning');
+      return;
+    }
+    
+    if (reason === 'Other') {
+      const otherReason = otherReasonElement.value.trim();
+      if (!otherReason) {
+        showToast('Please specify the reason for cancellation', 'warning');
+        return;
+      }
+      reason = otherReason;
+    }
+    
+    // Show processing toast
+    showToast('Processing your cancellation request...', 'info');
+    
+    // Send cancellation request
+    fetch(`/orders/${orderId}/cancel`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ reason }),
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        // Hide the modal
+        const modal = bootstrap.Modal.getInstance(document.getElementById('cancelOrderModal'));
+        if (modal) {
+          modal.hide();
+        }
+        
+        showToast(data.message, 'success');
+        
+        // Reload the page after a short delay
+        setTimeout(() => {
+          window.location.reload();
+        }, 1500);
+      } else {
+        showToast(data.message, 'error');
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      showToast('An error occurred while processing your request.', 'error');
+    });
+  }
+
+  // Cancel specific item
+  function cancelItem(orderId, productId) {
+    const selectElement = document.getElementById(`cancelItemReason${productId}`);
+    const otherReasonElement = document.getElementById(`otherReason${productId}`);
+    
+    let reason = selectElement.value;
+    
+    if (reason === '') {
+      showToast('Please select a reason for cancellation', 'warning');
+      return;
+    }
+    
+    if (reason === 'Other') {
+      const otherReason = otherReasonElement.value.trim();
+      if (!otherReason) {
+        showToast('Please specify the reason for cancellation', 'warning');
+        return;
+      }
+      reason = otherReason;
+    }
+    
+    // Show processing toast
+    showToast('Processing your cancellation request...', 'info');
+    
+    // Send cancellation request
+    fetch(`/orders/${orderId}/items/${productId}/cancel`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ reason }),
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        // Hide the modal
+        const modal = bootstrap.Modal.getInstance(document.getElementById(`cancelItemModal${productId}`));
+        if (modal) {
+          modal.hide();
+        }
+        
+        showToast(data.message, 'success');
+        
+        // Reload the page after a short delay
+        setTimeout(() => {
+          window.location.reload();
+        }, 1500);
+      } else {
+        showToast(data.message, 'error');
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      showToast('An error occurred while processing your request.', 'error');
+    });
+  }
+
+  // Return entire order
+  function returnOrder(orderId) {
+    const selectElement = document.getElementById('returnOrderReason');
+    const otherReasonElement = document.getElementById('otherReturnOrderReason');
+    
+    let reason = selectElement.value;
+    
+    if (reason === '') {
+      showToast('Please select a reason for return', 'warning');
+      return;
+    }
+    
+    if (reason === 'Other') {
+      const otherReason = otherReasonElement.value.trim();
+      if (!otherReason) {
+        showToast('Please specify the reason for return', 'warning');
+        return;
+      }
+      reason = otherReason;
+    }
+    
+    // Show processing toast
+    showToast('Processing your return request...', 'info');
+    
+    // Send return request
+    fetch(`/orders/${orderId}/return`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ reason }),
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        // Hide the modal
+        const modal = bootstrap.Modal.getInstance(document.getElementById('returnOrderModal'));
+        if (modal) {
+          modal.hide();
+        }
+        
+        showToast(data.message, 'success');
+        
+        // Reload the page after a short delay
+        setTimeout(() => {
+          window.location.reload();
+        }, 1500);
+      } else {
+        showToast(data.message, 'error');
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      showToast('An error occurred while processing your request.', 'error');
+    });
+  }
+
+  // Return specific item
+  function returnItem(orderId, productId) {
+    const selectElement = document.getElementById(`returnItemReason${productId}`);
+    const otherReasonElement = document.getElementById(`otherReturnReason${productId}`);
+    
+    let reason = selectElement.value;
+    
+    if (reason === '') {
+      showToast('Please select a reason for return', 'warning');
+      return;
+    }
+    
+    if (reason === 'Other') {
+      const otherReason = otherReasonElement.value.trim();
+      if (!otherReason) {
+        showToast('Please specify the reason for return', 'warning');
+        return;
+      }
+      reason = otherReason;
+    }
+    
+    // Show processing toast
+    showToast('Processing your return request...', 'info');
+    
+    // Send return request
+    fetch(`/orders/${orderId}/items/${productId}/return`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ reason }),
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        // Hide the modal
+        const modal = bootstrap.Modal.getInstance(document.getElementById(`returnItemModal${productId}`));
+        if (modal) {
+          modal.hide();
+        }
+        
+        showToast(data.message, 'success');
+        
+        // Reload the page after a short delay
+        setTimeout(() => {
+          window.location.reload();
+        }, 1500);
+      } else {
+        showToast(data.message, 'error');
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      showToast('An error occurred while processing your request.', 'error');
+    });
+  }
+
+  // Function to reorder (buy again)
+  function reorder(orderId) {
+    // Show processing toast
+    showToast('Adding items to your cart...', 'info');
+    
+    fetch(`/orders/${orderId}/reorder`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        showToast(data.message || 'Items have been added to your cart', 'success');
+        
+        // Redirect after a short delay
+        setTimeout(() => {
+          window.location.href = data.redirectUrl || '/cart';
+        }, 1500);
+      } else {
+        showToast(data.message || 'Failed to add items to cart', 'error');
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      showToast('An error occurred while processing your request', 'error');
+    });
+    return false; // Prevent default link behavior
+  }
+</script>
 
 <%- include("../partials/user/footer") %>

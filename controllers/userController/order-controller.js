@@ -1,6 +1,7 @@
 const Order = require("../../models/orderSchema");
 const User = require("../../models/userSchema");
 const Product = require("../../models/productSchema");
+const Cart = require("../../models/cartSchema"); // Added Cart import
 const PDFDocument = require('pdfkit');
 const path = require('path');
 
@@ -26,7 +27,7 @@ const getOrders = async (req, res) => {
     const skip = (page - 1) * limit;
 
     // Handle filter
-    const validFilters = ['All', 'Delivered', 'Processing', 'Shipped', 'Placed', 'Cancelled', 'Returned'];
+    const validFilters = ['All', 'Delivered', 'Processing', 'Shipped', 'Placed', 'Cancelled', 'Returned', 'Partially Cancelled', 'Partially Returned'];
     let filter = req.query.filter || 'All';
     if (!validFilters.includes(filter)) {
       filter = 'All';
@@ -159,8 +160,8 @@ const getOrderDetails = async (req, res) => {
     order.formattedTotal = `₹${order.total.toFixed(2)}`;
     order.formattedSubtotal = `₹${order.subtotal.toFixed(2)}`;
     order.formattedTax = `₹${order.tax.toFixed(2)}`;
-    order.formattedDiscount = `₹${order.discount ? order.discount.toFixed(2) : '0.00'}`;
-    order.formattedCouponDiscount = `₹${order.couponDiscount ? order.couponDiscount.toFixed(2) : '0.00'}`;
+    order.formattedDiscount = order.discount ? `₹${order.discount.toFixed(2)}` : "₹0.00";
+    order.formattedCouponDiscount = order.couponDiscount ? `₹${order.couponDiscount.toFixed(2)}` : "₹0.00";
     
     order.items.forEach(item => {
       item.formattedPrice = `₹${item.price.toFixed(2)}`;
@@ -168,6 +169,16 @@ const getOrderDetails = async (req, res) => {
       if (item.discountedPrice) {
         item.formattedDiscountedPrice = `₹${item.discountedPrice.toFixed(2)}`;
       }
+    });
+
+    // Check if the order can be cancelled or returned
+    const canBeCancelled = ['Placed', 'Processing'].includes(order.orderStatus);
+    const canBeReturned = order.orderStatus === 'Delivered';
+    
+    // Check if individual items can be cancelled or returned
+    order.items.forEach(item => {
+      item.canBeCancelled = canBeCancelled && item.status === 'Active';
+      item.canBeReturned = canBeReturned && item.status === 'Active';
     });
 
     // Create timeline based on order status using actual timestamps
@@ -192,19 +203,19 @@ const getOrderDetails = async (req, res) => {
           hour: '2-digit',
           minute: '2-digit'
         }),
-        completed: ['Placed', 'Processing', 'Shipped', 'Delivered', 'Returned'].includes(order.orderStatus)
+        completed: ['Placed', 'Processing', 'Shipped', 'Delivered', 'Returned', 'Partially Cancelled', 'Partially Returned'].includes(order.orderStatus)
       },
       {
         status: 'Processing',
-        timestamp: order.orderStatus === 'Processing' && order.updatedAt
-          ? new Date(order.updatedAt).toLocaleString('en-US', {
+        timestamp: order.processedAt
+          ? new Date(order.processedAt).toLocaleString('en-US', {
               year: 'numeric',
               month: 'long',
               day: 'numeric',
               hour: '2-digit',
               minute: '2-digit'
             })
-          : ['Shipped', 'Delivered', 'Returned'].includes(order.orderStatus)
+          : ['Shipped', 'Delivered', 'Returned', 'Partially Returned'].includes(order.orderStatus)
           ? new Date(order.createdAt.getTime() + 24 * 60 * 60 * 1000).toLocaleString('en-US', {
               year: 'numeric',
               month: 'long',
@@ -217,20 +228,20 @@ const getOrderDetails = async (req, res) => {
               month: 'long',
               day: 'numeric'
             }),
-        completed: ['Processing', 'Shipped', 'Delivered', 'Returned'].includes(order.orderStatus),
+        completed: ['Processing', 'Shipped', 'Delivered', 'Returned', 'Partially Returned'].includes(order.orderStatus),
         active: order.orderStatus === 'Processing'
       },
       {
         status: 'Shipped',
-        timestamp: order.orderStatus === 'Shipped' && order.updatedAt
-          ? new Date(order.updatedAt).toLocaleString('en-US', {
+        timestamp: order.shippedAt
+          ? new Date(order.shippedAt).toLocaleString('en-US', {
               year: 'numeric',
               month: 'long',
               day: 'numeric',
               hour: '2-digit',
               minute: '2-digit'
             })
-          : ['Delivered', 'Returned'].includes(order.orderStatus)
+          : ['Delivered', 'Returned', 'Partially Returned'].includes(order.orderStatus)
           ? new Date(order.createdAt.getTime() + 3 * 24 * 60 * 60 * 1000).toLocaleString('en-US', {
               year: 'numeric',
               month: 'long',
@@ -243,12 +254,12 @@ const getOrderDetails = async (req, res) => {
               month: 'long',
               day: 'numeric'
             }),
-        completed: ['Shipped', 'Delivered', 'Returned'].includes(order.orderStatus),
+        completed: ['Shipped', 'Delivered', 'Returned', 'Partially Returned'].includes(order.orderStatus),
         active: order.orderStatus === 'Shipped'
       },
       {
         status: 'Out for Delivery',
-        timestamp: order.orderStatus === 'Delivered' && order.deliveredAt
+        timestamp: order.deliveredAt
           ? new Date(order.deliveredAt.getTime() - 24 * 60 * 60 * 1000).toLocaleString('en-US', {
               year: 'numeric',
               month: 'long',
@@ -261,12 +272,12 @@ const getOrderDetails = async (req, res) => {
               month: 'long',
               day: 'numeric'
             }),
-        completed: order.orderStatus === 'Delivered' || order.orderStatus === 'Returned',
+        completed: ['Delivered', 'Returned', 'Partially Returned'].includes(order.orderStatus),
         active: false
       },
       {
         status: 'Delivered',
-        timestamp: order.orderStatus === 'Delivered' && order.deliveredAt
+        timestamp: order.deliveredAt
           ? new Date(order.deliveredAt).toLocaleString('en-US', {
               year: 'numeric',
               month: 'long',
@@ -279,36 +290,52 @@ const getOrderDetails = async (req, res) => {
               month: 'long',
               day: 'numeric'
             }),
-        completed: order.orderStatus === 'Delivered' || order.orderStatus === 'Returned',
-        active: order.orderStatus === 'Delivered'
+        completed: ['Delivered', 'Returned', 'Partially Returned'].includes(order.orderStatus),
+        active: ['Delivered', 'Partially Returned'].includes(order.orderStatus)
       }
     ];
 
-    if (order.orderStatus === 'Returned' && order.returnedAt) {
+    if (order.orderStatus === 'Returned' || order.orderStatus === 'Partially Returned') {
       timeline.push({
-        status: 'Returned',
-        timestamp: new Date(order.returnedAt).toLocaleString('en-US', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit'
-        }),
+        status: order.orderStatus,
+        timestamp: order.returnedAt 
+          ? new Date(order.returnedAt).toLocaleString('en-US', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit'
+            })
+          : new Date().toLocaleString('en-US', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit'
+            }),
         completed: true,
         returned: true
       });
     }
 
-    if (order.orderStatus === 'Cancelled' && order.cancelledAt) {
+    if (order.orderStatus === 'Cancelled' || order.orderStatus === 'Partially Cancelled') {
       timeline.push({
-        status: 'Cancelled',
-        timestamp: new Date(order.cancelledAt).toLocaleString('en-US', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit'
-        }),
+        status: order.orderStatus,
+        timestamp: order.cancelledAt 
+          ? new Date(order.cancelledAt).toLocaleString('en-US', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit'
+            })
+          : new Date().toLocaleString('en-US', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit'
+            }),
         completed: true,
         cancelled: true
       });
@@ -317,6 +344,8 @@ const getOrderDetails = async (req, res) => {
     res.render('order-details', {
       order,
       timeline,
+      canBeCancelled,
+      canBeReturned,
       user: {
         id: userId,
         fullName: user.fullName || 'User',
@@ -598,6 +627,7 @@ const downloadInvoice = async (req, res) => {
     // Add table rows
     let y = tableTop + 30;
     
+    // Only include active items or show status for cancelled/returned items
     order.items.forEach((item, index) => {
       // Alternate row background for better readability
       if (index % 2 === 1) {
@@ -610,8 +640,15 @@ const downloadInvoice = async (req, res) => {
          .font('Helvetica')
          .fontSize(9);
       
-      // Item name
-      doc.text(item.title || 'Unknown Product', colPositions[0] + 5, y + 10, { 
+      // Item name with status if cancelled or returned
+      let itemTitle = item.title || 'Unknown Product';
+      if (item.status === 'Cancelled') {
+        itemTitle += ' (Cancelled)';
+      } else if (item.status === 'Returned') {
+        itemTitle += ' (Returned)';
+      }
+      
+      doc.text(itemTitle, colPositions[0] + 5, y + 10, { 
         width: colWidths[0] * contentWidth - 10, 
         align: 'left' 
       });
@@ -635,8 +672,8 @@ const downloadInvoice = async (req, res) => {
         align: 'right' 
       });
       
-      // Total
-      const itemTotal = (item.price * item.quantity) - itemDiscount;
+      // Total - only count active items for total
+      const itemTotal = item.status === 'Active' ? (item.price * item.quantity) - itemDiscount : 0;
       doc.text(`₹${itemTotal.toFixed(2)}`, colPositions[4] + 5, y + 10, { 
         width: colWidths[4] * contentWidth - 10, 
         align: 'right' 
@@ -757,7 +794,7 @@ const downloadInvoice = async (req, res) => {
 };
 
 /**
- * Cancel an order
+ * Cancel an entire order
  */
 const cancelOrder = async (req, res) => {
   try {
@@ -767,6 +804,12 @@ const cancelOrder = async (req, res) => {
 
     const userId = req.session.user_id;
     const orderId = req.params.id;
+    const { reason } = req.body;
+
+    // Validate cancellation reason
+    if (!reason || reason.trim() === '') {
+      return res.status(400).json({ success: false, message: 'Cancellation reason is required' });
+    }
 
     // Find the order
     const order = await Order.findOne({
@@ -791,16 +834,27 @@ const cancelOrder = async (req, res) => {
     // Update order status
     order.orderStatus = 'Cancelled';
     order.cancelledAt = new Date();
-    order.cancellationReason = req.body.reason || 'Customer cancelled';
+    order.cancellationReason = reason;
+    
+    // Update all items to Cancelled status
+    order.items.forEach(item => {
+      if (item.status === 'Active') {
+        item.status = 'Cancelled';
+        item.cancelledAt = new Date();
+        item.cancellationReason = reason;
+      }
+    });
     
     await order.save();
 
-    // Restore product stock
+    // Restore product stock for each item
     for (const item of order.items) {
-      await Product.findByIdAndUpdate(
-        item.product,
-        { $inc: { stock: item.quantity } }
-      );
+      if (item.status === 'Cancelled') {
+        await Product.findByIdAndUpdate(
+          item.product,
+          { $inc: { stock: item.quantity } }
+        );
+      }
     }
 
     // If payment was made, initiate refund process
@@ -827,7 +881,126 @@ const cancelOrder = async (req, res) => {
 };
 
 /**
- * Initiate return for an order
+ * Cancel a specific product from an order
+ */
+const cancelOrderItem = async (req, res) => {
+  try {
+    if (!req.session.user_id) {
+      return res.status(401).json({ success: false, message: 'Unauthorized' });
+    }
+
+    const userId = req.session.user_id;
+    const orderId = req.params.id;
+    const productId = req.params.productId;
+    const { reason } = req.body;
+
+    // Validate cancellation reason
+    if (!reason || reason.trim() === '') {
+      return res.status(400).json({ success: false, message: 'Cancellation reason is required' });
+    }
+
+    // Find the order
+    const order = await Order.findOne({
+      _id: orderId,
+      user: userId,
+      isDeleted: false
+    });
+
+    if (!order) {
+      return res.status(404).json({ success: false, message: 'Order not found' });
+    }
+
+    // Check if order can be cancelled
+    const allowedStatuses = ['Placed', 'Processing'];
+    if (!allowedStatuses.includes(order.orderStatus) && 
+        !order.orderStatus.includes('Partially')) {
+      return res.status(400).json({
+        success: false,
+        message: `Items in this order cannot be cancelled in ${order.orderStatus} status`
+      });
+    }
+
+    // Find the specific product in the order
+    const orderItem = order.items.find(item => item.product.toString() === productId);
+    
+    if (!orderItem) {
+      return res.status(404).json({ success: false, message: 'Product not found in this order' });
+    }
+    
+    if (orderItem.status !== 'Active') {
+      return res.status(400).json({ 
+        success: false, 
+        message: `This item is already ${orderItem.status.toLowerCase()}` 
+      });
+    }
+
+    // Calculate refund amount for this item
+    const itemTotal = orderItem.price * orderItem.quantity;
+    
+    // Update the item status
+    orderItem.status = 'Cancelled';
+    orderItem.cancelledAt = new Date();
+    orderItem.cancellationReason = reason;
+    
+    // Check if there are any active items left
+    const hasActiveItems = order.items.some(item => item.status === 'Active');
+    
+    // Check if there are any returned items
+    const hasReturnedItems = order.items.some(item => item.status === 'Returned');
+    
+    // Update order status based on item statuses
+    if (!hasActiveItems) {
+      // If all items are cancelled/returned, mark the whole order as cancelled or returned
+      if (hasReturnedItems) {
+        order.orderStatus = 'Returned';
+      } else {
+        order.orderStatus = 'Cancelled';
+      }
+    } else if (hasReturnedItems) {
+      // If some items are active and some are returned (and now some are cancelled)
+      order.orderStatus = 'Partially Returned';
+    } else {
+      // If some items are active and some are cancelled
+      order.orderStatus = 'Partially Cancelled';
+    }
+    
+    order.cancelledAt = new Date();
+    await order.save();
+
+    // Restore product stock
+    await Product.findByIdAndUpdate(
+      productId,
+      { $inc: { stock: orderItem.quantity } }
+    );
+
+    // Handle refund if payment was made
+    if (order.paymentStatus === 'Paid') {
+      if (!hasActiveItems) {
+        order.paymentStatus = 'Refund Initiated';
+      } else {
+        order.paymentStatus = 'Partially Refunded';
+      }
+      await order.save();
+      
+      // Placeholder for actual refund logic
+      console.log(`Partial refund of ₹${itemTotal} initiated for item in order ${order.orderNumber}`);
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Item cancelled successfully'
+    });
+  } catch (error) {
+    console.error('Error cancelling order item:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+};
+
+/**
+ * Initiate return for an entire order
  */
 const returnOrder = async (req, res) => {
   try {
@@ -837,6 +1010,12 @@ const returnOrder = async (req, res) => {
 
     const userId = req.session.user_id;
     const orderId = req.params.id;
+    const { reason } = req.body;
+
+    // Validate return reason
+    if (!reason || reason.trim() === '') {
+      return res.status(400).json({ success: false, message: 'Return reason is required' });
+    }
 
     // Find the order
     const order = await Order.findOne({
@@ -850,7 +1029,8 @@ const returnOrder = async (req, res) => {
     }
 
     // Check if order can be returned
-    if (order.orderStatus !== 'Delivered') {
+    if (order.orderStatus !== 'Delivered' && 
+        !order.orderStatus.includes('Partially')) {
       return res.status(400).json({
         success: false,
         message: `Order cannot be returned in ${order.orderStatus} status`
@@ -868,19 +1048,128 @@ const returnOrder = async (req, res) => {
       });
     }
 
-    // Update order status
+    // CHANGE: Update order status to Return Requested instead of Returned
     order.orderStatus = 'Return Requested';
-    order.returnReason = req.body.reason || 'Customer requested return';
-    order.returnRequestedAt = new Date();
+    order.returnReason = reason;
+    order.returnRequestedAt = new Date(); // Add a new field to track when return was requested
+    
+    // Update all active items to Return Requested status
+    order.items.forEach(item => {
+      if (item.status === 'Active') {
+        item.status = 'Return Requested';
+        item.returnReason = reason;
+        item.returnRequestedAt = new Date();
+      }
+    });
     
     await order.save();
 
     return res.status(200).json({
       success: true,
-      message: 'Return request submitted successfully'
+      message: 'Return request submitted successfully. Our team will review your request.'
     });
   } catch (error) {
     console.error('Error processing return request:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+};
+
+/**
+ * Return a specific item from an order
+ */
+const returnOrderItem = async (req, res) => {
+  try {
+    if (!req.session.user_id) {
+      return res.status(401).json({ success: false, message: 'Unauthorized' });
+    }
+
+    const userId = req.session.user_id;
+    const orderId = req.params.id;
+    const productId = req.params.productId;
+    const { reason } = req.body;
+
+    // Validate return reason
+    if (!reason || reason.trim() === '') {
+      return res.status(400).json({ success: false, message: 'Return reason is required' });
+    }
+
+    // Find the order
+    const order = await Order.findOne({
+      _id: orderId,
+      user: userId,
+      isDeleted: false
+    });
+
+    if (!order) {
+      return res.status(404).json({ success: false, message: 'Order not found' });
+    }
+
+    // Check if order can be returned
+    if (order.orderStatus !== 'Delivered' && 
+        !order.orderStatus.includes('Partially')) {
+      return res.status(400).json({
+        success: false,
+        message: `Items in this order cannot be returned in ${order.orderStatus} status`
+      });
+    }
+
+    // Check if return is within allowed time period (e.g., 7 days)
+    const deliveredDate = order.deliveredAt || order.updatedAt;
+    const returnPeriod = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
+    
+    if (Date.now() - deliveredDate > returnPeriod) {
+      return res.status(400).json({
+        success: false,
+        message: 'Return period has expired'
+      });
+    }
+
+    // Find the specific product in the order
+    const orderItem = order.items.find(item => item.product.toString() === productId);
+    
+    if (!orderItem) {
+      return res.status(404).json({ success: false, message: 'Product not found in this order' });
+    }
+    
+    if (orderItem.status !== 'Active') {
+      return res.status(400).json({ 
+        success: false, 
+        message: `This item is already ${orderItem.status.toLowerCase()}` 
+      });
+    }
+
+    // CHANGE: Instead of marking as Returned, mark as "Return Requested"
+    // We'll add a new status to track return requests
+    orderItem.status = 'Return Requested';
+    orderItem.returnReason = reason;
+    orderItem.returnRequestedAt = new Date();
+    
+    // Check if there are any active items left
+    const hasActiveItems = order.items.some(item => item.status === 'Active');
+    const hasReturnRequestedItems = order.items.some(item => item.status === 'Return Requested');
+    const hasCancelledItems = order.items.some(item => item.status === 'Cancelled');
+    const hasReturnedItems = order.items.some(item => item.status === 'Returned');
+    
+    // Update order status based on item statuses
+    if (!hasActiveItems && hasReturnRequestedItems) {
+      // If all items are in return requested state
+      order.orderStatus = 'Return Requested';
+    } else if (hasReturnRequestedItems) {
+      // If some items are active and some are return requested
+      order.orderStatus = 'Partially Return Requested';
+    }
+    
+    await order.save();
+
+    return res.status(200).json({
+      success: true,
+      message: 'Return request submitted successfully. Our team will review your request.'
+    });
+  } catch (error) {
+    console.error('Error processing item return request:', error);
     return res.status(500).json({
       success: false,
       message: 'Internal server error'
@@ -928,7 +1217,7 @@ const trackOrder = async (req, res) => {
       });
     }
 
-    if (['Processing', 'Shipped', 'Out for Delivery', 'Delivered'].includes(order.orderStatus)) {
+    if (['Processing', 'Shipped', 'Out for Delivery', 'Delivered', 'Partially Cancelled', 'Partially Returned'].includes(order.orderStatus)) {
       trackingInfo.timeline.push({
         status: 'Processing',
         date: order.processingAt || new Date(order.createdAt.getTime() + 24 * 60 * 60 * 1000),
@@ -936,7 +1225,7 @@ const trackOrder = async (req, res) => {
       });
     }
 
-    if (['Shipped', 'Out for Delivery', 'Delivered'].includes(order.orderStatus)) {
+    if (['Shipped', 'Out for Delivery', 'Delivered', 'Partially Returned'].includes(order.orderStatus)) {
       trackingInfo.timeline.push({
         status: 'Shipped',
         date: order.shippedAt || new Date(order.createdAt.getTime() + 2 * 24 * 60 * 60 * 1000),
@@ -944,7 +1233,7 @@ const trackOrder = async (req, res) => {
       });
     }
 
-    if (['Out for Delivery', 'Delivered'].includes(order.orderStatus)) {
+    if (['Out for Delivery', 'Delivered', 'Partially Returned'].includes(order.orderStatus)) {
       trackingInfo.timeline.push({
         status: 'Out for Delivery',
         date: order.outForDeliveryAt || new Date(order.createdAt.getTime() + 4 * 24 * 60 * 60 * 1000),
@@ -952,7 +1241,7 @@ const trackOrder = async (req, res) => {
       });
     }
 
-    if (order.orderStatus === 'Delivered') {
+    if (['Delivered', 'Partially Returned'].includes(order.orderStatus)) {
       trackingInfo.timeline.push({
         status: 'Delivered',
         date: order.deliveredAt || new Date(order.createdAt.getTime() + 5 * 24 * 60 * 60 * 1000),
@@ -960,24 +1249,24 @@ const trackOrder = async (req, res) => {
       });
     }
 
-    if (order.orderStatus === 'Cancelled') {
+    if (order.orderStatus === 'Cancelled' || order.orderStatus === 'Partially Cancelled') {
       trackingInfo.timeline.push({
-        status: 'Cancelled',
+        status: order.orderStatus,
         date: order.cancelledAt || order.updatedAt,
-        description: `Order cancelled: ${order.cancellationReason || 'Customer request'}`
+        description: `Order ${order.orderStatus.toLowerCase()}: ${order.cancellationReason || 'Customer request'}`
       });
     }
 
-    if (order.orderStatus === 'Returned' || order.orderStatus === 'Return Requested') {
+    if (order.orderStatus === 'Returned' || order.orderStatus === 'Partially Returned') {
       trackingInfo.timeline.push({
         status: order.orderStatus,
-        date: order.returnRequestedAt || order.updatedAt,
+        date: order.returnedAt || order.updatedAt,
         description: `Return ${order.orderStatus === 'Returned' ? 'processed' : 'requested'}: ${order.returnReason || 'Customer request'}`
       });
     }
 
     // Calculate estimated delivery date if not delivered yet
-    if (!['Delivered', 'Cancelled', 'Returned'].includes(order.orderStatus)) {
+    if (!['Delivered', 'Cancelled', 'Returned', 'Partially Returned'].includes(order.orderStatus)) {
       trackingInfo.estimatedDelivery = new Date(order.createdAt.getTime() + 5 * 24 * 60 * 60 * 1000);
     }
 
@@ -1038,49 +1327,45 @@ const reorder = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Order not found' });
     }
 
-    // Check product availability and update prices
-    const cart = await Cart.findOne({ user: userId });
+    // Check if cart exists, create if not
+    let cart = await Cart.findOne({ user: userId });
     if (!cart) {
-      // Create cart if it doesn't exist
-      await Cart.create({ user: userId, items: [] });
+      cart = new Cart({ user: userId, items: [] });
+      await cart.save();
     } else {
-      // Clear existing cart
+      // Clear existing cart items
       cart.items = [];
       await cart.save();
     }
 
     // Add items from the original order to cart
     for (const item of originalOrder.items) {
-      const product = await Product.findById(item.product).lean();
+      // Only add active items or items from fully cancelled/returned orders
+      const shouldAddItem = item.status === 'Active' || !originalOrder.items.some(i => i.status === 'Active');
       
-      if (!product || !product.isListed || product.isDeleted) {
-        continue; // Skip unavailable products
-      }
-
-      if (product.stock < item.quantity) {
-        // Add with available quantity
-        if (product.stock > 0) {
-          await Cart.updateOne(
-            { user: userId },
-            { $push: { items: {
-              product: product._id,
-              quantity: product.stock,
-              priceAtAddition: product.price
-            }}}
-          );
+      if (shouldAddItem) {
+        const product = await Product.findById(item.product).lean();
+        
+        if (!product || !product.isListed || product.isDeleted) {
+          continue; // Skip unavailable products
         }
-      } else {
-        // Add with original quantity
-        await Cart.updateOne(
-          { user: userId },
-          { $push: { items: {
+
+        // Check stock availability
+        const quantityToAdd = Math.min(item.quantity, product.stock);
+        
+        if (quantityToAdd > 0) {
+          // Add item to cart
+          cart.items.push({
             product: product._id,
-            quantity: item.quantity,
+            quantity: quantityToAdd,
             priceAtAddition: product.price
-          }}}
-        );
+          });
+        }
       }
     }
+    
+    // Save the updated cart
+    await cart.save();
 
     return res.status(200).json({
       success: true,
@@ -1103,7 +1388,9 @@ module.exports = {
   getPaymentFailure,
   downloadInvoice,
   cancelOrder,
+  cancelOrderItem,
   returnOrder,
+  returnOrderItem,
   trackOrder,
   reorder
 };

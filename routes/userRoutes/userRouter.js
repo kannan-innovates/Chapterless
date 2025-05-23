@@ -123,6 +123,12 @@ router.get('/order-success/:id', isAuthenticated, orderController.getOrderSucces
 router.get('/payment-failure', isAuthenticated, orderController.getPaymentFailure);
 router.get('/orders/:id/invoice', isAuthenticated, orderController.downloadInvoice);
 
+router.post('/orders/:id/cancel',isAuthenticated,orderController.cancelOrder);
+router.post('/orders/:id/items/:productId/cancel',isAuthenticated, orderController.cancelOrderItem);
+router.post('/orders/:id/return',  isAuthenticated,orderController.returnOrder);
+router.post('/orders/:id/items/:productId/return',isAuthenticated,orderController.returnOrderItem);
+router.post('/orders/:id/reorder',isAuthenticated, orderController.reorder);
+
 // Password change route
 router.post('/change-password', isAuthenticated, newPasswordController.changePassword);
 

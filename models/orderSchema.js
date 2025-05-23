@@ -74,6 +74,28 @@ const orderItemSchema = new mongoose.Schema(
       required: true,
       min: 1,
     },
+    // Updated status field to include Return Requested
+    status: {
+      type: String,
+      enum: ["Active", "Cancelled", "Returned", "Return Requested"],
+      default: "Active"
+    },
+    // Fields for cancellation or return
+    cancelledAt: {
+      type: Date,
+    },
+    cancellationReason: {
+      type: String,
+    },
+    returnedAt: {
+      type: Date,
+    },
+    returnReason: {
+      type: String,
+    },
+    returnRequestedAt: {
+      type: Date,
+    }
   },
   { _id: false }
 );
@@ -99,7 +121,15 @@ const orderSchema = new mongoose.Schema({
   },
   paymentStatus: {
     type: String,
-    enum: ["Pending", "Paid", "Failed", "Refunded"],
+    enum: [
+      "Pending", 
+      "Paid", 
+      "Failed", 
+      "Refunded", 
+      "Partially Refunded", 
+      "Refund Initiated",
+      "Refund Processing"
+    ],
     default: "Pending",
   },
   orderStatus: {
@@ -111,6 +141,10 @@ const orderSchema = new mongoose.Schema({
       "Delivered",
       "Cancelled",
       "Returned",
+      "Partially Cancelled",
+      "Partially Returned",
+      "Return Requested",       // Added new status
+      "Partially Return Requested" // Added new status
     ],
     default: "Placed",
   },
@@ -165,6 +199,15 @@ const orderSchema = new mongoose.Schema({
   },
   returnedAt: {
     type: Date,
+  },
+  returnRequestedAt: {
+    type: Date,
+  },
+  cancellationReason: {
+    type: String,
+  },
+  returnReason: {
+    type: String,
   },
   trackingId: {
     type: String,

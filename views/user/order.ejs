@@ -29,7 +29,12 @@
                   <li><a class="dropdown-item <%= currentFilter === 'All' ? 'active' : '' %>" href="/orders?sort=<%= currentSort %>">All Orders</a></li>
                   <li><a class="dropdown-item <%= currentFilter === 'Delivered' ? 'active' : '' %>" href="/orders?filter=Delivered&sort=<%= currentSort %>">Delivered</a></li>
                   <li><a class="dropdown-item <%= currentFilter === 'Processing' ? 'active' : '' %>" href="/orders?filter=Processing&sort=<%= currentSort %>">Processing</a></li>
+                  <li><a class="dropdown-item <%= currentFilter === 'Shipped' ? 'active' : '' %>" href="/orders?filter=Shipped&sort=<%= currentSort %>">Shipped</a></li>
+                  <li><a class="dropdown-item <%= currentFilter === 'Placed' ? 'active' : '' %>" href="/orders?filter=Placed&sort=<%= currentSort %>">Placed</a></li>
                   <li><a class="dropdown-item <%= currentFilter === 'Cancelled' ? 'active' : '' %>" href="/orders?filter=Cancelled&sort=<%= currentSort %>">Cancelled</a></li>
+                  <li><a class="dropdown-item <%= currentFilter === 'Partially Cancelled' ? 'active' : '' %>" href="/orders?filter=Partially%20Cancelled&sort=<%= currentSort %>">Partially Cancelled</a></li>
+                  <li><a class="dropdown-item <%= currentFilter === 'Returned' ? 'active' : '' %>" href="/orders?filter=Returned&sort=<%= currentSort %>">Returned</a></li>
+                  <li><a class="dropdown-item <%= currentFilter === 'Partially Returned' ? 'active' : '' %>" href="/orders?filter=Partially%20Returned&sort=<%= currentSort %>">Partially Returned</a></li>
                 </ul>
               </div>
             </div>
@@ -73,18 +78,22 @@
                         <span class="badge bg-warning text-dark">Processing</span>
                       <% } else if (order.orderStatus === 'Cancelled') { %>
                         <span class="badge bg-secondary">Cancelled</span>
+                      <% } else if (order.orderStatus === 'Partially Cancelled') { %>
+                        <span class="badge bg-secondary">Partially Cancelled</span>
                       <% } else if (order.orderStatus === 'Placed') { %>
                         <span class="badge bg-info">Placed</span>
                       <% } else if (order.orderStatus === 'Returned') { %>
                         <span class="badge bg-danger">Returned</span>
+                      <% } else if (order.orderStatus === 'Partially Returned') { %>
+                        <span class="badge bg-danger">Partially Returned</span>
                       <% } %>
                     </div>
                   </div>
                   <div class="order-body p-3">
                     <div class="row g-3">
                       <div class="col-md-8">
-                        <% order.items.forEach(item => { %>
-                          <div class="d-flex flex-column flex-md-row gap-3 <% if (!order.items[order.items.length - 1] === item) { %>mt-3 pt-3 border-top<% } %>">
+                        <% order.items.forEach((item, index) => { %>
+                          <div class="d-flex flex-column flex-md-row gap-3 <%= index > 0 ? 'mt-3 pt-3 border-top' : '' %>">
                             <div class="order-item-image">
                               <img 
                                 src="<%= item.image || 'https://via.placeholder.com/120x160' %>" 
@@ -94,7 +103,16 @@
                               >
                             </div>
                             <div class="order-item-details">
-                              <h5 class="fs-6 fw-semibold mb-1"><%= item.title || 'Unknown Product' %></h5>
+                              <h5 class="fs-6 fw-semibold mb-1">
+                                <%= item.title || 'Unknown Product' %>
+                                <% if (item.status === 'Cancelled') { %>
+                                  <span class="item-status cancelled">Cancelled</span>
+                                <% } else if (item.status === 'Returned') { %>
+                                  <span class="item-status returned">Returned</span>
+                                <% } else if (item.status === 'Active') { %>
+                                  <span class="item-status active">Active</span>
+                                <% } %>
+                              </h5>
                               <p class="mb-1">Qty: <%= item.quantity || 1 %></p>
                               <p class="fw-medium mb-0"><%= item.formattedPrice %></p>
                               <div class="d-block d-md-none mt-2">
@@ -106,10 +124,14 @@
                                   <span class="badge bg-warning text-dark">Processing</span>
                                 <% } else if (order.orderStatus === 'Cancelled') { %>
                                   <span class="badge bg-secondary">Cancelled</span>
+                                <% } else if (order.orderStatus === 'Partially Cancelled') { %>
+                                  <span class="badge bg-secondary">Partially Cancelled</span>
                                 <% } else if (order.orderStatus === 'Placed') { %>
                                   <span class="badge bg-info">Placed</span>
                                 <% } else if (order.orderStatus === 'Returned') { %>
                                   <span class="badge bg-danger">Returned</span>
+                                <% } else if (order.orderStatus === 'Partially Returned') { %>
+                                  <span class="badge bg-danger">Partially Returned</span>
                                 <% } %>
                               </div>
                             </div>
@@ -120,17 +142,15 @@
                         <div class="order-actions d-flex flex-column gap-2">
                           <a href="/orders/<%= order._id %>" class="btn btn-dark btn-sm">View Order Details</a>
                           <% if (['Shipped', 'Delivered'].includes(order.orderStatus)) { %>
-                            <a href="#" class="btn btn-outline-dark btn-sm">Track Package</a>
+                            <a href="/orders/<%= order._id %>/track" class="btn btn-outline-dark btn-sm">Track Package</a>
                           <% } %>
                           <a href="/orders/<%= order._id %>/invoice" class="btn btn-outline-dark btn-sm">Download Invoice</a>
-                          <% if (order.orderStatus === 'Delivered') { %>
+                          <% if (order.orderStatus === 'Delivered' || order.orderStatus === 'Partially Returned') { %>
                             <a href="#" class="btn btn-outline-dark btn-sm">Write a Review</a>
                           <% } %>
-                          <% if (['Cancelled', 'Delivered'].includes(order.orderStatus)) { %>
-                            <a href="#" class="btn btn-outline-dark btn-sm">Buy Again</a>
-                          <% } %>
+                          <button class="btn btn-outline-dark btn-sm" onclick="reorder('<%= order._id %>')">Buy Again</button>
                           <% if (['Placed', 'Processing'].includes(order.orderStatus)) { %>
-                            <a href="#" class="btn btn-outline-danger btn-sm">Cancel Order</a>
+                            <a href="/orders/<%= order._id %>" class="btn btn-outline-danger btn-sm">Cancel Order</a>
                           <% } %>
                         </div>
                       </div>
@@ -178,6 +198,9 @@
   </div>
 </div>
 
+<!-- Toast container for notifications -->
+<div class="toast-container"></div>
+
 <style>
   body {
     font-family: "Inter", sans-serif;
@@ -204,6 +227,30 @@
   .order-item-image {
     min-width: 80px;
     max-width: 120px;
+  }
+
+  /* Item status badges */
+  .item-status {
+    display: inline-block;
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    margin-left: 0.5rem;
+  }
+
+  .item-status.cancelled {
+    background-color: #f8d7da;
+    color: #842029;
+  }
+
+  .item-status.returned {
+    background-color: #fff3cd;
+    color: #664d03;
+  }
+
+  .item-status.active {
+    background-color: #d1e7dd;
+    color: #0f5132;
   }
 
   @media (max-width: 767.98px) {
@@ -290,6 +337,10 @@
     background-color: #000;
     border-color: #000;
     color: #fff;
+  }
+
+  .pagination .page-item.disabled .page-link {
+    color: #6c757d;
   }
 
   .dropdown-menu {
@@ -425,6 +476,135 @@
       margin-bottom: 2rem;
     }
   }
+  
+  /* Toast notification styles */
+  .toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+  }
+  
+  .toast {
+    min-width: 300px;
+  }
+  
+  .toast-success {
+    background-color: #d1e7dd;
+    color: #0f5132;
+    border-color: #badbcc;
+  }
+  
+  .toast-error {
+    background-color: #f8d7da;
+    color: #842029;
+    border-color: #f5c2c7;
+  }
+  
+  .toast-warning {
+    background-color: #fff3cd;
+    color: #664d03;
+    border-color: #ffecb5;
+  }
+  
+  .toast-info {
+    background-color: #cff4fc;
+    color: #055160;
+    border-color: #b6effb;
+  }
 </style>
+
+<script>
+  // Toast notification function
+  function showToast(message, type = 'info') {
+    const toastContainer = document.querySelector('.toast-container');
+    
+    // Create toast element
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type} show`;
+    toast.setAttribute('role', 'alert');
+    toast.setAttribute('aria-live', 'assertive');
+    toast.setAttribute('aria-atomic', 'true');
+    
+    // Create toast header
+    const toastHeader = document.createElement('div');
+    toastHeader.className = 'toast-header';
+    
+    // Create toast title based on type
+    let title = 'Notification';
+    let icon = 'info-circle';
+    
+    if (type === 'success') {
+      title = 'Success';
+      icon = 'check-circle';
+    } else if (type === 'error') {
+      title = 'Error';
+      icon = 'exclamation-circle';
+    } else if (type === 'warning') {
+      title = 'Warning';
+      icon = 'exclamation-triangle';
+    }
+    
+    toastHeader.innerHTML = `
+      <i class="bi bi-${icon} me-2"></i>
+      <strong class="me-auto">${title}</strong>
+      <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+    `;
+    
+    // Create toast body
+    const toastBody = document.createElement('div');
+    toastBody.className = 'toast-body';
+    toastBody.textContent = message;
+    
+    // Append header and body to toast
+    toast.appendChild(toastHeader);
+    toast.appendChild(toastBody);
+    
+    // Append toast to container
+    toastContainer.appendChild(toast);
+    
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+      toast.remove();
+    }, 5000);
+    
+    // Add click event to close button
+    const closeButton = toast.querySelector('.btn-close');
+    closeButton.addEventListener('click', () => {
+      toast.remove();
+    });
+  }
+
+  // Function to reorder (buy again)
+  function reorder(orderId) {
+    // Show processing toast
+    showToast('Adding items to your cart...', 'info');
+    
+    fetch(`/orders/${orderId}/reorder`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        showToast(data.message || 'Items have been added to your cart', 'success');
+        
+        // Redirect after a short delay
+        setTimeout(() => {
+          window.location.href = data.redirectUrl || '/cart';
+        }, 1500);
+      } else {
+        showToast(data.message || 'Failed to add items to cart', 'error');
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      showToast('An error occurred while processing your request', 'error');
+    });
+    return false; // Prevent default link behavior
+  }
+</script>
 
 <%- include("../partials/user/footer") %>
