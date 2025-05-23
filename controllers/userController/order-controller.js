@@ -171,14 +171,19 @@ const getOrderDetails = async (req, res) => {
       }
     });
 
-    // Check if the order can be cancelled or returned
-    const canBeCancelled = ['Placed', 'Processing'].includes(order.orderStatus);
-    const canBeReturned = order.orderStatus === 'Delivered';
+    // FIXED: Check if individual items can be cancelled or returned
+    const orderNotTooFarProgressed = ['Placed', 'Processing', 'Partially Cancelled', 'Partially Returned', 'Partially Return Requested'].includes(order.orderStatus);
     
-    // Check if individual items can be cancelled or returned
     order.items.forEach(item => {
-      item.canBeCancelled = canBeCancelled && item.status === 'Active';
-      item.canBeReturned = canBeReturned && item.status === 'Active';
+      // An item can be cancelled if:
+      // 1. The item itself is still 'Active'
+      // 2. The overall order hasn't progressed too far (not shipped/delivered)
+      item.canBeCancelled = item.status === 'Active' && orderNotTooFarProgressed;
+      
+      // An item can be returned if:
+      // 1. The order is delivered
+      // 2. The item is still 'Active'
+      item.canBeReturned = order.orderStatus === 'Delivered' && item.status === 'Active';
     });
 
     // Create timeline based on order status using actual timestamps
@@ -203,7 +208,7 @@ const getOrderDetails = async (req, res) => {
           hour: '2-digit',
           minute: '2-digit'
         }),
-        completed: ['Placed', 'Processing', 'Shipped', 'Delivered', 'Returned', 'Partially Cancelled', 'Partially Returned'].includes(order.orderStatus)
+        completed: ['Placed', 'Processing', 'Shipped', 'Delivered', 'Returned', 'Partially Cancelled', 'Partially Returned', 'Partially Return Requested'].includes(order.orderStatus)
       },
       {
         status: 'Processing',
@@ -344,8 +349,6 @@ const getOrderDetails = async (req, res) => {
     res.render('order-details', {
       order,
       timeline,
-      canBeCancelled,
-      canBeReturned,
       user: {
         id: userId,
         fullName: user.fullName || 'User',
@@ -359,6 +362,7 @@ const getOrderDetails = async (req, res) => {
     res.status(500).render('error', { message: 'Internal server error', isAuthenticated: true });
   }
 };
+
 
 /**
  * Get order success page
@@ -910,16 +914,6 @@ const cancelOrderItem = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Order not found' });
     }
 
-    // Check if order can be cancelled
-    const allowedStatuses = ['Placed', 'Processing'];
-    if (!allowedStatuses.includes(order.orderStatus) && 
-        !order.orderStatus.includes('Partially')) {
-      return res.status(400).json({
-        success: false,
-        message: `Items in this order cannot be cancelled in ${order.orderStatus} status`
-      });
-    }
-
     // Find the specific product in the order
     const orderItem = order.items.find(item => item.product.toString() === productId);
     
@@ -927,10 +921,22 @@ const cancelOrderItem = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Product not found in this order' });
     }
     
+    // FIXED: Check individual item status instead of overall order status
     if (orderItem.status !== 'Active') {
       return res.status(400).json({ 
         success: false, 
         message: `This item is already ${orderItem.status.toLowerCase()}` 
+      });
+    }
+
+    // FIXED: Check if this specific item can be cancelled based on order progress
+    // Items can be cancelled if the order hasn't been shipped or delivered yet
+    const canCancelItem = ['Placed', 'Processing', 'Partially Cancelled', 'Partially Returned', 'Partially Return Requested'].includes(order.orderStatus);
+    
+    if (!canCancelItem) {
+      return res.status(400).json({
+        success: false,
+        message: `Items cannot be cancelled when order status is ${order.orderStatus}`
       });
     }
 
@@ -944,24 +950,26 @@ const cancelOrderItem = async (req, res) => {
     
     // Check if there are any active items left
     const hasActiveItems = order.items.some(item => item.status === 'Active');
-    
-    // Check if there are any returned items
     const hasReturnedItems = order.items.some(item => item.status === 'Returned');
+    const hasReturnRequestedItems = order.items.some(item => item.status === 'Return Requested');
     
     // Update order status based on item statuses
     if (!hasActiveItems) {
-      // If all items are cancelled/returned, mark the whole order as cancelled or returned
-      if (hasReturnedItems) {
+      // If no active items remain
+      if (hasReturnedItems && !hasReturnRequestedItems) {
         order.orderStatus = 'Returned';
+      } else if (hasReturnRequestedItems) {
+        order.orderStatus = 'Partially Return Requested';
       } else {
         order.orderStatus = 'Cancelled';
       }
-    } else if (hasReturnedItems) {
-      // If some items are active and some are returned (and now some are cancelled)
-      order.orderStatus = 'Partially Returned';
     } else {
-      // If some items are active and some are cancelled
-      order.orderStatus = 'Partially Cancelled';
+      // Some active items remain
+      if (hasReturnedItems || hasReturnRequestedItems) {
+        order.orderStatus = 'Partially Returned';
+      } else {
+        order.orderStatus = 'Partially Cancelled';
+      }
     }
     
     order.cancelledAt = new Date();
@@ -982,7 +990,6 @@ const cancelOrderItem = async (req, res) => {
       }
       await order.save();
       
-      // Placeholder for actual refund logic
       console.log(`Partial refund of ₹${itemTotal} initiated for item in order ${order.orderNumber}`);
     }
 
@@ -998,6 +1005,7 @@ const cancelOrderItem = async (req, res) => {
     });
   }
 };
+
 
 /**
  * Initiate return for an entire order

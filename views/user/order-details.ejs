@@ -86,6 +86,11 @@
     border-color: #ffc107;
   }
 
+  .timeline-item.return-requested::before {
+    background-color: #818cf8;
+    border-color: #4338ca;
+  }
+
   .badge {
     font-weight: 500;
     padding: 0.5em 0.75em;
@@ -224,6 +229,11 @@
     color: #0f5132;
   }
 
+  .item-status.return-requested {
+    background-color: #e2e3fe;
+    color: #4338ca;
+  }
+
   /* Styles for modal */
   .modal-content {
     border-radius: 0.5rem;
@@ -294,17 +304,6 @@
     color: #055160;
     border-color: #b6effb;
   }
-
-  /* Add this for the new return requested status */
-  .item-status.return-requested {
-    background-color: #e2e3fe;
-    color: #4338ca;
-  }
-  
-  .timeline-item.return-requested::before {
-    background-color: #818cf8;
-    border-color: #4338ca;
-  }
 </style>
 
 <div class="container py-4">
@@ -347,6 +346,10 @@
               <span class="badge bg-danger">Returned</span>
             <% } else if (order.orderStatus === 'Partially Returned') { %>
               <span class="badge bg-danger">Partially Returned</span>
+            <% } else if (order.orderStatus === 'Return Requested') { %>
+              <span class="badge bg-warning">Return Requested</span>
+            <% } else if (order.orderStatus === 'Partially Return Requested') { %>
+              <span class="badge bg-warning">Partially Return Requested</span>
             <% } %>
           </div>
         </div>
@@ -357,28 +360,6 @@
         <div class="card-body p-4">
           <h5 class="fw-bold mb-3">Order Status</h5>
           <div class="order-timeline">
-            <% if (order.orderStatus === 'Return Requested' || order.orderStatus === 'Partially Return Requested' || order.returnRequestedAt) { %>
-              <% timeline.push({
-                status: order.orderStatus === 'Partially Return Requested' ? 'Partially Return Requested' : 'Return Requested',
-                timestamp: order.returnRequestedAt 
-                  ? new Date(order.returnRequestedAt).toLocaleString('en-US', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    })
-                  : new Date().toLocaleString('en-US', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    }),
-                completed: true,
-                return_requested: true
-              }); %>
-            <% } %>
             <% timeline.forEach(item => { %>
               <div class="timeline-item <%= item.completed ? 'completed' : item.active ? 'active' : item.cancelled ? 'cancelled' : item.returned ? 'returned' : item.return_requested ? 'return-requested' : 'pending' %>">
                 <p class="fw-medium mb-0"><%= item.status %></p>
@@ -422,17 +403,7 @@
                 </div>
                 <p class="mb-2">Qty: <%= item.quantity || 1 %></p>
                 <div class="d-flex flex-wrap gap-2">
-                  <% if (order.orderStatus === 'Delivered' && item.status === 'Active') { %>
-                    <a href="#" class="btn btn-outline-dark btn-sm">Write a Review</a>
-                    <a href="#" class="btn btn-outline-dark btn-sm" onclick="reorder('<%= order._id %>')">Buy Again</a>
-                    <button 
-                      class="btn btn-outline-danger btn-sm" 
-                      data-bs-toggle="modal" 
-                      data-bs-target="#returnItemModal<%= item.product %>"
-                    >
-                      Return Item
-                    </button>
-                  <% } else if (['Placed', 'Processing'].includes(order.orderStatus) && item.status === 'Active') { %>
+                  <% if (item.canBeCancelled) { %>
                     <button 
                       class="btn btn-outline-danger btn-sm" 
                       data-bs-toggle="modal" 
@@ -441,12 +412,27 @@
                       Cancel Item
                     </button>
                   <% } %>
+                  
+                  <% if (item.canBeReturned) { %>
+                    <button 
+                      class="btn btn-outline-danger btn-sm" 
+                      data-bs-toggle="modal" 
+                      data-bs-target="#returnItemModal<%= item.product %>"
+                    >
+                      Return Item
+                    </button>
+                  <% } %>
+                  
+                  <% if (order.orderStatus === 'Delivered' && item.status === 'Active') { %>
+                    <a href="#" class="btn btn-outline-dark btn-sm">Write a Review</a>
+                    <a href="#" class="btn btn-outline-dark btn-sm" onclick="reorder('<%= order._id %>')">Buy Again</a>
+                  <% } %>
                 </div>
               </div>
             </div>
 
             <!-- Cancel Item Modal -->
-            <% if (['Placed', 'Processing'].includes(order.orderStatus) && item.status === 'Active') { %>
+            <% if (item.canBeCancelled) { %>
               <div class="modal fade" id="cancelItemModal<%= item.product %>" tabindex="-1" aria-labelledby="cancelItemModalLabel<%= item.product %>" aria-hidden="true">
                 <div class="modal-dialog">
                   <div class="modal-content">
@@ -488,7 +474,7 @@
             <% } %>
 
             <!-- Return Item Modal -->
-            <% if (order.orderStatus === 'Delivered' && item.status === 'Active') { %>
+            <% if (item.canBeReturned) { %>
               <div class="modal fade" id="returnItemModal<%= item.product %>" tabindex="-1" aria-labelledby="returnItemModalLabel<%= item.product %>" aria-hidden="true">
                 <div class="modal-dialog">
                   <div class="modal-content">
@@ -547,8 +533,7 @@
                   <% if (order.shippingAddress.landmark) { %>
                     <p class="mb-1"><%= order.shippingAddress.landmark %></p>
                   <% } %>
-                  <p class="mb-1"><%= order.shippingAddress.city || '' %>, <%= order.shippingAddress.state || '' %> <%= order.shippingAddress.pinCode || '' %></p>
-                  <p class="mb-3"><%= order.shippingAddress.country || '' %></p>
+                  <p class="mb-1"><%= order.shippingAddress.district || '' %>, <%= order.shippingAddress.state || '' %> <%= order.shippingAddress.pincode || '' %></p>
                   <p class="mb-0"><span class="text-muted">Phone:</span> <%= order.shippingAddress.phone || 'N/A' %></p>
                 </div>
                 
@@ -570,8 +555,7 @@
                   <% if (order.shippingAddress.landmark) { %>
                     <p class="mb-1"><%= order.shippingAddress.landmark %></p>
                   <% } %>
-                  <p class="mb-1"><%= order.shippingAddress.city || '' %>, <%= order.shippingAddress.state || '' %> <%= order.shippingAddress.pinCode || '' %></p>
-                  <p class="mb-0"><%= order.shippingAddress.country || '' %></p>
+                  <p class="mb-1"><%= order.shippingAddress.district || '' %>, <%= order.shippingAddress.state || '' %> <%= order.shippingAddress.pincode || '' %></p>
                 </div>
               </div>
             </div>
@@ -619,7 +603,13 @@
             
             <div>
               <a href="/orders/<%= order._id %>/invoice" class="btn btn-outline-dark btn-sm mb-2 w-100">Download Invoice</a>
-              <% if (['Placed', 'Processing'].includes(order.orderStatus)) { %>
+              <% 
+                const orderNotTooFarProgressed = ['Placed', 'Processing', 'Partially Cancelled', 'Partially Returned', 'Partially Return Requested'].includes(order.orderStatus);
+                const hasActiveItems = order.items.some(item => item.status === 'Active');
+                const canCancelOrder = orderNotTooFarProgressed && hasActiveItems;
+                const canReturnOrder = order.orderStatus === 'Delivered' && hasActiveItems;
+              %>
+              <% if (canCancelOrder) { %>
                 <button 
                   class="btn btn-outline-danger btn-sm w-100" 
                   data-bs-toggle="modal" 
@@ -627,7 +617,7 @@
                 >
                   Cancel Order
                 </button>
-              <% } else if (order.orderStatus === 'Delivered') { %>
+              <% } else if (canReturnOrder) { %>
                 <button 
                   class="btn btn-outline-danger btn-sm w-100" 
                   data-bs-toggle="modal" 
@@ -651,7 +641,7 @@
 <div class="toast-container"></div>
 
 <!-- Cancel Order Modal -->
-<% if (['Placed', 'Processing'].includes(order.orderStatus)) { %>
+<% if (canCancelOrder) { %>
 <div class="modal fade" id="cancelOrderModal" tabindex="-1" aria-labelledby="cancelOrderModalLabel" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
@@ -692,7 +682,7 @@
 <% } %>
 
 <!-- Return Order Modal -->
-<% if (order.orderStatus === 'Delivered') { %>
+<% if (canReturnOrder) { %>
 <div class="modal fade" id="returnOrderModal" tabindex="-1" aria-labelledby="returnOrderModalLabel" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
