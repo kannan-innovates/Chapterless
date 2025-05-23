@@ -34,6 +34,8 @@ const newPasswordController = require('../../controllers/userController/change-p
 
 const userCouponController = require('../../controllers/userController/user-coupon-controller');
 
+const walletController = require('../../controllers/userController/wallet-controller');
+
 // Public routes
 router.get("/", userController.loadHomePage);
 router.get("/pageNotFound", userController.pageNotFound);
@@ -135,4 +137,7 @@ router.post('/change-password', isAuthenticated, newPasswordController.changePas
 // Coupon routes
 router.get('/user-coupons', isAuthenticated, userCouponController.getUserCoupons);
 
+// Wallet routes
+
+router.get('/wallet',isAuthenticated,walletController.getWallet)
 module.exports = router;
