@@ -399,8 +399,20 @@
                       <span class="item-status active">Active</span>
                     <% } %>
                   </h6>
-                  <p class="fw-medium mb-0"><%= item.formattedPrice %></p>
+                  <p class="fw-medium mb-0">
+                    <% if (item.discountedPrice && item.discountedPrice < item.price) { %>
+                      <span class="text-decoration-line-through text-muted me-2">₹<%= item.price.toFixed(2) %></span>
+                      <span>₹<%= item.discountedPrice.toFixed(2) %></span>
+                    <% } else { %>
+                      <%= item.formattedPrice %>
+                    <% } %>
+                  </p>
                 </div>
+                <% if (item.offerTitle) { %>
+                  <p class="mb-2 text-success">
+                    <small><i class="bi bi-tag-fill me-1"></i><%= item.offerTitle %></small>
+                  </p>
+                <% } %>
                 <p class="mb-2">Qty: <%= item.quantity || 1 %></p>
                 <div class="d-flex flex-wrap gap-2">
                   <% if (item.canBeCancelled) { %>

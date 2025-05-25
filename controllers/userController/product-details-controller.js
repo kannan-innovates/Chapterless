@@ -14,32 +14,56 @@ const productDetails = async (req, res) => {
       return res.status(404).render("pageNotFound");
     }
 
-    const activeOffer = await getActiveOfferForProduct(product._id, product.category._id);
+    // Get active offer and calculate discount
+    const activeOffer = await getActiveOfferForProduct(
+      product._id, 
+      product.category._id,
+      product.regularPrice
+    );
     
     const { discountAmount, discountPercentage, finalPrice } = calculateDiscount(
       activeOffer, 
       product.regularPrice
     );
     
+    // Add offer and price information to product object
     product.activeOffer = activeOffer;
     product.discountAmount = discountAmount;
     product.discountPercentage = discountPercentage;
-    product.finalPrice = finalPrice || product.salePrice; // Use offer price or fallback to salePrice
+    product.finalPrice = finalPrice;
+    product.regularPrice = product.regularPrice || product.salePrice; // Ensure regularPrice exists
 
-
+    // Get related products
     const relatedProducts = await Product.aggregate([
-      { $match: { _id: { $ne: product._id }, isListed: true, isDeleted: false } },
+      { 
+        $match: { 
+          _id: { $ne: product._id }, 
+          isListed: true, 
+          isDeleted: false,
+          category: product.category._id 
+        }
+      },
       { $sample: { size: 4 } },
     ]);
 
+    // Calculate offers for related products
     for (const relatedProduct of relatedProducts) {
-      const offer = await getActiveOfferForProduct(relatedProduct._id, relatedProduct.category);
-      const { discountPercentage, discountAmount, finalPrice } = calculateDiscount(offer, relatedProduct.regularPrice);
+      const offer = await getActiveOfferForProduct(
+        relatedProduct._id, 
+        relatedProduct.category,
+        relatedProduct.regularPrice || relatedProduct.salePrice
+      );
+      
+      const { discountPercentage, discountAmount, finalPrice } = calculateDiscount(
+        offer, 
+        relatedProduct.regularPrice || relatedProduct.salePrice
+      );
+      
       relatedProduct.activeOffer = offer;
       relatedProduct.discountPercentage = discountPercentage;
       relatedProduct.discountAmount = discountAmount;
-      relatedProduct.finalPrice = finalPrice || relatedProduct.salePrice;
-      
+      relatedProduct.finalPrice = finalPrice;
+      relatedProduct.regularPrice = relatedProduct.regularPrice || relatedProduct.salePrice;
     }
 
     let cartCount = 0;
@@ -61,6 +85,16 @@ const productDetails = async (req, res) => {
       }
     }
 
+    // Log the product data for debugging
+    console.log('Product details with offer:', {
+      title: product.title,
+      regularPrice: product.regularPrice,
+      finalPrice: product.finalPrice,
+      discountPercentage: product.discountPercentage,
+      hasOffer: !!product.activeOffer,
+      offerTitle: product.activeOffer?.title
+    });
+
     res.render("product-details", {
       product,
       relatedProducts,
@@ -72,9 +106,10 @@ const productDetails = async (req, res) => {
       isAuthenticated: !!userId,
     });
   } catch (error) {
-    console.log("Error fetching product details:", error);
+    console.error("Error fetching product details:", error);
     res.status(500).render("pageNotFound");
   }
 };
 
 module.exports = { productDetails };
+

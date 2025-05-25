@@ -51,17 +51,22 @@ const getCheckout = async (req, res) => {
       // Process each item for offers
       for (const item of cartItems) {
         // Get active offer for this product
-        const offer = await getActiveOfferForProduct(item.product._id, item.product.category);
+        const offer = await getActiveOfferForProduct(
+          item.product._id, 
+          item.product.category,
+          item.priceAtAddition
+        );
 
         if (offer) {
           // Calculate discount
-          const { discountAmount, finalPrice } = calculateDiscount(offer, item.priceAtAddition);
+          const { discountAmount, discountPercentage, finalPrice } = calculateDiscount(offer, item.priceAtAddition);
 
           // Store original and discounted prices
           item.originalPrice = item.priceAtAddition;
           item.discountedPrice = finalPrice;
           item.offerDiscount = discountAmount * item.quantity;
           item.offerTitle = offer.title;
+          item.discountPercentage = discountPercentage;
 
           // Add to total offer discount
           offerDiscount += discountAmount * item.quantity;
@@ -69,6 +74,8 @@ const getCheckout = async (req, res) => {
           item.originalPrice = item.priceAtAddition;
           item.discountedPrice = item.priceAtAddition;
           item.offerDiscount = 0;
+          item.offerTitle = null;
+          item.discountPercentage = 0;
         }
       }
 

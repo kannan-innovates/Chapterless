@@ -82,7 +82,7 @@
                         <span class="text-decoration-line-through">₹<%= item.originalPrice.toFixed(2) %></span>
                         <span class="ms-2 text-success">₹<%= item.discountedPrice.toFixed(2) %></span>
                         <span class="ms-2 badge bg-danger">
-                          <%= item.offerTitle %>
+                          <%= item.discountPercentage %>% OFF - <%= item.offerTitle %>
                         </span>
                       <% } else { %>
                         Price: ₹<%= item.priceAtAddition ? item.priceAtAddition.toFixed(2) : '0.00' %>
@@ -1819,7 +1819,7 @@
                   ? `<p class="mb-1">Landmark: ${address.landmark}</p>`
                   : ""
               }
-              <p class="mb-3">Phone: ${address.phone}</p>
+              <p class="mb-0">Phone: ${address.phone}</p>
             </div>
           </div>
         </div>

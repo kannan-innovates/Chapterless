@@ -69,18 +69,24 @@
             </div>
           </div>
           
-          <div class="price-section">
+          <div class="price-section mb-4">
             <% if (product.activeOffer && product.discountPercentage > 0) { %>
-              <h2 class="fs-3 fw-bold mb-0">₹<%= product.finalPrice.toFixed(2) %></h2>
-              <span class="fs-5 original-price">₹<%= product.regularPrice.toFixed(2) %></span>
-              <span class="discount-badge"><%= product.discountPercentage %>% OFF</span>
+              <div class="d-flex align-items-baseline gap-2">
+                <h2 class="fs-3 fw-bold mb-0 text-danger">₹<%= product.finalPrice.toFixed(2) %></h2>
+                <span class="fs-5 text-decoration-line-through text-muted">₹<%= product.regularPrice.toFixed(2) %></span>
+                <span class="badge bg-danger">-<%= Math.round(product.discountPercentage) %>% OFF</span>
+              </div>
               <div class="offer-details mt-2">
-                <small class="text-success">
-                  <i class="ri-price-tag-3-line"></i> <%= product.activeOffer.title %>
+                <span class="text-success d-flex align-items-center gap-1">
+                  <i class="ri-price-tag-3-line"></i>
+                  <%= product.activeOffer.title %>
+                </span>
+                <small class="text-muted">
+                  You save: ₹<%= product.discountAmount.toFixed(2) %>
                 </small>
               </div>
             <% } else { %>
-              <h2 class="fs-3 fw-bold mb-0">₹<%= product.finalPrice.toFixed(2) %></h2>
+              <h2 class="fs-3 fw-bold mb-0 text-danger">₹<%= product.regularPrice.toFixed(2) %></h2>
             <% } %>
           </div>
           

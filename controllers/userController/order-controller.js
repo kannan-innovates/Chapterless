@@ -4,6 +4,7 @@ const Product = require("../../models/productSchema");
 const Cart = require("../../models/cartSchema"); // Added Cart import
 const PDFDocument = require('pdfkit');
 const path = require('path');
+const { getActiveOfferForProduct, calculateDiscount } = require("../../utils/offer-helper");
 
 /**
  * Get all orders for the current user with pagination, filtering, and sorting
@@ -69,27 +70,57 @@ const getOrders = async (req, res) => {
       pages: Array.from({ length: totalPages }, (_, i) => i + 1),
     };
 
-    // Format order data
-    orders.forEach(order => {
+    // Format order data and calculate offers
+    for (const order of orders) {
+      let totalBeforeDiscount = 0;
+      let totalDiscount = 0;
+      let totalAfterDiscount = 0;
+
       order.formattedDate = new Date(order.createdAt).toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'long',
         day: 'numeric',
       });
-      order.formattedTotal = `₹${order.total.toFixed(2)}`;
-      order.formattedSubtotal = `₹${order.subtotal.toFixed(2)}`;
-      order.formattedTax = `₹${order.tax.toFixed(2)}`;
-      order.formattedDiscount = `₹${order.discount ? order.discount.toFixed(2) : '0.00'}`;
-      order.formattedCouponDiscount = `₹${order.couponDiscount ? order.couponDiscount.toFixed(2) : '0.00'}`;
       
-      order.items.forEach(item => {
+      for (const item of order.items) {
+        // Get active offer for this product
+        const offer = await getActiveOfferForProduct(
+          item.product.toString(),
+          null,  // We'll get category from product if needed
+          item.price
+        );
+
+        // Calculate discount if offer exists
+        const { discountPercentage, discountAmount, finalPrice } = calculateDiscount(offer, item.price);
+        
+        const itemOriginalTotal = item.price * item.quantity;
+        const itemDiscountTotal = discountAmount * item.quantity;
+        const itemFinalTotal = finalPrice * item.quantity;
+
+        totalBeforeDiscount += itemOriginalTotal;
+        totalDiscount += itemDiscountTotal;
+        totalAfterDiscount += itemFinalTotal;
+        
         item.formattedPrice = `₹${item.price.toFixed(2)}`;
-        item.formattedTotal = `₹${(item.price * item.quantity).toFixed(2)}`;
-        if (item.discountedPrice) {
-          item.formattedDiscountedPrice = `₹${item.discountedPrice.toFixed(2)}`;
-        }
-      });
-    });
+        item.formattedTotal = `₹${itemFinalTotal.toFixed(2)}`;
+        item.discountedPrice = finalPrice;
+        item.formattedDiscountedPrice = `₹${finalPrice.toFixed(2)}`;
+        item.offerDiscount = discountAmount;
+        item.offerTitle = offer ? offer.title : null;
+        item.discountPercentage = discountPercentage;
+      }
+
+      // Update order totals
+      order.subtotal = totalBeforeDiscount;
+      order.discount = totalDiscount;
+      order.total = totalAfterDiscount + (order.tax || 0) - (order.couponDiscount || 0);
+      
+      order.formattedSubtotal = `₹${order.subtotal.toFixed(2)}`;
+      order.formattedTotal = `₹${order.total.toFixed(2)}`;
+      order.formattedTax = `₹${(order.tax || 0).toFixed(2)}`;
+      order.formattedDiscount = `₹${order.discount.toFixed(2)}`;
+      order.formattedCouponDiscount = `₹${(order.couponDiscount || 0).toFixed(2)}`;
+    }
 
     // Map sort values to display text
     const sortDisplay = {
@@ -151,25 +182,56 @@ const getOrderDetails = async (req, res) => {
       return res.redirect('/login');
     }
 
-    // Format order data
+    // Format order data and calculate offers
+    let totalBeforeDiscount = 0;
+    let totalDiscount = 0;
+    let totalAfterDiscount = 0;
+
     order.formattedDate = new Date(order.createdAt).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric'
     });
-    order.formattedTotal = `₹${order.total.toFixed(2)}`;
-    order.formattedSubtotal = `₹${order.subtotal.toFixed(2)}`;
-    order.formattedTax = `₹${order.tax.toFixed(2)}`;
-    order.formattedDiscount = order.discount ? `₹${order.discount.toFixed(2)}` : "₹0.00";
-    order.formattedCouponDiscount = order.couponDiscount ? `₹${order.couponDiscount.toFixed(2)}` : "₹0.00";
     
-    order.items.forEach(item => {
+    // Calculate offers for each item
+    for (const item of order.items) {
+      // Get active offer for this product
+      const offer = await getActiveOfferForProduct(
+        item.product.toString(),
+        null,  // We'll get category from product if needed
+        item.price
+      );
+
+      // Calculate discount if offer exists
+      const { discountPercentage, discountAmount, finalPrice } = calculateDiscount(offer, item.price);
+      
+      const itemOriginalTotal = item.price * item.quantity;
+      const itemDiscountTotal = discountAmount * item.quantity;
+      const itemFinalTotal = finalPrice * item.quantity;
+
+      totalBeforeDiscount += itemOriginalTotal;
+      totalDiscount += itemDiscountTotal;
+      totalAfterDiscount += itemFinalTotal;
+      
       item.formattedPrice = `₹${item.price.toFixed(2)}`;
-      item.formattedTotal = `₹${(item.price * item.quantity).toFixed(2)}`;
-      if (item.discountedPrice) {
-        item.formattedDiscountedPrice = `₹${item.discountedPrice.toFixed(2)}`;
-      }
-    });
+      item.formattedTotal = `₹${itemFinalTotal.toFixed(2)}`;
+      item.discountedPrice = finalPrice;
+      item.formattedDiscountedPrice = `₹${finalPrice.toFixed(2)}`;
+      item.offerDiscount = discountAmount;
+      item.offerTitle = offer ? offer.title : null;
+      item.discountPercentage = discountPercentage;
+    }
+
+    // Update order totals
+    order.subtotal = totalBeforeDiscount;
+    order.discount = totalDiscount;
+    order.total = totalAfterDiscount + (order.tax || 0) - (order.couponDiscount || 0);
+    
+    order.formattedSubtotal = `₹${order.subtotal.toFixed(2)}`;
+    order.formattedTotal = `₹${order.total.toFixed(2)}`;
+    order.formattedTax = `₹${(order.tax || 0).toFixed(2)}`;
+    order.formattedDiscount = `₹${order.discount.toFixed(2)}`;
+    order.formattedCouponDiscount = `₹${(order.couponDiscount || 0).toFixed(2)}`;
 
     // FIXED: Check if individual items can be cancelled or returned
     const orderNotTooFarProgressed = ['Placed', 'Processing', 'Partially Cancelled', 'Partially Returned', 'Partially Return Requested'].includes(order.orderStatus);
@@ -496,13 +558,57 @@ const downloadInvoice = async (req, res) => {
       return res.status(401).send('User not found');
     }
 
+    // Calculate offers and format order data
+    let totalBeforeDiscount = 0;
+    let totalDiscount = 0;
+    let totalAfterDiscount = 0;
+
     // Format order data
     order.formattedDate = new Date(order.createdAt).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric'
     });
+
+    // Process each item for offers
+    for (const item of order.items) {
+      // Get active offer for this product
+      const offer = await getActiveOfferForProduct(
+        item.product.toString(),
+        null,
+        item.price
+      );
+
+      // Calculate discount if offer exists
+      const { discountPercentage, discountAmount, finalPrice } = calculateDiscount(offer, item.price);
+      
+      const itemOriginalTotal = item.price * item.quantity;
+      const itemDiscountTotal = discountAmount * item.quantity;
+      const itemFinalTotal = finalPrice * item.quantity;
+
+      totalBeforeDiscount += itemOriginalTotal;
+      totalDiscount += itemDiscountTotal;
+      totalAfterDiscount += itemFinalTotal;
+
+      // Update item with offer information
+      item.discountedPrice = finalPrice;
+      item.offerDiscount = discountAmount;
+      item.offerTitle = offer ? offer.title : null;
+      item.discountPercentage = discountPercentage;
+      item.finalTotal = itemFinalTotal;
+    }
+
+    // Update order totals
+    order.subtotal = totalBeforeDiscount;
+    order.discount = totalDiscount;
+    order.total = totalAfterDiscount + (order.tax || 0) - (order.couponDiscount || 0);
     
+    order.formattedSubtotal = `₹${order.subtotal.toFixed(2)}`;
+    order.formattedTotal = `₹${order.total.toFixed(2)}`;
+    order.formattedTax = `₹${(order.tax || 0).toFixed(2)}`;
+    order.formattedDiscount = `₹${order.discount.toFixed(2)}`;
+    order.formattedCouponDiscount = `₹${(order.couponDiscount || 0).toFixed(2)}`;
+
     // Create PDF document
     const doc = new PDFDocument({ 
       margin: 50,
@@ -535,35 +641,40 @@ const downloadInvoice = async (req, res) => {
     const rightMargin = pageWidth - 50;
 
     // Add logo and company info
-    doc.image(path.join(__dirname, '../../public/assets/harryPotter.jpeg'), leftMargin, 50, { width: 60 })
+    doc.image(path.join(__dirname, '../../public/assets/harryPotter.jpeg'), leftMargin, 50, { width: 50 })
        .font('Helvetica-Bold')
-       .fontSize(22)
+       .fontSize(24)
        .fillColor(colors.primary)
-       .text('Chapterless', leftMargin + 70, 60)
+       .text('Chapterless', leftMargin + 70, 50)
        .font('Helvetica')
        .fontSize(10)
        .fillColor(colors.secondary)
-       .text('WHERE STORIES FIND LOST SOULS', leftMargin + 70, 85);
+       .text('WHERE STORIES FIND LOST SOULS', leftMargin + 70, 80);
 
     // Add invoice title and details
     doc.font('Helvetica-Bold')
-       .fontSize(28)
+       .fontSize(24)
        .fillColor(colors.dark)
-       .text('INVOICE', rightMargin - 150, 50, { align: 'right', width: 150 })
+       .text('INVOICE', rightMargin - 120, 50, { align: 'right', width: 120 })
        .fontSize(10)
        .fillColor(colors.secondary)
-       .text(`Invoice Number: #${order.orderNumber}`, rightMargin - 150, 85, { align: 'right', width: 150 })
-       .text(`Date: ${order.formattedDate}`, rightMargin - 150, 100, { align: 'right', width: 150 });
+       .text(`Invoice Number:`, rightMargin - 120, 80, { align: 'right', width: 120 })
+       .fillColor(colors.dark)
+       .text(`#${order.orderNumber}`, rightMargin - 120, 92, { align: 'right', width: 120 })
+       .fillColor(colors.secondary)
+       .text(`Date:`, rightMargin - 120, 110, { align: 'right', width: 120 })
+       .fillColor(colors.dark)
+       .text(`${order.formattedDate}`, rightMargin - 120, 122, { align: 'right', width: 120 });
 
     // Add separator line
     doc.strokeColor(colors.border)
        .lineWidth(1)
-       .moveTo(leftMargin, 120)
-       .lineTo(rightMargin, 120)
+       .moveTo(leftMargin, 150)
+       .lineTo(rightMargin, 150)
        .stroke();
 
     // Add billing and shipping info
-    const billingStartY = 140;
+    const billingStartY = 170;
     
     // Billing info
     doc.font('Helvetica-Bold')
@@ -572,33 +683,32 @@ const downloadInvoice = async (req, res) => {
        .text('Bill To:', leftMargin, billingStartY)
        .font('Helvetica')
        .fontSize(10)
-       .fillColor(colors.secondary)
-       .text(order.shippingAddress.fullName || user.fullName || 'N/A', leftMargin, billingStartY + 20)
-       .text(order.shippingAddress.street || '', leftMargin, billingStartY + 35)
-       .text(`${order.shippingAddress.district || ''}, ${order.shippingAddress.state || ''} - ${order.shippingAddress.pincode || ''}`, leftMargin, billingStartY + 50)
-       .text(`Phone: ${order.shippingAddress.phone || 'N/A'}`, leftMargin, billingStartY + 65)
-       .text(`Email: ${user.email || 'N/A'}`, leftMargin, billingStartY + 80);
+       .fillColor(colors.dark)
+       .text(order.shippingAddress.fullName || user.fullName || 'N/A', leftMargin, billingStartY + 25)
+       .text(order.shippingAddress.street || '', leftMargin, billingStartY + 40)
+       .text(`${order.shippingAddress.district || ''}, ${order.shippingAddress.state || ''} - ${order.shippingAddress.pincode || ''}`, leftMargin, billingStartY + 55)
+       .text(`Phone: ${order.shippingAddress.phone || 'N/A'}`, leftMargin, billingStartY + 70)
+       .text(`Email: ${user.email || 'N/A'}`, leftMargin, billingStartY + 85);
 
     // Payment info
     doc.font('Helvetica-Bold')
        .fontSize(14)
        .fillColor(colors.dark)
-       .text('Payment Details:', rightMargin - 200, billingStartY, { width: 200, align: 'left' })
+       .text('Payment Details:', rightMargin - 200, billingStartY)
        .font('Helvetica')
        .fontSize(10)
-       .fillColor(colors.secondary)
-       .text(`Method: ${order.paymentMethod || 'Cash on Delivery'}`, rightMargin - 200, billingStartY + 20, { width: 200, align: 'left' })
-       .text(`Status: ${order.paymentStatus || 'Pending'}`, rightMargin - 200, billingStartY + 35, { width: 200, align: 'left' });
+       .text(`Method: ${order.paymentMethod || 'Cash on Delivery'}`, rightMargin - 200, billingStartY + 25)
+       .text(`Status: ${order.paymentStatus || 'Pending'}`, rightMargin - 200, billingStartY + 40);
 
     // Add separator line
     doc.strokeColor(colors.border)
        .lineWidth(1)
-       .moveTo(leftMargin, billingStartY + 110)
-       .lineTo(rightMargin, billingStartY + 110)
+       .moveTo(leftMargin, billingStartY + 120)
+       .lineTo(rightMargin, billingStartY + 120)
        .stroke();
 
     // Order items table
-    const tableTop = billingStartY + 130;
+    const tableTop = billingStartY + 140;
     const tableHeaders = ['Item', 'Price', 'Quantity', 'Discount', 'Total'];
     const colWidths = [0.40, 0.15, 0.15, 0.15, 0.15]; // Proportions of contentWidth
     
@@ -613,7 +723,7 @@ const downloadInvoice = async (req, res) => {
     
     // Add table header
     doc.fillColor(colors.light)
-       .rect(leftMargin, tableTop, contentWidth, 30)
+       .rect(leftMargin, tableTop, contentWidth, 25)
        .fill();
     
     doc.font('Helvetica-Bold')
@@ -625,65 +735,75 @@ const downloadInvoice = async (req, res) => {
       const x = colPositions[i];
       const width = colWidths[i] * contentWidth;
       
-      doc.text(header, x + 5, tableTop + 10, { width: width - 10, align });
+      doc.text(header, x + 5, tableTop + 8, { width: width - 10, align });
     });
     
     // Add table rows
-    let y = tableTop + 30;
+    let y = tableTop + 25;
     
-    // Only include active items or show status for cancelled/returned items
     order.items.forEach((item, index) => {
       // Alternate row background for better readability
       if (index % 2 === 1) {
         doc.fillColor('#F9FAFB')
-           .rect(leftMargin, y, contentWidth, 30)
+           .rect(leftMargin, y, contentWidth, 35)
            .fill();
       }
       
       doc.fillColor(colors.dark)
          .font('Helvetica')
-         .fontSize(9);
+         .fontSize(10);
       
-      // Item name with status if cancelled or returned
+      // Item name with status
       let itemTitle = item.title || 'Unknown Product';
-      if (item.status === 'Cancelled') {
-        itemTitle += ' (Cancelled)';
-      } else if (item.status === 'Returned') {
-        itemTitle += ' (Returned)';
+      if (item.status !== 'Active') {
+        itemTitle += ` (${item.status})`;
       }
       
-      doc.text(itemTitle, colPositions[0] + 5, y + 10, { 
+      doc.text(itemTitle, colPositions[0] + 5, y + 5, { 
         width: colWidths[0] * contentWidth - 10, 
         align: 'left' 
       });
+
+      // Add offer title if exists
+      if (item.offerTitle) {
+        doc.fillColor(colors.success)
+           .fontSize(8)
+           .text(item.offerTitle, colPositions[0] + 5, y + 20, {
+             width: colWidths[0] * contentWidth - 10,
+             align: 'left'
+           });
+      }
       
       // Price
-      doc.text(`₹${item.price.toFixed(2)}`, colPositions[1] + 5, y + 10, { 
-        width: colWidths[1] * contentWidth - 10, 
-        align: 'right' 
-      });
+      doc.fillColor(colors.dark)
+         .fontSize(10)
+         .text(`₹${item.price.toFixed(2)}`, colPositions[1] + 5, y + 12, { 
+           width: colWidths[1] * contentWidth - 10, 
+           align: 'right' 
+         });
       
       // Quantity
-      doc.text(item.quantity.toString(), colPositions[2] + 5, y + 10, { 
+      doc.text(item.quantity.toString(), colPositions[2] + 5, y + 12, { 
         width: colWidths[2] * contentWidth - 10, 
         align: 'right' 
       });
       
       // Discount
-      const itemDiscount = item.offerDiscount || 0;
-      doc.text(`₹${itemDiscount.toFixed(2)}`, colPositions[3] + 5, y + 10, { 
-        width: colWidths[3] * contentWidth - 10, 
-        align: 'right' 
-      });
+      const itemDiscount = (item.offerDiscount || 0) * item.quantity;
+      doc.fillColor(colors.success)
+         .text(`₹${itemDiscount.toFixed(2)}`, colPositions[3] + 5, y + 12, { 
+           width: colWidths[3] * contentWidth - 10, 
+           align: 'right' 
+         });
       
-      // Total - only count active items for total
-      const itemTotal = item.status === 'Active' ? (item.price * item.quantity) - itemDiscount : 0;
-      doc.text(`₹${itemTotal.toFixed(2)}`, colPositions[4] + 5, y + 10, { 
-        width: colWidths[4] * contentWidth - 10, 
-        align: 'right' 
-      });
+      // Total
+      doc.fillColor(colors.dark)
+         .text(`₹${item.finalTotal.toFixed(2)}`, colPositions[4] + 5, y + 12, { 
+           width: colWidths[4] * contentWidth - 10, 
+           align: 'right' 
+         });
       
-      y += 30;
+      y += 35;
     });
     
     // Add table border
@@ -693,12 +813,12 @@ const downloadInvoice = async (req, res) => {
        .stroke();
     
     // Add horizontal lines for each row
-    let lineY = tableTop + 30;
+    let lineY = tableTop + 25;
     for (let i = 0; i < order.items.length; i++) {
       doc.moveTo(leftMargin, lineY)
          .lineTo(rightMargin - 50, lineY)
          .stroke();
-      lineY += 30;
+      lineY += 35;
     }
     
     // Add vertical lines for columns
@@ -729,26 +849,24 @@ const downloadInvoice = async (req, res) => {
        .text(`₹${order.tax.toFixed(2)}`, summaryX + 100, summaryStartY + 20, { width: 100, align: 'right' });
     
     // Offer discount
-    if (order.discount && order.discount > 0) {
+    if (order.discount > 0) {
       doc.fillColor(colors.secondary)
          .text('Offer Discount:', summaryX, summaryStartY + 40, { width: 100, align: 'left' })
          .fillColor(colors.success)
-         .text(`-₹${order.discount.toFixed(2)}`, summaryX + 100, summaryStartY + 40, { width: 100, align: 'right' });
+         .text(`- ₹${order.discount.toFixed(2)}`, summaryX + 100, summaryStartY + 40, { width: 100, align: 'right' });
     }
     
     // Coupon discount
     if (order.couponDiscount && order.couponDiscount > 0) {
-      const yPos = order.discount && order.discount > 0 ? summaryStartY + 60 : summaryStartY + 40;
+      const yPos = order.discount > 0 ? summaryStartY + 60 : summaryStartY + 40;
       doc.fillColor(colors.secondary)
          .text(`Coupon Discount${order.couponCode ? ` (${order.couponCode})` : ''}:`, summaryX, yPos, { width: 100, align: 'left' })
          .fillColor(colors.success)
-         .text(`-₹${order.couponDiscount.toFixed(2)}`, summaryX + 100, yPos, { width: 100, align: 'right' });
+         .text(`- ₹${order.couponDiscount.toFixed(2)}`, summaryX + 100, yPos, { width: 100, align: 'right' });
     }
     
     // Total
-    const totalY = order.couponDiscount && order.couponDiscount > 0 ? 
-                  (order.discount && order.discount > 0 ? summaryStartY + 90 : summaryStartY + 70) : 
-                  (order.discount && order.discount > 0 ? summaryStartY + 70 : summaryStartY + 50);
+    const totalY = summaryStartY + (order.discount > 0 ? 80 : 60);
     
     // Add separator line before total
     doc.strokeColor(colors.border)
@@ -758,7 +876,7 @@ const downloadInvoice = async (req, res) => {
        .stroke();
     
     doc.font('Helvetica-Bold')
-       .fontSize(14)
+       .fontSize(12)
        .fillColor(colors.primary)
        .text('Total:', summaryX, totalY, { width: 100, align: 'left' })
        .text(`₹${order.total.toFixed(2)}`, summaryX + 100, totalY, { width: 100, align: 'right' });

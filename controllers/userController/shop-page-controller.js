@@ -51,8 +51,22 @@ const shopPage = async (req, res) => {
 
     // Calculate finalPrice and apply offers
     for (const product of products) {
-      const offer = await getActiveOfferForProduct(product._id, product.category._id);
+      const offer = await getActiveOfferForProduct(product._id, product.category._id, product.regularPrice);
+      console.log(`Processing offers for product ${product.title}:`, {
+        productId: product._id,
+        categoryId: product.category._id,
+        regularPrice: product.regularPrice,
+        hasOffer: !!offer
+      });
+      
       const { discountPercentage, discountAmount, finalPrice } = calculateDiscount(offer, product.regularPrice);
+      console.log('Calculated discount:', {
+        discountPercentage,
+        discountAmount,
+        finalPrice,
+        offerTitle: offer?.title
+      });
+      
       product.activeOffer = offer;
       product.discountPercentage = discountPercentage;
       product.discountAmount = discountAmount;

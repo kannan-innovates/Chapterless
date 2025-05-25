@@ -32,15 +32,26 @@ const getWishlist = async (req, res) => {
 
       // Get active offers for all products in wishlist
       for (const item of wishlistItems) {
-        const offer = await getActiveOfferForProduct(item.product._id, item.product.category)
+        const offer = await getActiveOfferForProduct(
+          item.product._id, 
+          item.product.category,
+          item.product.regularPrice
+        )
 
-        const { discountPercentage } = calculateDiscount(offer, item.product.regularPrice)
+        const { discountPercentage, discountAmount, finalPrice } = calculateDiscount(
+          offer, 
+          item.product.regularPrice
+        )
 
+        // Update product with offer information
         item.product.activeOffer = offer
         item.product.discountPercentage = discountPercentage
-      }
+        item.product.discountAmount = discountAmount
+        item.product.finalPrice = finalPrice
+        item.product.regularPrice = item.product.regularPrice || item.product.salePrice
+        item.product.salePrice = finalPrice // Update salePrice to reflect the discounted price
 
-      wishlistItems.forEach((item) => {
+        // Count stock status
         if (item.product.stock > 10) {
           inStockItems++
         } else if (item.product.stock > 0) {
@@ -48,7 +59,7 @@ const getWishlist = async (req, res) => {
         } else {
           outOfStockItems++
         }
-      })
+      }
 
       wishlistItems = wishlistItems.slice(skip, skip + limit)
     }
@@ -67,10 +78,23 @@ const getWishlist = async (req, res) => {
 
     // Get active offers for recently viewed products
     for (const product of recentlyViewed) {
-      const offer = await getActiveOfferForProduct(product._id, product.category)
-      const { discountPercentage } = calculateDiscount(offer, product.regularPrice)
+      const offer = await getActiveOfferForProduct(
+        product._id, 
+        product.category,
+        product.regularPrice
+      )
+      
+      const { discountPercentage, discountAmount, finalPrice } = calculateDiscount(
+        offer, 
+        product.regularPrice
+      )
+      
       product.activeOffer = offer
       product.discountPercentage = discountPercentage
+      product.discountAmount = discountAmount
+      product.finalPrice = finalPrice
+      product.regularPrice = product.regularPrice || product.salePrice
+      product.salePrice = finalPrice // Update salePrice to reflect the discounted price
     }
 
     res.render("wishlist", {
