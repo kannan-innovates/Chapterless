@@ -848,22 +848,19 @@
                         >
                         <div class="product-details">
                           <div class="product-name"><%= item.title || 'Unknown Product' %></div>
-                          <% if (item.offerTitle) { %>
-                            <div class="offer-badge"><%= item.offerTitle %></div>
-                          <% } %>
                           <div class="product-meta">
-                            <div>ISBN: <%= item.isbn || 'N/A' %></div>
-                            <div>Author: <%= item.author || 'N/A' %></div>
+                            <div>ISBN: <%= item.isbn %></div>
+                            <div>Author: <%= item.author %></div>
                           </div>
                         </div>
                       </div>
                     </td>
                     <td class="price-cell">
                       <% if (item.discountedPrice && item.discountedPrice < item.price) { %>
-                        <span class="price-original"><%= item.formattedPrice %></span>
+                        <span class="price-original"><%= item.formattedOriginalPrice %></span>
                         <span class="price-discounted"><%= item.formattedDiscountedPrice %></span>
                       <% } else { %>
-                        <%= item.formattedPrice %>
+                        <%= item.formattedOriginalPrice %>
                       <% } %>
                     </td>
                     <td><%= item.quantity || 1 %></td>
@@ -886,11 +883,11 @@
                       <% } %>
                     </td>
                     <td class="subtotal-cell" style="text-align: right;">
-                      <% const itemTotal = item.discountedPrice ? item.discountedPrice * item.quantity : item.price * item.quantity %>
+                      <% const itemTotal = item.discountedPrice * item.quantity %>
                       ₹<%= itemTotal.toFixed(2) %>
-                      <% if (item.offerDiscount && item.offerDiscount > 0) { %>
+                      <% if (item.formattedSavings) { %>
                         <div class="discount-text" style="font-size: 0.75rem;">
-                          Saved: <%= item.formattedOfferDiscount %>
+                          <%= item.formattedSavings %>
                         </div>
                       <% } %>
                     </td>
@@ -907,14 +904,19 @@
               <span class="summary-value"><%= order.formattedSubtotal %></span>
             </div>
             
-            <% if (order.discount && order.discount > 0) { %>
+            <% if (order.discount > 0) { %>
             <div class="summary-row">
-              <span class="summary-label">Offer Discount</span>
-              <span class="summary-value discount-text">-<%= order.formattedDiscount %></span>
+              <span class="summary-label">
+                Offer Discount
+                <% if (order.items[0].priceBreakdown && order.items[0].priceBreakdown.offerTitle) { %>
+                  <span class="offer-badge"><%= order.items[0].priceBreakdown.offerTitle %></span>
+                <% } %>
+              </span>
+              <span class="summary-value discount-text"><%= order.formattedDiscount %></span>
             </div>
             <% } %>
             
-            <% if (order.couponDiscount && order.couponDiscount > 0) { %>
+            <% if (order.couponDiscount > 0) { %>
             <div class="summary-row">
               <span class="summary-label">
                 Coupon Discount
@@ -922,13 +924,13 @@
                   <span class="coupon-code"><%= order.couponCode %></span>
                 <% } %>
               </span>
-              <span class="summary-value discount-text">-<%= order.formattedCouponDiscount %></span>
+              <span class="summary-value discount-text"><%= order.formattedCouponDiscount %></span>
             </div>
             <% } %>
             
             <div class="summary-row">
               <span class="summary-label">Shipping</span>
-              <span class="summary-value">₹<%= order.shipping ? order.shipping.toFixed(2) : '0.00' %></span>
+              <span class="summary-value"><%= order.formattedShipping %></span>
             </div>
             
             <div class="summary-row">

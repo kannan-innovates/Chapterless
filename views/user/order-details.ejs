@@ -308,7 +308,12 @@
 
 <div class="container py-4">
   <div class="row">
-    <%- include("../partials/user/accountSidebar") %>
+    <%- include("../partials/user/accountSidebar", { user: { 
+      id: user.id,
+      fullName: user.fullName,
+      email: user.email,
+      profileImage: user.profileImage
+    } }) %>
     
     <!-- Main Content -->
     <div class="col-lg-9">
@@ -399,14 +404,35 @@
                       <span class="item-status active">Active</span>
                     <% } %>
                   </h6>
-                  <p class="fw-medium mb-0">
-                    <% if (item.discountedPrice && item.discountedPrice < item.price) { %>
-                      <span class="text-decoration-line-through text-muted me-2">₹<%= item.price.toFixed(2) %></span>
-                      <span>₹<%= item.discountedPrice.toFixed(2) %></span>
+                  <div class="text-end">
+                    <% if (item.discountedPrice && item.discountedPrice < item.originalPrice) { %>
+                      <p class="mb-0">
+                        <span class="text-decoration-line-through text-muted me-2">
+                          <%= item.formattedPrice %>
+                        </span>
+                        <span class="fw-medium">
+                          <%= item.formattedDiscountedPrice %>
+                        </span>
+                      </p>
+                      <% if (item.offerDiscount > 0) { %>
+                        <small class="text-success d-block">
+                          Save <%= item.discountPercentage %>% with offer
+                        </small>
+                      <% } %>
+                      <% if (item.couponDiscount > 0) { %>
+                        <small class="text-success d-block">
+                          Extra <%= (item.couponProportion * 100).toFixed(1) %>% of total coupon applied
+                        </small>
+                      <% } %>
+                      <% if (item.finalPrice !== item.discountedPrice) { %>
+                        <p class="mb-0 mt-1 fw-medium text-success">
+                          Final price: <%= item.formattedFinalPrice %>
+                        </p>
+                      <% } %>
                     <% } else { %>
-                      <%= item.formattedPrice %>
+                      <p class="fw-medium mb-0"><%= item.formattedPrice %></p>
                     <% } %>
-                  </p>
+                  </div>
                 </div>
                 <% if (item.offerTitle) { %>
                   <p class="mb-2 text-success">
@@ -419,7 +445,7 @@
                     <button 
                       class="btn btn-outline-danger btn-sm" 
                       data-bs-toggle="modal" 
-                      data-bs-target="#cancelItemModal<%= item.product %>"
+                      data-bs-target="#cancelItemModal<%= item.product._id || item.product %>"
                     >
                       Cancel Item
                     </button>
@@ -429,7 +455,7 @@
                     <button 
                       class="btn btn-outline-danger btn-sm" 
                       data-bs-toggle="modal" 
-                      data-bs-target="#returnItemModal<%= item.product %>"
+                      data-bs-target="#returnItemModal<%= item.product._id || item.product %>"
                     >
                       Return Item
                     </button>
@@ -445,11 +471,11 @@
 
             <!-- Cancel Item Modal -->
             <% if (item.canBeCancelled) { %>
-              <div class="modal fade" id="cancelItemModal<%= item.product %>" tabindex="-1" aria-labelledby="cancelItemModalLabel<%= item.product %>" aria-hidden="true">
+              <div class="modal fade" id="cancelItemModal<%= item.product._id || item.product %>" tabindex="-1" aria-labelledby="cancelItemModalLabel<%= item.product._id || item.product %>" aria-hidden="true">
                 <div class="modal-dialog">
                   <div class="modal-content">
                     <div class="modal-header">
-                      <h5 class="modal-title" id="cancelItemModalLabel<%= item.product %>">Cancel Item</h5>
+                      <h5 class="modal-title" id="cancelItemModalLabel<%= item.product._id || item.product %>">Cancel Item</h5>
                       <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
@@ -458,10 +484,10 @@
                       <p>Quantity: <%= item.quantity %></p>
                       <p>Price: <%= item.formattedPrice %></p>
                       
-                      <form id="cancelItemForm<%= item.product %>">
+                      <form id="cancelItemForm<%= item.product._id || item.product %>">
                         <div class="mb-3">
-                          <label for="cancelItemReason<%= item.product %>" class="form-label">Reason for Cancellation</label>
-                          <select class="form-control" id="cancelItemReason<%= item.product %>" required>
+                          <label for="cancelItemReason<%= item.product._id || item.product %>" class="form-label">Reason for Cancellation</label>
+                          <select class="form-control" id="cancelItemReason<%= item.product._id || item.product %>" required>
                             <option value="">Select a reason</option>
                             <option value="Changed my mind">Changed my mind</option>
                             <option value="Found a better price elsewhere">Found a better price elsewhere</option>
@@ -470,15 +496,15 @@
                             <option value="Other">Other</option>
                           </select>
                         </div>
-                        <div class="mb-3" id="otherReasonDiv<%= item.product %>" style="display: none;">
-                          <label for="otherReason<%= item.product %>" class="form-label">Please specify</label>
-                          <textarea class="form-control" id="otherReason<%= item.product %>" rows="3"></textarea>
+                        <div class="mb-3" id="otherReasonDiv<%= item.product._id || item.product %>" style="display: none;">
+                          <label for="otherReason<%= item.product._id || item.product %>" class="form-label">Please specify</label>
+                          <textarea class="form-control" id="otherReason<%= item.product._id || item.product %>" rows="3"></textarea>
                         </div>
                       </form>
                     </div>
                     <div class="modal-footer">
                       <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                      <button type="button" class="btn btn-danger" onclick="cancelItem('<%= order._id %>', '<%= item.product %>')">Cancel Item</button>
+                      <button type="button" class="btn btn-danger" onclick="cancelItem('<%= order._id %>', '<%= item.product._id || item.product %>')">Cancel Item</button>
                     </div>
                   </div>
                 </div>
@@ -487,11 +513,11 @@
 
             <!-- Return Item Modal -->
             <% if (item.canBeReturned) { %>
-              <div class="modal fade" id="returnItemModal<%= item.product %>" tabindex="-1" aria-labelledby="returnItemModalLabel<%= item.product %>" aria-hidden="true">
+              <div class="modal fade" id="returnItemModal<%= item.product._id || item.product %>" tabindex="-1" aria-labelledby="returnItemModalLabel<%= item.product._id || item.product %>" aria-hidden="true">
                 <div class="modal-dialog">
                   <div class="modal-content">
                     <div class="modal-header">
-                      <h5 class="modal-title" id="returnItemModalLabel<%= item.product %>">Return Item</h5>
+                      <h5 class="modal-title" id="returnItemModalLabel<%= item.product._id || item.product %>">Return Item</h5>
                       <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
@@ -500,10 +526,10 @@
                       <p>Quantity: <%= item.quantity %></p>
                       <p>Price: <%= item.formattedPrice %></p>
                       
-                      <form id="returnItemForm<%= item.product %>">
+                      <form id="returnItemForm<%= item.product._id || item.product %>">
                         <div class="mb-3">
-                          <label for="returnItemReason<%= item.product %>" class="form-label">Reason for Return</label>
-                          <select class="form-control" id="returnItemReason<%= item.product %>" required>
+                          <label for="returnItemReason<%= item.product._id || item.product %>" class="form-label">Reason for Return</label>
+                          <select class="form-control" id="returnItemReason<%= item.product._id || item.product %>" required>
                             <option value="">Select a reason</option>
                             <option value="Item damaged">Item damaged</option>
                             <option value="Item defective">Item defective</option>
@@ -512,15 +538,15 @@
                             <option value="Other">Other</option>
                           </select>
                         </div>
-                        <div class="mb-3" id="otherReturnReasonDiv<%= item.product %>" style="display: none;">
-                          <label for="otherReturnReason<%= item.product %>" class="form-label">Please specify</label>
-                          <textarea class="form-control" id="otherReturnReason<%= item.product %>" rows="3"></textarea>
+                        <div class="mb-3" id="otherReturnReasonDiv<%= item.product._id || item.product %>" style="display: none;">
+                          <label for="otherReturnReason<%= item.product._id || item.product %>" class="form-label">Please specify</label>
+                          <textarea class="form-control" id="otherReturnReason<%= item.product._id || item.product %>" rows="3"></textarea>
                         </div>
                       </form>
                     </div>
                     <div class="modal-footer">
                       <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                      <button type="button" class="btn btn-danger" onclick="returnItem('<%= order._id %>', '<%= item.product %>')">Return Item</button>
+                      <button type="button" class="btn btn-danger" onclick="returnItem('<%= order._id %>', '<%= item.product._id || item.product %>')">Return Item</button>
                     </div>
                   </div>
                 </div>
@@ -827,29 +853,29 @@
     
     // For item cancellations
     <% order.items.forEach(item => { %>
-      const cancelItemReason<%= item.product %> = document.getElementById('cancelItemReason<%= item.product %>');
-      const otherReasonDiv<%= item.product %> = document.getElementById('otherReasonDiv<%= item.product %>');
+      const cancelItemReason<%= item.product._id || item.product %> = document.getElementById('cancelItemReason<%= item.product._id || item.product %>');
+      const otherReasonDiv<%= item.product._id || item.product %> = document.getElementById('otherReasonDiv<%= item.product._id || item.product %>');
       
-      if (cancelItemReason<%= item.product %>) {
-        cancelItemReason<%= item.product %>.addEventListener('change', function() {
+      if (cancelItemReason<%= item.product._id || item.product %>) {
+        cancelItemReason<%= item.product._id || item.product %>.addEventListener('change', function() {
           if (this.value === 'Other') {
-            otherReasonDiv<%= item.product %>.style.display = 'block';
+            otherReasonDiv<%= item.product._id || item.product %>.style.display = 'block';
           } else {
-            otherReasonDiv<%= item.product %>.style.display = 'none';
+            otherReasonDiv<%= item.product._id || item.product %>.style.display = 'none';
           }
         });
       }
       
       // For item returns
-      const returnItemReason<%= item.product %> = document.getElementById('returnItemReason<%= item.product %>');
-      const otherReturnReasonDiv<%= item.product %> = document.getElementById('otherReturnReasonDiv<%= item.product %>');
+      const returnItemReason<%= item.product._id || item.product %> = document.getElementById('returnItemReason<%= item.product._id || item.product %>');
+      const otherReturnReasonDiv<%= item.product._id || item.product %> = document.getElementById('otherReturnReasonDiv<%= item.product._id || item.product %>');
       
-      if (returnItemReason<%= item.product %>) {
-        returnItemReason<%= item.product %>.addEventListener('change', function() {
+      if (returnItemReason<%= item.product._id || item.product %>) {
+        returnItemReason<%= item.product._id || item.product %>.addEventListener('change', function() {
           if (this.value === 'Other') {
-            otherReturnReasonDiv<%= item.product %>.style.display = 'block';
+            otherReturnReasonDiv<%= item.product._id || item.product %>.style.display = 'block';
           } else {
-            otherReturnReasonDiv<%= item.product %>.style.display = 'none';
+            otherReturnReasonDiv<%= item.product._id || item.product %>.style.display = 'none';
           }
         });
       }

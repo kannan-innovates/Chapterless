@@ -108,10 +108,21 @@
           <td colspan="3" class="text-end">Subtotal</td>
           <td><%= order.formattedSubtotal %></td>
         </tr>
+        <% if (order.discount && order.discount > 0) { %>
+          <tr>
+            <td colspan="3" class="text-end text-success">Offer Discount</td>
+            <td class="text-success">-<%= order.formattedDiscount %></td>
+          </tr>
+        <% } %>
+        <% if (order.couponDiscount && order.couponDiscount > 0) { %>
+          <tr>
+            <td colspan="3" class="text-end text-primary">Coupon Discount <%= order.couponCode ? `(${order.couponCode})` : '' %></td>
+            <td class="text-primary">-<%= order.formattedCouponDiscount %></td>
+          </tr>
+        <% } %>
         <tr>
           <td colspan="3" class="text-end">Tax</td>
           <td><%= order.formattedTax %></td>
-        Deductible: true
         </tr>
         <tr>
           <td colspan="3" class="text-end total">Total</td>

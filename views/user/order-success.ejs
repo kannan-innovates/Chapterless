@@ -34,9 +34,32 @@
               <span>Payment Method:</span>
               <span class="fw-medium"><%= paymentMethod %></span>
             </div>
+            <div class="d-flex justify-content-between mb-2">
+              <span>Subtotal:</span>
+              <span class="fw-medium">₹<%= subtotal.toFixed(2) %></span>
+            </div>
+            <% if (offerDiscount && offerDiscount > 0) { %>
+              <div class="d-flex justify-content-between mb-2">
+                <span>Offer Discount:</span>
+                <span class="fw-medium text-success">-₹<%= offerDiscount.toFixed(2) %></span>
+              </div>
+            <% } %>
+            <% if (couponDiscount && couponDiscount > 0) { %>
+              <div class="d-flex justify-content-between mb-2">
+                <span>Coupon Discount<%= couponCode ? ` (${couponCode})` : '' %>:</span>
+                <span class="fw-medium text-primary">-₹<%= couponDiscount.toFixed(2) %></span>
+              </div>
+            <% } %>
+            <% if (tax && tax > 0) { %>
+              <div class="d-flex justify-content-between mb-2">
+                <span>Tax (8%):</span>
+                <span class="fw-medium">₹<%= tax.toFixed(2) %></span>
+              </div>
+            <% } %>
+            <hr class="my-2">
             <div class="d-flex justify-content-between">
-              <span>Order Total:</span>
-              <span class="fw-bold">₹<%= total.toFixed(2) %></span>
+              <span class="fw-bold">Order Total:</span>
+              <span class="fw-bold fs-5">₹<%= total.toFixed(2) %></span>
             </div>
           </div>
           

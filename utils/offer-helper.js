@@ -12,8 +12,6 @@ const Product = require("../models/productSchema")
  */
 const getActiveOfferForProduct = async (productId, productCategoryId, productPrice) => {
   try {
-
-
     const now = new Date()
     let categoryToQuery = productCategoryId
 
@@ -22,7 +20,6 @@ const getActiveOfferForProduct = async (productId, productCategoryId, productPri
       const productDoc = await Product.findById(productId).select("category").lean()
       if (productDoc && productDoc.category) {
         categoryToQuery = productDoc.category.toString()
-       
       }
     }
 
@@ -59,9 +56,7 @@ const getActiveOfferForProduct = async (productId, productCategoryId, productPri
       endDate: { $gte: now },
     }).lean()
 
-
     if (!potentialOffers || potentialOffers.length === 0) {
-      console.log("❌ No active offers found")
       return null
     }
 
@@ -71,7 +66,6 @@ const getActiveOfferForProduct = async (productId, productCategoryId, productPri
 
     for (const offer of potentialOffers) {
       const discountInfo = calculateDiscount(offer, productPrice)
-   
 
       // Compare by actual discount amount (monetary value)
       if (discountInfo.discountAmount > bestDiscountAmount) {
@@ -88,10 +82,9 @@ const getActiveOfferForProduct = async (productId, productCategoryId, productPri
       }
     }
 
-
     return bestOffer
   } catch (error) {
-    console.error("❌ Error fetching active offer:", error)
+    console.error("Error fetching active offer:", error)
     return null
   }
 }
@@ -159,7 +152,6 @@ const calculateDiscount = (offer, price) => {
  */
 const getActiveOffersForProducts = async (products) => {
   try {
-
     const offerMap = {}
 
     for (const product of products) {
@@ -171,16 +163,12 @@ const getActiveOffersForProducts = async (products) => {
 
       if (offer) {
         offerMap[product._id.toString()] = calculateDiscount(offer, product.price)
-      
-      } else {
-        console.log(`❌ No offer for product ${product._id}`)
       }
     }
 
-    
     return offerMap
   } catch (error) {
-    console.error("❌ Error fetching offers for products:", error)
+    console.error("Error fetching offers for products:", error)
     return {}
   }
 }
@@ -218,6 +206,99 @@ const getOfferStatus = (offer) => {
   return "Active"
 }
 
+/**
+ * Calculate proportional coupon discount for each item
+ * @param {Object} coupon - The coupon object
+ * @param {Array} items - Array of items with discountedPrice and quantity
+ * @returns {Object} - Object with total discount and per-item discounts
+ */
+const calculateProportionalCouponDiscount = (coupon, items) => {
+  if (!coupon || !items || items.length === 0) {
+    return { totalDiscount: 0, itemDiscounts: {} }
+  }
+
+  // Calculate cart total from prices after offer
+  const cartTotal = items.reduce((sum, item) => {
+    const itemTotal = item.discountedPrice * item.quantity;
+    return sum + itemTotal;
+  }, 0);
+
+  if (cartTotal <= 0) {
+    return { totalDiscount: 0, itemDiscounts: {} }
+  }
+
+  // Calculate total coupon discount
+  let totalCouponDiscount = 0;
+  if (coupon.discountType === "percentage") {
+    totalCouponDiscount = (cartTotal * coupon.discountValue) / 100;
+    if (coupon.maxDiscountValue) {
+      totalCouponDiscount = Math.min(totalCouponDiscount, coupon.maxDiscountValue);
+    }
+  } else {
+    totalCouponDiscount = Math.min(coupon.discountValue, cartTotal);
+  }
+
+  const itemDiscounts = {};
+
+  // Split discount among items proportionally based on their price after offer
+  items.forEach((item) => {
+    const itemTotal = item.discountedPrice * item.quantity;
+    const proportion = itemTotal / cartTotal;
+    
+    // Calculate item's share of the discount using the formula
+    const itemDiscount = Math.round((totalCouponDiscount * proportion) * 100) / 100;
+    
+    // Ensure discount doesn't exceed item's price after offer
+    const finalDiscount = Math.min(itemDiscount, itemTotal);
+
+    itemDiscounts[item.product.toString()] = {
+      amount: finalDiscount,
+      proportion: proportion
+    };
+  });
+
+  // Recalculate total discount based on individual item discounts
+  const actualTotalDiscount = Object.values(itemDiscounts)
+    .reduce((sum, discount) => sum + discount.amount, 0);
+
+  return {
+    totalDiscount: actualTotalDiscount,
+    itemDiscounts
+  }
+}
+
+/**
+ * Get detailed price breakdown for an item including proportional coupon discount
+ * @param {Object} item - Cart/Order item
+ * @param {Object} couponInfo - Coupon discount info for this item
+ * @returns {Object} - Detailed price breakdown
+ */
+const getItemPriceDetails = (item, couponInfo = null) => {
+  const originalPrice = item.price || item.priceAtAddition
+  const quantity = item.quantity
+  const subtotal = originalPrice * quantity
+  
+  // Get offer discount
+  const offerDiscount = item.offerDiscount || 0
+  const priceAfterOffer = item.discountedPrice * quantity
+
+  // Get coupon discount
+  const couponDiscount = couponInfo ? couponInfo.amount : 0
+  
+  // Calculate final price
+  const finalPrice = priceAfterOffer - couponDiscount
+
+  return {
+    originalPrice,
+    quantity,
+    subtotal,
+    offerDiscount,
+    priceAfterOffer,
+    couponDiscount,
+    finalPrice,
+    couponProportion: couponInfo ? couponInfo.proportion : 0
+  }
+}
 
 module.exports = {
   getActiveOfferForProduct,
@@ -226,5 +307,6 @@ module.exports = {
   isOfferActive,
   getOfferStatus,
   getOfferPriority,
-
+  calculateProportionalCouponDiscount,
+  getItemPriceDetails
 }

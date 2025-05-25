@@ -1,0 +1,384 @@
+<%- include("../partials/user/header") %>
+
+<!-- Checkout Page -->
+<div class="container py-5">
+  <div class="row g-4">
+    <!-- Main Checkout Area -->
+    <div class="col-lg-8">
+      <div class="card border-0 shadow-sm mb-4">
+        <!-- Step 1: Cart Review -->
+        <div class="checkout-step-content active" id="step-1-content">
+          <div class="card-header bg-white p-4 border-0">
+            <h4 class="mb-0">Review Your Cart</h4>
+          </div>
+          <div class="card-body p-4">
+            <div class="cart-items">
+              <% if (cartItems && cartItems.length > 0) { %> 
+                <% cartItems.forEach(item => { %>
+                <div class="cart-item d-flex flex-wrap py-3 border-bottom">
+                  <!-- Product Image -->
+                  <div class="col-2">
+                    <img
+                      src="<%= item.product && item.product.mainImage ? item.product.mainImage : 'https://via.placeholder.com/80' %>"
+                      alt="<%= item.product && item.product.title ? item.product.title : 'Product' %>"
+                      class="rounded"
+                      width="80"
+                      height="80"
+                      onerror="this.src='https://via.placeholder.com/80'"
+                    />
+                  </div>
+
+                  <!-- Product Details -->
+                  <div class="col-8">
+                    <h5 class="mb-3"><%= item.product.title %></h5>
+                    
+                    <!-- Price Breakdown -->
+                    <div class="price-breakdown">
+                      <!-- Original Price -->
+                      <div class="price-line">
+                        <span class="label">Original Price:</span>
+                        <span class="text-decoration-line-through">₹<%= item.originalPrice.toFixed(2) %></span>
+                      </div>
+
+                      <!-- Offer Discount -->
+                      <% if (item.offerDiscount > 0) { %>
+                      <div class="price-line">
+                        <span>
+                          <span class="badge bg-danger discount-badge">
+                            15.0% OFF - <%= item.offerTitle %>
+                          </span>
+                        </span>
+                        <span class="text-danger">-₹<%= item.offerDiscount.toFixed(2) %></span>
+                      </div>
+                      <% } %>
+
+                      <!-- Price After Offer -->
+                      <div class="price-line">
+                        <span class="label">Price after offer:</span>
+                        <span class="fw-medium">₹<%= item.discountedPrice.toFixed(2) %></span>
+                      </div>
+
+                      <!-- Coupon Discount -->
+                      <% if (appliedCoupon && itemDetails[item.product._id] && itemDetails[item.product._id].couponDiscount > 0) { %>
+                      <div class="price-line">
+                        <span>
+                          <span class="badge bg-success discount-badge">
+                            <%= appliedCoupon.code %> - <%= appliedCoupon.discountValue %>% OFF
+                          </span>
+                        </span>
+                        <span class="text-success">-₹<%= itemDetails[item.product._id].couponDiscount.toFixed(2) %></span>
+                      </div>
+                      <% } %>
+
+                      <!-- Final Price -->
+                      <div class="price-line mt-3 border-top pt-2">
+                        <div class="d-flex align-items-center">
+                          <span class="label me-2">Quantity:</span>
+                          <span><%= item.quantity %></span>
+                        </div>
+                        <div class="text-end">
+                          <div class="fw-bold fs-5">₹<%= itemDetails[item.product._id].finalPrice.toFixed(2) %></div>
+                          <% if (itemDetails[item.product._id].offerDiscount + itemDetails[item.product._id].couponDiscount > 0) { %>
+                          <div class="total-saved">
+                            You Save: ₹<%= (itemDetails[item.product._id].offerDiscount + itemDetails[item.product._id].couponDiscount).toFixed(2) %>
+                            (<%= ((itemDetails[item.product._id].offerDiscount + itemDetails[item.product._id].couponDiscount) / (item.originalPrice * item.quantity) * 100).toFixed(1) %>%)
+                          </div>
+                          <% } %>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Remove Button -->
+                  <div class="col-2 text-end">
+                    <button class="btn btn-sm btn-outline-danger">
+                      <i class="bi bi-trash"></i> Remove
+                    </button>
+                  </div>
+                </div>
+                <% }) %>
+              <% } else { %>
+                <div class="alert alert-info text-center">
+                  Your cart is empty. <a href="/shopPage">Continue shopping</a>.
+                </div>
+              <% } %>
+
+              <!-- Coupon Section -->
+              <div class="mt-4">
+                <!-- Coupon Input -->
+                <div id="couponInputSection" class="<%= appliedCoupon ? 'd-none' : '' %>">
+                  <div class="d-flex flex-wrap gap-2">
+                    <div class="flex-grow-1">
+                      <div class="input-group">
+                        <input
+                          type="text"
+                          class="form-control"
+                          placeholder="Enter coupon code"
+                          id="couponCode"
+                        />
+                        <button
+                          class="btn btn-dark"
+                          type="button"
+                          id="applyCoupon"
+                        >
+                          Apply
+                        </button>
+                      </div>
+                    </div>
+                    <button
+                      class="btn btn-outline-secondary"
+                      type="button"
+                      data-bs-toggle="modal"
+                      data-bs-target="#availableCouponsModal"
+                    >
+                      <i class="bi bi-ticket-perforated me-1"></i>View Coupons
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Applied Coupon -->
+                <div id="appliedCouponSection" class="<%= !appliedCoupon ? 'd-none' : '' %>">
+                  <div class="alert alert-success d-flex align-items-center">
+                    <i class="bi bi-ticket-perforated-fill me-2"></i>
+                    <div class="flex-grow-1">
+                      Coupon <strong><%= appliedCoupon ? appliedCoupon.code : '' %></strong> applied successfully!
+                      <button id="removeCoupon" class="btn btn-sm text-danger p-0 ms-2">
+                        <i class="bi bi-x-circle"></i> Remove
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Order Summary Sidebar -->
+    <div class="col-lg-4">
+      <div class="card border-0 shadow-sm mb-4 sticky-lg-top" style="top: 20px; z-index: 1">
+        <div class="card-header bg-white p-4 border-0">
+          <h4 class="mb-0">Order Summary</h4>
+        </div>
+        <div class="card-body p-4">
+          <!-- Subtotal -->
+          <div class="summary-item d-flex justify-content-between mb-3">
+            <span class="text-muted">Subtotal (<%= cartItems ? cartItems.length : 0 %> items)</span>
+            <span class="fw-medium" id="subtotal" data-value="<%= subtotal %>">₹<%= subtotal ? subtotal.toFixed(2) : '0.00' %></span>
+          </div>
+          
+          <!-- Offer Discount -->
+          <% if (offerDiscount && offerDiscount > 0) { %>
+          <div class="summary-item d-flex justify-content-between mb-3">
+            <span class="text-muted">Offer Discount</span>
+            <span class="fw-medium text-success">-₹<%= offerDiscount.toFixed(2) %></span>
+          </div>
+          <% } %>
+          
+          <!-- Coupon Discount -->
+          <div id="appliedCouponSection" class="summary-item d-flex justify-content-between mb-3 <%= !appliedCoupon ? 'd-none' : '' %>">
+            <span class="text-muted d-flex align-items-center">
+              <i class="bi bi-ticket-perforated-fill me-2"></i>
+              Coupon: <span id="appliedCouponCode" class="ms-1 fw-medium"><%= appliedCoupon ? appliedCoupon.code : '' %></span>
+            </span>
+            <span class="fw-medium text-success" id="couponDiscount">-₹<%= couponDiscount ? couponDiscount.toFixed(2) : '0.00' %></span>
+          </div>
+          
+          <!-- Shipping -->
+          <div class="summary-item d-flex justify-content-between mb-3">
+            <span class="text-muted">Shipping</span>
+            <span class="fw-medium">₹0</span>
+          </div>
+          
+          <!-- Tax -->
+          <div class="summary-item d-flex justify-content-between mb-3">
+            <span class="text-muted">Tax (8%)</span>
+            <span class="fw-medium" id="tax">₹<%= tax ? tax.toFixed(2) : '0.00' %></span>
+          </div>
+          
+          <hr />
+          
+          <!-- Total -->
+          <div class="summary-item d-flex justify-content-between mb-3">
+            <span class="fw-bold">Total</span>
+            <span class="fw-bold fs-5" id="totalAmount">₹<%= totalAmount ? totalAmount.toFixed(2) : '0.00' %></span>
+          </div>
+
+          <!-- Proceed Button -->
+          <button class="btn btn-dark w-100 py-3" onclick="window.location.href='/checkout/address'">
+            Proceed to Checkout
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Available Coupons Modal -->
+<div class="modal fade" id="availableCouponsModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Available Coupons</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <% if (availableCoupons && availableCoupons.length > 0) { %>
+          <% availableCoupons.forEach(coupon => { %>
+            <div class="coupon-card mb-3 p-3 border rounded">
+              <div class="d-flex justify-content-between align-items-start">
+                <div>
+                  <h6 class="mb-1"><%= coupon.code %></h6>
+                  <p class="mb-1 text-success"><%= coupon.discountDisplay %></p>
+                  <small class="text-muted d-block"><%= coupon.description %></small>
+                  <% if (coupon.minOrderAmount) { %>
+                    <small class="text-muted d-block">Min. Order: ₹<%= coupon.minOrderAmount %></small>
+                  <% } %>
+                </div>
+                <button 
+                  class="btn btn-sm btn-outline-dark apply-coupon-btn"
+                  data-coupon-code="<%= coupon.code %>"
+                >
+                  Apply
+                </button>
+              </div>
+            </div>
+          <% }) %>
+        <% } else { %>
+          <p class="text-center text-muted mb-0">No coupons available at the moment.</p>
+        <% } %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Apply coupon
+  const applyCouponBtn = document.getElementById("applyCoupon");
+  const couponCodeInput = document.getElementById("couponCode");
+  
+  if (applyCouponBtn) {
+    applyCouponBtn.addEventListener("click", function () {
+      const couponCode = couponCodeInput.value.trim();
+      if (!couponCode) {
+        Toast.fire({
+          icon: "error",
+          title: "Please enter a coupon code",
+        });
+        return;
+      }
+
+      // Disable button during API call
+      applyCouponBtn.disabled = true;
+      applyCouponBtn.innerHTML =
+        '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Applying...';
+
+      fetch("/checkout/apply-coupon", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ couponCode }),
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          if (data.success) {
+            // Show success message
+            Toast.fire({
+              icon: "success",
+              title: data.message,
+            });
+
+            // Refresh page to update all calculations
+            setTimeout(() => {
+              window.location.reload();
+            }, 1500);
+          } else {
+            // Show error message
+            Toast.fire({
+              icon: "error",
+              title: data.message || "Failed to apply coupon",
+            });
+            
+            // Clear coupon input on error
+            couponCodeInput.value = "";
+          }
+        })
+        .catch((error) => {
+          console.error("Error applying coupon:", error);
+          Toast.fire({
+            icon: "error",
+            title: "Failed to apply coupon. Please try again.",
+          });
+          
+          // Clear coupon input on error
+          couponCodeInput.value = "";
+        })
+        .finally(() => {
+          // Re-enable button
+          applyCouponBtn.disabled = false;
+          applyCouponBtn.innerHTML = "Apply";
+        });
+    });
+  }
+
+  // Remove coupon
+  const removeCouponBtn = document.getElementById("removeCoupon");
+  if (removeCouponBtn) {
+    removeCouponBtn.addEventListener("click", function () {
+      fetch("/checkout/remove-coupon", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          if (data.success) {
+            Toast.fire({
+              icon: "success",
+              title: data.message,
+            });
+
+            // Refresh page to update all calculations
+            setTimeout(() => {
+              window.location.reload();
+            }, 1000);
+          } else {
+            Toast.fire({
+              icon: "error",
+              title: data.message,
+            });
+          }
+        })
+        .catch((error) => {
+          console.error("Error removing coupon:", error);
+          Toast.fire({
+            icon: "error",
+            title: "Failed to remove coupon",
+          });
+        });
+    });
+  }
+
+  // Available coupons modal
+  const applyCouponFromModal = document.querySelectorAll(".apply-coupon-btn");
+  applyCouponFromModal.forEach((button) => {
+    button.addEventListener("click", function () {
+      const couponCode = this.getAttribute("data-coupon-code");
+      couponCodeInput.value = couponCode;
+
+      // Close modal
+      const modal = bootstrap.Modal.getInstance(document.getElementById("availableCouponsModal"));
+      if (modal) {
+        modal.hide();
+      }
+
+      // Trigger apply coupon
+      applyCouponBtn.click();
+    });
+  });
+</script>
+
+<%- include("../partials/user/footer") %>

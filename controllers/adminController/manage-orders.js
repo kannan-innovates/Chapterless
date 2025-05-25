@@ -23,8 +23,8 @@ const getManageOrders = async (req, res) => {
     // Handle Payment Method filter
     const validPaymentMethods = ["COD", "UPI", "Card", "Wallet"]
     let payment = req.query.payment || ""
-    if (payment === "CARD") payment = "Card" // Normalize for schema
-    if (payment === "UPI") payment = "UPI" // Already matches schema
+    if (payment === "CARD") payment = "Card" 
+    if (payment === "UPI") payment = "UPI" 
     if (payment && validPaymentMethods.includes(payment)) {
       query.paymentMethod = payment
     }
@@ -107,218 +107,190 @@ const getManageOrders = async (req, res) => {
     })
   } catch (error) {
     console.error("Error fetching orders:", error)
-    res.status(500).render("error", { message: "Internal server error" })
+    res.redirect('/admin/dashboard');
   }
 }
 
 const getOrderDetails = async (req, res) => {
   try {
     const orderId = req.params.id;
-
-    // Fetch the order and populate user details
-    const order = await Order.findOne({
-      _id: orderId,
-      isDeleted: false,
-    })
-      .populate("user", "fullName email")
-      .populate("items.product", "isbn author") // Populate product details for ISBN and author
+    const order = await Order.findById(orderId)
+      .populate('user', 'fullName email phone address')
+      .populate({
+        path: 'items.product',
+        select: 'title author isbn image price'
+      })
       .lean();
 
     if (!order) {
-      return res.status(404).render("error", {
-        message: "Order not found",
-      });
+      return res.redirect('/admin/getOrders');
     }
 
-    // Fetch customer data
-    const customer = {
-      fullName: order.user ? order.user.fullName : "Unknown",
-      email: order.user ? order.user.email : "N/A",
-    };
-
-    // Format order data
-    order.formattedDate = new Date(order.createdAt).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
+    // Format dates
+    order.formattedDate = new Date(order.createdAt).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
     });
-    order.formattedTotal = `₹${order.total.toFixed(2)}`;
+
+    // Process each item to include offer and coupon details
+    order.items = order.items.map(item => {
+      // Format prices
+      item.formattedOriginalPrice = `₹${item.price.toFixed(2)}`;
+      item.formattedDiscountedPrice = `₹${item.discountedPrice.toFixed(2)}`;
+
+      // Set ISBN and Author to N/A if not available
+      item.isbn = item.isbn || 'N/A';
+      item.author = item.author || 'N/A';
+
+      // Calculate individual item savings
+      let itemSavings = 0;
+      if (item.priceBreakdown) {
+        if (item.priceBreakdown.offerDiscount) {
+          itemSavings += item.priceBreakdown.offerDiscount;
+        }
+        if (item.priceBreakdown.couponDiscount) {
+          itemSavings += item.priceBreakdown.couponDiscount;
+        }
+      }
+      item.formattedSavings = itemSavings > 0 ? `Saved: ₹${itemSavings.toFixed(2)}` : '';
+
+      return item;
+    });
+
+    // Format order totals
     order.formattedSubtotal = `₹${order.subtotal.toFixed(2)}`;
-    order.formattedTax = `₹${order.tax.toFixed(2)}`;
     
-    // Format discount values
-    order.formattedDiscount = order.discount ? `₹${order.discount.toFixed(2)}` : "₹0.00";
-    order.formattedCouponDiscount = order.couponDiscount ? `₹${order.couponDiscount.toFixed(2)}` : "₹0.00";
+    // Format offer discount
+    if (order.discount && order.discount > 0) {
+      order.formattedDiscount = `-₹${order.discount.toFixed(2)}`;
+    }
 
-    // Format item data
-    order.items.forEach((item) => {
-      item.formattedPrice = `₹${item.price.toFixed(2)}`;
-      
-      // Format discounted price if available
-      if (item.discountedPrice) {
-        item.formattedDiscountedPrice = `₹${item.discountedPrice.toFixed(2)}`;
-      }
-      
-      // Format offer discount if available
-      if (item.offerDiscount) {
-        item.formattedOfferDiscount = `₹${item.offerDiscount.toFixed(2)}`;
-      }
-      
-      // Ensure ISBN and author are available
-      item.isbn = item.product ? item.product.isbn : "N/A";
-      item.author = item.product ? item.product.author : "N/A";
+    // Format coupon discount
+    if (order.couponDiscount && order.couponDiscount > 0) {
+      order.formattedCouponDiscount = `-₹${order.couponDiscount.toFixed(2)}`;
+    }
+
+    // Format shipping and tax
+    order.formattedShipping = `₹${order.shipping ? order.shipping.toFixed(2) : '0.00'}`;
+    order.formattedTax = `₹${order.tax.toFixed(2)}`;
+    order.formattedTotal = `₹${order.total.toFixed(2)}`;
+
+    // Check if any items can be cancelled or returned
+    const hasActiveItems = order.items.some(item => 
+      item.status !== 'Cancelled' && item.status !== 'Returned'
+    );
+
+    const hasReturnRequestedItems = order.items.some(item => 
+      item.status === 'Return Requested'
+    );
+
+    // Generate timeline data
+    const timeline = [];
+    
+    // Add order placed
+    timeline.push({
+      status: 'Order Placed',
+      timestamp: new Date(order.createdAt).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      }),
+      message: 'Order has been placed successfully',
+      completed: true
     });
 
-    // Create timeline based on order status using actual timestamps
-    const timeline = [
-      {
-        status: "Placed",
-        timestamp: new Date(order.createdAt).toLocaleString("en-US", {
-          year: "numeric",
-          month: "long",
-          day: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-        message: "Your order has been placed successfully.",
-        completed: true,
-      },
-    ];
-
-    // Only add Processing status if it's relevant
-    if (["Processing", "Shipped", "Delivered", "Returned", "Partially Cancelled", "Partially Returned", "Return Requested", "Partially Return Requested"].includes(order.orderStatus) || order.processedAt) {
+    // Add processing if applicable
+    if (order.processedAt || order.orderStatus === 'Processing') {
       timeline.push({
-        status: "Processing",
-        timestamp: order.processedAt
-          ? new Date(order.processedAt).toLocaleString("en-US", {
-              year: "numeric",
-              month: "long",
-              day: "numeric",
-              hour: "2-digit",
-              minute: "2-digit",
-            })
-          : "Pending",
-        message: "Your order has been processed and is being prepared for shipping.",
-        completed: ["Processing", "Shipped", "Delivered", "Returned", "Partially Cancelled", "Partially Returned", "Return Requested", "Partially Return Requested"].includes(order.orderStatus) || order.processedAt,
+        status: 'Processing',
+        timestamp: order.processedAt ? new Date(order.processedAt).toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        }) : 'Pending',
+        message: 'Order is being processed',
+        completed: !!order.processedAt
       });
     }
 
-    // Only add Shipped status if it's relevant
-    if (["Shipped", "Delivered", "Returned", "Partially Returned", "Return Requested", "Partially Return Requested"].includes(order.orderStatus) || order.shippedAt) {
+    // Add shipped if applicable
+    if (order.shippedAt || order.orderStatus === 'Shipped') {
       timeline.push({
-        status: "Shipped",
-        timestamp: order.shippedAt
-          ? new Date(order.shippedAt).toLocaleString("en-US", {
-              year: "numeric",
-              month: "long",
-              day: "numeric",
-              hour: "2-digit",
-              minute: "2-digit",
-            })
-          : "Pending",
-        message: order.trackingId
-          ? `Your order has been shipped. Tracking ID: ${order.trackingId}`
-          : "Your order has been shipped. Tracking information will be updated soon.",
-        completed: ["Shipped", "Delivered", "Returned", "Partially Returned", "Return Requested", "Partially Return Requested"].includes(order.orderStatus) || order.shippedAt,
+        status: 'Shipped',
+        timestamp: order.shippedAt ? new Date(order.shippedAt).toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        }) : 'Pending',
+        message: 'Order has been shipped',
+        completed: !!order.shippedAt
       });
     }
 
-    // Only add Delivered status if it's relevant
-    if (["Delivered", "Returned", "Partially Returned", "Return Requested", "Partially Return Requested"].includes(order.orderStatus) || order.deliveredAt) {
+    // Add delivered if applicable
+    if (order.deliveredAt || order.orderStatus === 'Delivered') {
       timeline.push({
-        status: "Delivered",
-        timestamp: order.deliveredAt
-          ? new Date(order.deliveredAt).toLocaleString("en-US", {
-              year: "numeric",
-              month: "long",
-              day: "numeric",
-              hour: "2-digit",
-              minute: "2-digit",
-            })
-          : "Pending",
-        message: "Your order has been delivered.",
-        completed: ["Delivered", "Returned", "Partially Returned", "Return Requested", "Partially Return Requested"].includes(order.orderStatus) || order.deliveredAt,
+        status: 'Delivered',
+        timestamp: order.deliveredAt ? new Date(order.deliveredAt).toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        }) : 'Pending',
+        message: 'Order has been delivered',
+        completed: !!order.deliveredAt
       });
     }
 
-    // Add Return Requested status if applicable
-    if (order.orderStatus === "Return Requested" || order.orderStatus === "Partially Return Requested" || order.returnRequestedAt) {
+    // Add cancelled/returned if applicable
+    if (order.orderStatus === 'Cancelled' || order.orderStatus === 'Partially Cancelled') {
       timeline.push({
-        status: order.orderStatus === "Partially Return Requested" ? "Partially Return Requested" : "Return Requested",
-        timestamp: order.returnRequestedAt
-          ? new Date(order.returnRequestedAt).toLocaleString("en-US", {
-              year: "numeric",
-              month: "long",
-              day: "numeric",
-              hour: "2-digit",
-              minute: "2-digit",
-            })
-          : "Pending",
-        message: order.orderStatus === "Partially Return Requested" 
-          ? "Return requested for some items in the order." 
-          : "Return requested for the order.",
-        completed: order.orderStatus === "Return Requested" || order.orderStatus === "Partially Return Requested" || order.returnRequestedAt,
+        status: order.orderStatus,
+        timestamp: order.cancelledAt ? new Date(order.cancelledAt).toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        }) : 'N/A',
+        message: `Order has been ${order.orderStatus.toLowerCase()}`,
+        completed: true
+      });
+    } else if (order.orderStatus === 'Returned' || order.orderStatus === 'Partially Returned') {
+      timeline.push({
+        status: order.orderStatus,
+        timestamp: order.returnedAt ? new Date(order.returnedAt).toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        }) : 'N/A',
+        message: `Order has been ${order.orderStatus.toLowerCase()}`,
+        completed: true
       });
     }
 
-    // Add Returned status if applicable
-    if (order.orderStatus === "Returned" || order.orderStatus === "Partially Returned" || order.returnedAt) {
-      timeline.push({
-        status: order.orderStatus === "Partially Returned" ? "Partially Returned" : "Returned",
-        timestamp: order.returnedAt
-          ? new Date(order.returnedAt).toLocaleString("en-US", {
-              year: "numeric",
-              month: "long",
-              day: "numeric",
-              hour: "2-digit",
-              minute: "2-digit",
-            })
-          : "Pending",
-        message: order.orderStatus === "Partially Returned" 
-          ? "Some items in the order have been returned." 
-          : "The order has been returned.",
-        completed: order.orderStatus === "Returned" || order.orderStatus === "Partially Returned" || order.returnedAt,
-      });
-    }
-
-    // Add Cancelled status if applicable
-    if (order.orderStatus === "Cancelled" || order.orderStatus === "Partially Cancelled" || order.cancelledAt) {
-      timeline.push({
-        status: order.orderStatus === "Partially Cancelled" ? "Partially Cancelled" : "Cancelled",
-        timestamp: order.cancelledAt
-          ? new Date(order.cancelledAt).toLocaleString("en-US", {
-              year: "numeric",
-              month: "long",
-              day: "numeric",
-              hour: "2-digit",
-              minute: "2-digit",
-            })
-          : "Pending",
-        message: order.orderStatus === "Partially Cancelled" 
-          ? "Some items in the order have been cancelled." 
-          : "The order has been cancelled.",
-        completed: order.orderStatus === "Cancelled" || order.orderStatus === "Partially Cancelled" || order.cancelledAt,
-      });
-    }
-
-    // Check if there are any active items
-    const hasActiveItems = order.items.some(item => item.status === 'Active');
-    const hasCancelledItems = order.items.some(item => item.status === 'Cancelled');
-    const hasReturnedItems = order.items.some(item => item.status === 'Returned');
-    const hasReturnRequestedItems = order.items.some(item => item.status === 'Return Requested');
-
-    res.render("manage-order-details", {
+    res.render('manage-order-details', {
+      title: `Order #${order.orderNumber}`,
       order,
-      customer,
-      timeline,
       hasActiveItems,
-      hasCancelledItems,
-      hasReturnedItems,
-      hasReturnRequestedItems
+      hasReturnRequestedItems,
+      timeline,
+      customer: order.user || {}
     });
+
   } catch (error) {
-    console.error("Error in rendering order details:", error);
-    res.status(500).render("error", { message: "Internal server error" });
+    console.error('Error in getOrderDetails:', error);
+    res.redirect('/admin/getOrders');
   }
 };
 
@@ -330,20 +302,20 @@ const updateOrderStatus = async (req, res) => {
     // Validate the new status
     const validStatuses = ["Placed", "Processing", "Shipped", "Delivered", "Cancelled", "Returned", "Partially Cancelled", "Partially Returned"]
     if (!validStatuses.includes(status)) {
-      return res.status(400).json({ message: "Invalid status value" })
+      return res.status(400).json({ success: false, message: "Invalid status value" })
     }
 
     // Fetch the order
     const order = await Order.findById(orderId)
     if (!order || order.isDeleted) {
-      return res.status(404).json({ message: "Order not found" })
+      return res.status(404).json({ success: false, message: "Order not found" })
     }
 
     // If itemId is provided, update just that item
     if (itemId) {
       const item = order.items.id(itemId);
       if (!item) {
-        return res.status(404).json({ message: "Item not found in order" });
+        return res.status(404).json({ success: false, message: "Item not found in order" });
       }
 
       // Define allowed item status transitions
@@ -357,6 +329,7 @@ const updateOrderStatus = async (req, res) => {
       const allowedItemStatuses = itemStatusTransitions[item.status] || [];
       if (!allowedItemStatuses.includes(status)) {
         return res.status(400).json({
+          success: false,
           message: `Cannot update item status from ${item.status} to ${status}`
         });
       }
@@ -413,7 +386,7 @@ const updateOrderStatus = async (req, res) => {
       }
 
       await order.save();
-      return res.status(200).json({ message: "Item status updated successfully" });
+      return res.status(200).json({ success: true, message: "Item status updated successfully" });
     }
 
     // Define allowed status transitions for the entire order
@@ -432,6 +405,7 @@ const updateOrderStatus = async (req, res) => {
     const allowedStatuses = statusTransitions[order.orderStatus] || []
     if (!allowedStatuses.includes(status)) {
       return res.status(400).json({
+        success: false,
         message: `Cannot update order status from ${order.orderStatus} to ${status}`,
       })
     }
@@ -547,10 +521,10 @@ const updateOrderStatus = async (req, res) => {
 
     await order.save()
 
-    res.status(200).json({ message: "Order status updated successfully" })
+    res.status(200).json({ success: true, message: "Order status updated successfully" })
   } catch (error) {
     console.error("Error updating order status:", error)
-    res.status(500).json({ message: "Internal server error" })
+    res.status(500).json({ success: false, message: "Failed to update order status" })
   }
 }
 

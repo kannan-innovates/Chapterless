@@ -23,18 +23,16 @@
               <h2 class="fs-4 fw-bold mb-0 me-3">My Orders</h2>
               <div class="dropdown">
                 <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" id="filterDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                  <%= currentFilter === 'All' ? 'All Orders' : currentFilter %>
+                  <%= filterDisplay %>
                 </button>
                 <ul class="dropdown-menu" aria-labelledby="filterDropdown">
                   <li><a class="dropdown-item <%= currentFilter === 'All' ? 'active' : '' %>" href="/orders?sort=<%= currentSort %>">All Orders</a></li>
-                  <li><a class="dropdown-item <%= currentFilter === 'Delivered' ? 'active' : '' %>" href="/orders?filter=Delivered&sort=<%= currentSort %>">Delivered</a></li>
-                  <li><a class="dropdown-item <%= currentFilter === 'Processing' ? 'active' : '' %>" href="/orders?filter=Processing&sort=<%= currentSort %>">Processing</a></li>
-                  <li><a class="dropdown-item <%= currentFilter === 'Shipped' ? 'active' : '' %>" href="/orders?filter=Shipped&sort=<%= currentSort %>">Shipped</a></li>
-                  <li><a class="dropdown-item <%= currentFilter === 'Placed' ? 'active' : '' %>" href="/orders?filter=Placed&sort=<%= currentSort %>">Placed</a></li>
-                  <li><a class="dropdown-item <%= currentFilter === 'Cancelled' ? 'active' : '' %>" href="/orders?filter=Cancelled&sort=<%= currentSort %>">Cancelled</a></li>
-                  <li><a class="dropdown-item <%= currentFilter === 'Partially Cancelled' ? 'active' : '' %>" href="/orders?filter=Partially%20Cancelled&sort=<%= currentSort %>">Partially Cancelled</a></li>
-                  <li><a class="dropdown-item <%= currentFilter === 'Returned' ? 'active' : '' %>" href="/orders?filter=Returned&sort=<%= currentSort %>">Returned</a></li>
-                  <li><a class="dropdown-item <%= currentFilter === 'Partially Returned' ? 'active' : '' %>" href="/orders?filter=Partially%20Returned&sort=<%= currentSort %>">Partially Returned</a></li>
+                  <li><a class="dropdown-item <%= currentFilter === 'Delivered' ? 'active' : '' %>" href="/orders?filter=Delivered&sort=<%= currentSort %>">Delivered Orders</a></li>
+                  <li><a class="dropdown-item <%= currentFilter === 'Processing' ? 'active' : '' %>" href="/orders?filter=Processing&sort=<%= currentSort %>">Processing Orders</a></li>
+                  <li><a class="dropdown-item <%= currentFilter === 'Shipped' ? 'active' : '' %>" href="/orders?filter=Shipped&sort=<%= currentSort %>">Shipped Orders</a></li>
+                  <li><a class="dropdown-item <%= currentFilter === 'Placed' ? 'active' : '' %>" href="/orders?filter=Placed&sort=<%= currentSort %>">Placed Orders</a></li>
+                  <li><a class="dropdown-item <%= currentFilter === 'Cancelled' ? 'active' : '' %>" href="/orders?filter=Cancelled&sort=<%= currentSort %>">Cancelled Orders</a></li>
+                  <li><a class="dropdown-item <%= currentFilter === 'Returned' ? 'active' : '' %>" href="/orders?filter=Returned&sort=<%= currentSort %>">Returned Orders</a></li>
                 </ul>
               </div>
             </div>
@@ -68,6 +66,10 @@
                     <div>
                       <p class="mb-0 text-muted small">Total</p>
                       <p class="mb-0 fw-medium"><%= order.formattedTotal %></p>
+                    </div>
+                    <div>
+                      <p class="mb-0 text-muted small">Estimated Delivery</p>
+                      <p class="mb-0 fw-medium"><%= order.estimatedDeliveryDate || 'N/A' %></p>
                     </div>
                     <div class="d-none d-md-block">
                       <% if (order.orderStatus === 'Delivered') { %>
@@ -118,6 +120,11 @@
                                 <% if (item.discountedPrice && item.discountedPrice < item.price) { %>
                                   <span class="text-decoration-line-through text-muted me-2">₹<%= item.price.toFixed(2) %></span>
                                   <span>₹<%= item.discountedPrice.toFixed(2) %></span>
+                                  <% if (item.couponProportion > 0) { %>
+                                    <small class="text-success ms-2">
+                                      (<%= (item.couponProportion * 100).toFixed(1) %>% of total coupon applied)
+                                    </small>
+                                  <% } %>
                                 <% } else { %>
                                   <%= item.formattedPrice %>
                                 <% } %>
@@ -164,6 +171,11 @@
                           <% if (['Placed', 'Processing'].includes(order.orderStatus)) { %>
                             <a href="/orders/<%= order._id %>" class="btn btn-outline-danger btn-sm">Cancel Order</a>
                           <% } %>
+                          <div class="mt-2 text-center">
+                            <span class="badge <%= order.paymentStatus === 'Paid' ? 'bg-success' : order.paymentStatus === 'Pending' ? 'bg-warning' : 'bg-info' %>">
+                              <%= order.paymentStatus || 'Payment Pending' %>
+                            </span>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -527,71 +539,12 @@
 </style>
 
 <script>
-  // Toast notification function
-  function showToast(message, type = 'info') {
-    const toastContainer = document.querySelector('.toast-container');
-    
-    // Create toast element
-    const toast = document.createElement('div');
-    toast.className = `toast toast-${type} show`;
-    toast.setAttribute('role', 'alert');
-    toast.setAttribute('aria-live', 'assertive');
-    toast.setAttribute('aria-atomic', 'true');
-    
-    // Create toast header
-    const toastHeader = document.createElement('div');
-    toastHeader.className = 'toast-header';
-    
-    // Create toast title based on type
-    let title = 'Notification';
-    let icon = 'info-circle';
-    
-    if (type === 'success') {
-      title = 'Success';
-      icon = 'check-circle';
-    } else if (type === 'error') {
-      title = 'Error';
-      icon = 'exclamation-circle';
-    } else if (type === 'warning') {
-      title = 'Warning';
-      icon = 'exclamation-triangle';
-    }
-    
-    toastHeader.innerHTML = `
-      <i class="bi bi-${icon} me-2"></i>
-      <strong class="me-auto">${title}</strong>
-      <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
-    `;
-    
-    // Create toast body
-    const toastBody = document.createElement('div');
-    toastBody.className = 'toast-body';
-    toastBody.textContent = message;
-    
-    // Append header and body to toast
-    toast.appendChild(toastHeader);
-    toast.appendChild(toastBody);
-    
-    // Append toast to container
-    toastContainer.appendChild(toast);
-    
-    // Auto remove after 5 seconds
-    setTimeout(() => {
-      toast.remove();
-    }, 5000);
-    
-    // Add click event to close button
-    const closeButton = toast.querySelector('.btn-close');
-    closeButton.addEventListener('click', () => {
-      toast.remove();
-    });
-  }
-
   // Function to reorder (buy again)
   function reorder(orderId) {
     // Show processing toast
-    showToast('Adding items to your cart...', 'info');
+    showToast('Adding items to cart...', 'info');
     
+    // Send reorder request
     fetch(`/orders/${orderId}/reorder`, {
       method: 'POST',
       headers: {
@@ -601,21 +554,48 @@
     .then(response => response.json())
     .then(data => {
       if (data.success) {
-        showToast(data.message || 'Items have been added to your cart', 'success');
+        showToast(data.message, 'success');
         
-        // Redirect after a short delay
+        // Redirect to cart after a short delay
         setTimeout(() => {
-          window.location.href = data.redirectUrl || '/cart';
+          window.location.href = data.redirectUrl;
         }, 1500);
       } else {
-        showToast(data.message || 'Failed to add items to cart', 'error');
+        showToast(data.message, 'error');
       }
     })
     .catch(error => {
       console.error('Error:', error);
-      showToast('An error occurred while processing your request', 'error');
+      showToast('An error occurred while processing your request.', 'error');
     });
-    return false; // Prevent default link behavior
+  }
+
+  // Function to show toast notifications
+  function showToast(message, type = 'info') {
+    const toastContainer = document.querySelector('.toast-container');
+    const toast = document.createElement('div');
+    toast.className = `toast align-items-center text-white bg-${type} border-0`;
+    toast.setAttribute('role', 'alert');
+    toast.setAttribute('aria-live', 'assertive');
+    toast.setAttribute('aria-atomic', 'true');
+    
+    toast.innerHTML = `
+      <div class="d-flex">
+        <div class="toast-body">
+          ${message}
+        </div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+      </div>
+    `;
+    
+    toastContainer.appendChild(toast);
+    const bsToast = new bootstrap.Toast(toast);
+    bsToast.show();
+    
+    // Remove toast after it's hidden
+    toast.addEventListener('hidden.bs.toast', () => {
+      toast.remove();
+    });
   }
 </script>
 

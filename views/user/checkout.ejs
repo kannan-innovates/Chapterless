@@ -66,11 +66,11 @@
                   <div class="cart-item-image me-3">
                     <img
                       src="<%= item.product && item.product.mainImage ? item.product.mainImage : 'https://via.placeholder.com/80' %>"
-                      alt="<%= item.product && item.product.title ? item.product.title : 'Product' %>"
-                      class="rounded"
+                      alt="<%= item.product && item.product.title ? item.product.title : 'Product Image' %>"
+                      class="img-fluid rounded"
                       width="80"
                       height="80"
-                      onerror="console.log('Image failed to load: <%= item.product && item.product.mainImage ? item.product.mainImage : 'https://via.placeholder.com/80' %>')"
+                      onerror="this.src='https://via.placeholder.com/80'"
                     />
                   </div>
                   <div class="cart-item-details flex-grow-1">
@@ -82,23 +82,38 @@
                         <span class="text-decoration-line-through">₹<%= item.originalPrice.toFixed(2) %></span>
                         <span class="ms-2 text-success">₹<%= item.discountedPrice.toFixed(2) %></span>
                         <span class="ms-2 badge bg-danger">
-                          <%= item.discountPercentage %>% OFF - <%= item.offerTitle %>
+                          <%= item.discountPercentage %>% OFF
                         </span>
                       <% } else { %>
                         Price: ₹<%= item.priceAtAddition ? item.priceAtAddition.toFixed(2) : '0.00' %>
                       <% } %>
+                      <span class="ms-2">× <%= item.quantity || 1 %></span>
                     </p>
-                    <div class="d-flex align-items-center">
-                      <span class="text-muted me-3">Qty: <%= item.quantity || 1 %></span>
-                      <div class="cart-item-price fw-bold">
-                        <% if (item.offerDiscount && item.offerDiscount > 0) { %>
-                          ₹<%= (item.quantity * item.discountedPrice).toFixed(2) %>
-                          <span class="ms-2 text-success small">
-                            (Saved: ₹<%= (item.offerDiscount).toFixed(2) %>)
-                          </span>
-                        <% } else { %>
-                          ₹<%= item.quantity && item.priceAtAddition ? (item.quantity * item.priceAtAddition).toFixed(2) : '0.00' %>
+                    <div class="d-flex flex-column">
+                      <% if (item.offerDiscount && item.offerDiscount > 0) { %>
+                        <div class="text-success small">
+                          <i class="bi bi-tag-fill me-1"></i>Offer Discount: -₹<%= item.offerDiscount.toFixed(2) %>
+                        </div>
+                      <% } %>
+                    </div>
+                    <%
+                      const itemTotal = item.discountedPrice * item.quantity;
+                      const proportion = appliedCoupon ? (itemTotal / subtotal) : 0;
+                      const couponShare = appliedCoupon ? Math.round((couponDiscount * proportion) * 100) / 100 : 0;
+                    %>
+                    <div class="d-flex justify-content-between align-items-center mt-2">
+                      <div class="text-muted small">
+                        <div>Offer Discount: -₹<%= item.offerDiscount ? item.offerDiscount.toFixed(2) : '0.00' %></div>
+                        <% if (appliedCoupon) { %>
+                          <div>
+                            Coupon (<%= appliedCoupon.code %>): 
+                            -₹<%= couponShare.toFixed(2) %> 
+                            (<%= (proportion * 100).toFixed(2) %>%)
+                          </div>
                         <% } %>
+                      </div>
+                      <div class="fw-medium">
+                        Final Price: ₹<%= (itemTotal - couponShare).toFixed(2) %>
                       </div>
                     </div>
                   </div>
@@ -812,11 +827,11 @@
                             <div class="flex-shrink-0 me-3">
                               <img
                                 src="<%= item.product && item.product.mainImage ? item.product.mainImage : 'https://via.placeholder.com/60' %>"
-                                alt="<%= item.product && item.product.title ? item.product.title : 'Product' %>"
-                                class="rounded"
+                                alt="<%= item.product && item.product.title ? item.product.title : 'Product Image' %>"
+                                class="img-fluid rounded"
                                 width="60"
                                 height="60"
-                                onerror="console.log('Image failed to load: <%= item.product && item.product.mainImage ? item.product.mainImage : 'https://via.placeholder.com/60' %>')"
+                                onerror="this.src='https://via.placeholder.com/60'"
                               />
                             </div>
                             <div class="flex-grow-1">
@@ -832,15 +847,35 @@
                                 <% } %>
                                 <span class="ms-2">× <%= item.quantity || 1 %></span>
                               </p>
-                              <div class="d-flex justify-content-between">
-                                <span class="text-muted">Total:</span>
-                                <span class="fw-medium">
-                                  <% if (item.offerDiscount && item.offerDiscount > 0) { %>
-                                    ₹<%= (item.quantity * item.discountedPrice).toFixed(2) %>
-                                  <% } else { %>
-                                    ₹<%= item.quantity && item.priceAtAddition ? (item.quantity * item.priceAtAddition).toFixed(2) : '0.00' %>
+                              <div class="d-flex flex-column">
+                                <% if (item.offerDiscount && item.offerDiscount > 0) { %>
+                                  <div class="text-success small">
+                                    <i class="bi bi-tag-fill me-1"></i>Offer Discount: -₹<%= item.offerDiscount.toFixed(2) %>
+                                  </div>
+                                <% } %>
+                              </div>
+                              <%
+                                const itemTotal = item.discountedPrice * item.quantity;
+                                const proportion = appliedCoupon ? (itemTotal / subtotal) : 0;
+                                const couponShare = appliedCoupon ? Math.round((couponDiscount * proportion) * 100) / 100 : 0;
+                              %>
+                              <div class="d-flex justify-content-between align-items-center mt-2">
+                                <div class="text-muted small">
+                                  <div>Offer Discount: -₹<%= item.offerDiscount ? item.offerDiscount.toFixed(2) : '0.00' %></div>
+                                  <% if (appliedCoupon) { %>
+                                    <div>
+                                      Coupon (<%= appliedCoupon.code %>): 
+                                      <% const itemTotal = item.discountedPrice * item.quantity; %>
+                                      <% const proportion = itemTotal / subtotal; %>
+                                      <% const couponShare = Math.round((couponDiscount * proportion) * 100) / 100; %>
+                                      -₹<%= couponShare.toFixed(2) %> 
+                                      (<%= (proportion * 100).toFixed(2) %>%)
+                                    </div>
                                   <% } %>
-                                </span>
+                                </div>
+                                <div class="fw-medium">
+                                  Final Price: ₹<%= ((item.discountedPrice * item.quantity) - (couponShare || 0)).toFixed(2) %>
+                                </div>
                               </div>
                             </div>
                           </div>
@@ -937,6 +972,31 @@
             <span class="fw-bold">Total</span>
             <span class="fw-bold fs-5" id="totalAmount">₹<%= totalAmount ? totalAmount.toFixed(2) : '0.00' %></span>
           </div>
+
+          <% if (offerDiscount > 0 || (appliedCoupon && couponDiscount > 0)) { %>
+          <div class="alert alert-success mb-3">
+            <div class="d-flex align-items-center mb-2">
+              <i class="bi bi-piggy-bank-fill me-2"></i>
+              <span class="fw-medium">Your Savings</span>
+            </div>
+            <% if (offerDiscount > 0) { %>
+            <div class="d-flex justify-content-between small">
+              <span>Offer Discount:</span>
+              <span>₹<%= offerDiscount.toFixed(2) %></span>
+            </div>
+            <% } %>
+            <% if (appliedCoupon && couponDiscount > 0) { %>
+            <div class="d-flex justify-content-between small">
+              <span>Coupon Discount:</span>
+              <span>₹<%= couponDiscount.toFixed(2) %></span>
+            </div>
+            <% } %>
+            <div class="d-flex justify-content-between fw-medium mt-1">
+              <span>Total Savings:</span>
+              <span>₹<%= (offerDiscount + (couponDiscount || 0)).toFixed(2) %></span>
+            </div>
+          </div>
+          <% } %>
 
           <!-- Delivery Info -->
           <div class="delivery-info mt-4">
@@ -2385,11 +2445,11 @@
         amount: orderData.amount,
         currency: orderData.currency,
         name: orderData.name,
-        description: orderData.description,
+        description: `Order #${orderData.orderNumber} - Total: ₹${(orderData.amount / 100).toFixed(2)}`,
         order_id: orderData.order.id,
         prefill: orderData.prefill,
         theme: {
-          color: '#212529'
+          color: '#198754'
         },
         modal: {
           ondismiss: function() {
@@ -2401,6 +2461,13 @@
         }
       };
       
+      // Log for debugging
+      console.log('Razorpay Payment:', {
+        amount: orderData.amount,
+        amountInRupees: (orderData.amount / 100).toFixed(2),
+        breakdown: orderData.priceBreakdown
+      });
+
       const rzp = new Razorpay(options);
       rzp.open();
     }

@@ -4,7 +4,7 @@ const Product = require("../../models/productSchema");
 const Cart = require("../../models/cartSchema"); // Added Cart import
 const PDFDocument = require('pdfkit');
 const path = require('path');
-const { getActiveOfferForProduct, calculateDiscount } = require("../../utils/offer-helper");
+const { getActiveOfferForProduct, calculateDiscount, getItemPriceDetails } = require("../../utils/offer-helper");
 
 /**
  * Get all orders for the current user with pagination, filtering, and sorting
@@ -29,13 +29,13 @@ const getOrders = async (req, res) => {
 
     // Handle filter
     const validFilters = ['All', 'Delivered', 'Processing', 'Shipped', 'Placed', 'Cancelled', 'Returned', 'Partially Cancelled', 'Partially Returned'];
-    let filter = req.query.filter || 'All';
-    if (!validFilters.includes(filter)) {
-      filter = 'All';
+    let currentFilter = req.query.filter || 'All';
+    if (!validFilters.includes(currentFilter)) {
+      currentFilter = 'All';
     }
     const query = { user: userId, isDeleted: false };
-    if (filter !== 'All') {
-      query.orderStatus = filter;
+    if (currentFilter !== 'All') {
+      query.orderStatus = currentFilter;
     }
 
     // Handle sort
@@ -45,11 +45,33 @@ const getOrders = async (req, res) => {
       'total-desc': { total: -1 },
       'total-asc': { total: 1 }
     };
-    let sort = req.query.sort || 'createdAt-desc';
-    if (!validSorts[sort]) {
-      sort = 'createdAt-desc';
+
+    const sortDisplayMap = {
+      'createdAt-desc': 'Newest First',
+      'createdAt-asc': 'Oldest First',
+      'total-desc': 'Price: High to Low',
+      'total-asc': 'Price: Low to High'
+    };
+
+    let currentSort = req.query.sort || 'createdAt-desc';
+    if (!validSorts[currentSort]) {
+      currentSort = 'createdAt-desc';
     }
-    const sortCriteria = validSorts[sort];
+    const sortCriteria = validSorts[currentSort];
+    const sortDisplay = sortDisplayMap[currentSort];
+
+    // Filter display text
+    const filterDisplayMap = {
+      'All': 'All Orders',
+      'Delivered': 'Delivered Orders',
+      'Processing': 'Processing Orders',
+      'Shipped': 'Shipped Orders',
+      'Placed': 'Placed Orders',
+      'Cancelled': 'Cancelled Orders',
+      'Returned': 'Returned Orders',
+      'Partially Cancelled': 'Partially Cancelled Orders',
+      'Partially Returned': 'Partially Returned Orders'
+    };
 
     // Fetch orders with filter and sort
     const totalOrders = await Order.countDocuments(query);
@@ -58,6 +80,77 @@ const getOrders = async (req, res) => {
       .skip(skip)
       .limit(limit)
       .lean();
+
+    // Format order data and calculate offers
+    for (const order of orders) {
+      // Format date
+      order.formattedDate = new Date(order.createdAt).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      });
+      
+      // Calculate estimated delivery date
+      if (!['Delivered', 'Cancelled', 'Returned'].includes(order.orderStatus)) {
+        const deliveryDate = new Date(order.createdAt);
+        deliveryDate.setDate(deliveryDate.getDate() + 5); // Assuming 5 days delivery time
+        order.estimatedDeliveryDate = deliveryDate.toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        });
+      } else if (order.orderStatus === 'Delivered') {
+        order.estimatedDeliveryDate = new Date(order.deliveredAt || order.updatedAt).toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        });
+      }
+      
+      // Format order totals
+      order.formattedSubtotal = `₹${order.subtotal.toFixed(2)}`;
+      order.formattedTax = `₹${order.tax.toFixed(2)}`;
+      order.formattedTotal = `₹${order.total.toFixed(2)}`;
+      order.formattedDiscount = order.discount ? `₹${order.discount.toFixed(2)}` : '₹0.00';
+      order.formattedCouponDiscount = order.couponDiscount ? `₹${order.couponDiscount.toFixed(2)}` : '₹0.00';
+
+      // Format items with price breakdowns
+      for (const item of order.items) {
+        const priceBreakdown = item.priceBreakdown || {};
+        
+        // Format all price values
+        item.formattedOriginalPrice = `₹${priceBreakdown.originalPrice?.toFixed(2) || item.price.toFixed(2)}`;
+        item.formattedSubtotal = `₹${priceBreakdown.subtotal?.toFixed(2) || (item.price * item.quantity).toFixed(2)}`;
+        item.formattedOfferDiscount = priceBreakdown.offerDiscount ? `₹${priceBreakdown.offerDiscount.toFixed(2)}` : '₹0.00';
+        item.formattedPriceAfterOffer = `₹${priceBreakdown.priceAfterOffer?.toFixed(2) || item.discountedPrice.toFixed(2)}`;
+        item.formattedCouponDiscount = priceBreakdown.couponDiscount ? `₹${priceBreakdown.couponDiscount.toFixed(2)}` : '₹0.00';
+        item.formattedFinalPrice = `₹${priceBreakdown.finalPrice?.toFixed(2) || item.discountedPrice.toFixed(2)}`;
+        
+        // Store discount percentages and proportions
+        item.offerTitle = priceBreakdown.offerTitle || null;
+        item.couponProportion = priceBreakdown.couponProportion || 0;
+        
+        // Calculate effective discount percentage
+        const totalDiscount = (priceBreakdown.offerDiscount || 0) + (priceBreakdown.couponDiscount || 0);
+        const originalTotal = priceBreakdown.subtotal || (item.price * item.quantity);
+        item.effectiveDiscountPercentage = originalTotal > 0 ? 
+          ((totalDiscount / originalTotal) * 100).toFixed(1) : '0';
+
+        // Add flags for cancellation and return
+        item.canBeCancelled = (
+          item.status === 'Active' && 
+          ['Placed', 'Processing', 'Partially Cancelled', 'Partially Returned'].includes(order.orderStatus)
+        );
+
+        if (order.orderStatus === 'Delivered' && item.status === 'Active') {
+          const deliveredDate = order.deliveredAt || order.updatedAt;
+          const returnPeriod = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
+          item.canBeReturned = (Date.now() - deliveredDate <= returnPeriod);
+        } else {
+          item.canBeReturned = false;
+        }
+      }
+    }
 
     const totalPages = Math.ceil(totalOrders / limit);
     const pagination = {
@@ -70,83 +163,22 @@ const getOrders = async (req, res) => {
       pages: Array.from({ length: totalPages }, (_, i) => i + 1),
     };
 
-    // Format order data and calculate offers
-    for (const order of orders) {
-      let totalBeforeDiscount = 0;
-      let totalDiscount = 0;
-      let totalAfterDiscount = 0;
-
-      order.formattedDate = new Date(order.createdAt).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      });
-      
-      for (const item of order.items) {
-        // Get active offer for this product
-        const offer = await getActiveOfferForProduct(
-          item.product.toString(),
-          null,  // We'll get category from product if needed
-          item.price
-        );
-
-        // Calculate discount if offer exists
-        const { discountPercentage, discountAmount, finalPrice } = calculateDiscount(offer, item.price);
-        
-        const itemOriginalTotal = item.price * item.quantity;
-        const itemDiscountTotal = discountAmount * item.quantity;
-        const itemFinalTotal = finalPrice * item.quantity;
-
-        totalBeforeDiscount += itemOriginalTotal;
-        totalDiscount += itemDiscountTotal;
-        totalAfterDiscount += itemFinalTotal;
-        
-        item.formattedPrice = `₹${item.price.toFixed(2)}`;
-        item.formattedTotal = `₹${itemFinalTotal.toFixed(2)}`;
-        item.discountedPrice = finalPrice;
-        item.formattedDiscountedPrice = `₹${finalPrice.toFixed(2)}`;
-        item.offerDiscount = discountAmount;
-        item.offerTitle = offer ? offer.title : null;
-        item.discountPercentage = discountPercentage;
-      }
-
-      // Update order totals
-      order.subtotal = totalBeforeDiscount;
-      order.discount = totalDiscount;
-      order.total = totalAfterDiscount + (order.tax || 0) - (order.couponDiscount || 0);
-      
-      order.formattedSubtotal = `₹${order.subtotal.toFixed(2)}`;
-      order.formattedTotal = `₹${order.total.toFixed(2)}`;
-      order.formattedTax = `₹${(order.tax || 0).toFixed(2)}`;
-      order.formattedDiscount = `₹${order.discount.toFixed(2)}`;
-      order.formattedCouponDiscount = `₹${(order.couponDiscount || 0).toFixed(2)}`;
-    }
-
-    // Map sort values to display text
-    const sortDisplay = {
-      'createdAt-desc': 'Newest First',
-      'createdAt-asc': 'Oldest First',
-      'total-desc': 'Price: High to Low',
-      'total-asc': 'Price: Low to High'
-    };
-
     res.render('order', {
+      title: 'My Orders',
       orders,
+      user,
       pagination,
-      user: {
-        id: userId,
-        fullName: user.fullName || 'User',
-        email: user.email || '',
-        profileImage: user.profileImage || '/api/placeholder/120/120'
-      },
-      isAuthenticated: true,
-      currentFilter: filter,
-      currentSort: sort,
-      sortDisplay: sortDisplay[sort]
+      currentFilter,
+      currentSort,
+      sortDisplay,
+      filterDisplay: filterDisplayMap[currentFilter],
+      isAuthenticated: true
     });
   } catch (error) {
-    console.error('Error in rendering orders:', error);
-    res.status(500).render('error', { message: 'Internal server error' });
+    console.error('Error fetching orders:', error);
+    // Redirect to home page with error message
+    req.session.errorMessage = 'Something went wrong while fetching your orders. Please try again.';
+    return res.redirect('/');
   }
 };
 
@@ -155,262 +187,189 @@ const getOrders = async (req, res) => {
  */
 const getOrderDetails = async (req, res) => {
   try {
-    if (!req.session.user_id) {
+    const orderId = req.params.id;
+    const userId = req.session.user_id;
+
+    if (!userId) {
       return res.redirect('/login');
     }
 
-    const userId = req.session.user_id;
-    const orderId = req.params.id;
-
-    // Fetch the order and populate shipping address
-    const order = await Order.findOne({
-      _id: orderId,
-      user: userId,
-      isDeleted: false
-    }).lean();
-
-    if (!order) {
-      return res.status(404).render('error', {
-        message: 'Order not found or you do not have access to this order',
-        isAuthenticated: true
-      });
-    }
-
-    // Fetch user data for sidebar
+    // Fetch user data
     const user = await User.findById(userId, 'fullName email profileImage').lean();
     if (!user) {
       return res.redirect('/login');
     }
 
-    // Format order data and calculate offers
-    let totalBeforeDiscount = 0;
-    let totalDiscount = 0;
-    let totalAfterDiscount = 0;
+    const order = await Order.findById(orderId).populate('items.product');
 
+    if (!order || order.user.toString() !== userId.toString()) {
+      return res.status(404).render('error', { message: 'Order not found' });
+    }
+
+    // Format order data
     order.formattedDate = new Date(order.createdAt).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric'
     });
-    
-    // Calculate offers for each item
+
+    // Calculate total item value for coupon proportion
+    const totalItemsValue = order.items.reduce((sum, item) => {
+      return sum + (item.price * item.quantity);
+    }, 0);
+
+    // Process each item for offers and format prices
     for (const item of order.items) {
       // Get active offer for this product
       const offer = await getActiveOfferForProduct(
-        item.product.toString(),
-        null,  // We'll get category from product if needed
+        item.product._id || item.product,
+        null,
         item.price
       );
 
       // Calculate discount if offer exists
       const { discountPercentage, discountAmount, finalPrice } = calculateDiscount(offer, item.price);
       
-      const itemOriginalTotal = item.price * item.quantity;
-      const itemDiscountTotal = discountAmount * item.quantity;
-      const itemFinalTotal = finalPrice * item.quantity;
+      // Calculate coupon proportion and discount
+      if (order.couponDiscount && order.couponDiscount > 0) {
+        const itemValue = item.price * item.quantity;
+        item.couponProportion = itemValue / totalItemsValue;
+        item.couponDiscount = (order.couponDiscount * item.couponProportion);
+      }
 
-      totalBeforeDiscount += itemOriginalTotal;
-      totalDiscount += itemDiscountTotal;
-      totalAfterDiscount += itemFinalTotal;
-      
-      item.formattedPrice = `₹${item.price.toFixed(2)}`;
-      item.formattedTotal = `₹${itemFinalTotal.toFixed(2)}`;
+      // Update item with offer information
+      item.originalPrice = item.price;
       item.discountedPrice = finalPrice;
-      item.formattedDiscountedPrice = `₹${finalPrice.toFixed(2)}`;
       item.offerDiscount = discountAmount;
       item.offerTitle = offer ? offer.title : null;
       item.discountPercentage = discountPercentage;
+
+      // Calculate final price after all discounts
+      const itemSubtotal = item.price * item.quantity;
+      const itemOfferDiscount = (discountAmount || 0) * item.quantity;
+      const itemCouponDiscount = item.couponDiscount || 0;
+      item.finalPrice = (itemSubtotal - itemOfferDiscount - itemCouponDiscount) / item.quantity;
+
+      // Format prices for display
+      item.formattedPrice = `₹${item.price.toFixed(2)}`;
+      item.formattedDiscountedPrice = `₹${item.discountedPrice.toFixed(2)}`;
+      item.formattedFinalPrice = `₹${item.finalPrice.toFixed(2)}`;
+      item.formattedOfferDiscount = `₹${(item.offerDiscount || 0).toFixed(2)}`;
+      item.formattedCouponDiscount = `₹${(item.couponDiscount || 0).toFixed(2)}`;
+
+      // Check if item can be cancelled
+      item.canBeCancelled = (
+        item.status === 'Active' && 
+        ['Placed', 'Processing', 'Partially Cancelled', 'Partially Returned'].includes(order.orderStatus)
+      );
+
+      // Check if item can be returned
+      if (order.orderStatus === 'Delivered' && item.status === 'Active') {
+        const deliveredDate = order.deliveredAt || order.updatedAt;
+        const returnPeriod = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
+        item.canBeReturned = (Date.now() - deliveredDate <= returnPeriod);
+      } else {
+        item.canBeReturned = false;
+      }
     }
 
-    // Update order totals
-    order.subtotal = totalBeforeDiscount;
-    order.discount = totalDiscount;
-    order.total = totalAfterDiscount + (order.tax || 0) - (order.couponDiscount || 0);
-    
+    // Format order totals
     order.formattedSubtotal = `₹${order.subtotal.toFixed(2)}`;
+    order.formattedTax = `₹${order.tax.toFixed(2)}`;
     order.formattedTotal = `₹${order.total.toFixed(2)}`;
-    order.formattedTax = `₹${(order.tax || 0).toFixed(2)}`;
-    order.formattedDiscount = `₹${order.discount.toFixed(2)}`;
-    order.formattedCouponDiscount = `₹${(order.couponDiscount || 0).toFixed(2)}`;
+    order.formattedDiscount = order.discount ? `₹${order.discount.toFixed(2)}` : '₹0.00';
+    order.formattedCouponDiscount = order.couponDiscount ? `₹${order.couponDiscount.toFixed(2)}` : '₹0.00';
 
-    // FIXED: Check if individual items can be cancelled or returned
-    const orderNotTooFarProgressed = ['Placed', 'Processing', 'Partially Cancelled', 'Partially Returned', 'Partially Return Requested'].includes(order.orderStatus);
-    
-    order.items.forEach(item => {
-      // An item can be cancelled if:
-      // 1. The item itself is still 'Active'
-      // 2. The overall order hasn't progressed too far (not shipped/delivered)
-      item.canBeCancelled = item.status === 'Active' && orderNotTooFarProgressed;
-      
-      // An item can be returned if:
-      // 1. The order is delivered
-      // 2. The item is still 'Active'
-      item.canBeReturned = order.orderStatus === 'Delivered' && item.status === 'Active';
-    });
-
-    // Create timeline based on order status using actual timestamps
+    // Generate timeline
     const timeline = [
       {
         status: 'Order Placed',
-        timestamp: new Date(order.createdAt).toLocaleString('en-US', {
+        timestamp: new Date(order.createdAt).toLocaleDateString('en-US', {
           year: 'numeric',
-          month: 'long',
+          month: 'short',
           day: 'numeric',
           hour: '2-digit',
           minute: '2-digit'
         }),
-        completed: true
-      },
-      {
-        status: 'Payment Confirmed',
-        timestamp: new Date(order.createdAt).toLocaleString('en-US', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit'
-        }),
-        completed: ['Placed', 'Processing', 'Shipped', 'Delivered', 'Returned', 'Partially Cancelled', 'Partially Returned', 'Partially Return Requested'].includes(order.orderStatus)
+        completed: true,
+        active: false
       },
       {
         status: 'Processing',
-        timestamp: order.processedAt
-          ? new Date(order.processedAt).toLocaleString('en-US', {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit'
-            })
-          : ['Shipped', 'Delivered', 'Returned', 'Partially Returned'].includes(order.orderStatus)
-          ? new Date(order.createdAt.getTime() + 24 * 60 * 60 * 1000).toLocaleString('en-US', {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit'
-            })
-          : 'Estimated: ' + new Date(order.createdAt.getTime() + 24 * 60 * 60 * 1000).toLocaleDateString('en-US', {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric'
-            }),
-        completed: ['Processing', 'Shipped', 'Delivered', 'Returned', 'Partially Returned'].includes(order.orderStatus),
+        timestamp: order.processingDate ? new Date(order.processingDate).toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        }) : '',
+        completed: order.orderStatus === 'Processing' || order.orderStatus === 'Shipped' || order.orderStatus === 'Delivered',
         active: order.orderStatus === 'Processing'
       },
       {
         status: 'Shipped',
-        timestamp: order.shippedAt
-          ? new Date(order.shippedAt).toLocaleString('en-US', {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit'
-            })
-          : ['Delivered', 'Returned', 'Partially Returned'].includes(order.orderStatus)
-          ? new Date(order.createdAt.getTime() + 3 * 24 * 60 * 60 * 1000).toLocaleString('en-US', {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit'
-            })
-          : 'Estimated: ' + new Date(order.createdAt.getTime() + 3 * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric'
-            }),
-        completed: ['Shipped', 'Delivered', 'Returned', 'Partially Returned'].includes(order.orderStatus),
+        timestamp: order.shippedDate ? new Date(order.shippedDate).toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        }) : '',
+        completed: order.orderStatus === 'Shipped' || order.orderStatus === 'Delivered',
         active: order.orderStatus === 'Shipped'
       },
       {
-        status: 'Out for Delivery',
-        timestamp: order.deliveredAt
-          ? new Date(order.deliveredAt.getTime() - 24 * 60 * 60 * 1000).toLocaleString('en-US', {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit'
-            })
-          : 'Estimated: ' + new Date(order.createdAt.getTime() + 4 * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric'
-            }),
-        completed: ['Delivered', 'Returned', 'Partially Returned'].includes(order.orderStatus),
-        active: false
-      },
-      {
         status: 'Delivered',
-        timestamp: order.deliveredAt
-          ? new Date(order.deliveredAt).toLocaleString('en-US', {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit'
-            })
-          : 'Estimated: ' + new Date(order.createdAt.getTime() + 5 * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric'
-            }),
-        completed: ['Delivered', 'Returned', 'Partially Returned'].includes(order.orderStatus),
-        active: ['Delivered', 'Partially Returned'].includes(order.orderStatus)
+        timestamp: order.deliveredDate ? new Date(order.deliveredDate).toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        }) : '',
+        completed: order.orderStatus === 'Delivered',
+        active: order.orderStatus === 'Delivered'
       }
     ];
 
-    if (order.orderStatus === 'Returned' || order.orderStatus === 'Partially Returned') {
-      timeline.push({
-        status: order.orderStatus,
-        timestamp: order.returnedAt 
-          ? new Date(order.returnedAt).toLocaleString('en-US', {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit'
-            })
-          : new Date().toLocaleString('en-US', {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit'
-            }),
-        completed: true,
-        returned: true
-      });
-    }
-
+    // Add cancelled status if order is cancelled
     if (order.orderStatus === 'Cancelled' || order.orderStatus === 'Partially Cancelled') {
       timeline.push({
         status: order.orderStatus,
-        timestamp: order.cancelledAt 
-          ? new Date(order.cancelledAt).toLocaleString('en-US', {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit'
-            })
-          : new Date().toLocaleString('en-US', {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit'
-            }),
-        completed: true,
-        cancelled: true
+        timestamp: order.cancelledDate ? new Date(order.cancelledDate).toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        }) : '',
+        cancelled: true,
+        active: true
+      });
+    }
+
+    // Add return status if order is returned or return requested
+    if (order.orderStatus === 'Return Requested' || order.orderStatus === 'Returned' || 
+        order.orderStatus === 'Partially Return Requested' || order.orderStatus === 'Partially Returned') {
+      timeline.push({
+        status: order.orderStatus,
+        timestamp: order.returnRequestedDate ? new Date(order.returnRequestedDate).toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        }) : '',
+        return_requested: order.orderStatus.includes('Return Requested'),
+        returned: order.orderStatus.includes('Returned'),
+        active: true
       });
     }
 
     res.render('order-details', {
       order,
       timeline,
+      title: `Order #${order.orderNumber}`,
       user: {
         id: userId,
         fullName: user.fullName || 'User',
@@ -420,11 +379,10 @@ const getOrderDetails = async (req, res) => {
       isAuthenticated: true
     });
   } catch (error) {
-    console.error('Error in rendering order details:', error);
-    res.status(500).render('error', { message: 'Internal server error', isAuthenticated: true });
+    console.error('Error fetching order details:', error);
+    res.status(500).render('error', { message: 'Error fetching order details' });
   }
 };
-
 
 /**
  * Get order success page
@@ -458,10 +416,25 @@ const getOrderSuccess = async (req, res) => {
       return res.redirect('/login');
     }
 
+    // Calculate total offer discount from items
+    const totalOfferDiscount = order.items.reduce((sum, item) => {
+      return sum + (item.priceBreakdown?.offerDiscount || 0);
+    }, 0);
+
+    // Calculate total coupon discount from items
+    const totalCouponDiscount = order.items.reduce((sum, item) => {
+      return sum + (item.priceBreakdown?.couponDiscount || 0);
+    }, 0);
+
     res.render('order-success', {
       orderNumber: order.orderNumber,
       orderId: order._id,
       paymentMethod: order.paymentMethod,
+      subtotal: order.subtotal,
+      offerDiscount: totalOfferDiscount,
+      couponDiscount: totalCouponDiscount,
+      couponCode: order.couponCode,
+      tax: order.tax,
       total: order.total,
       user: {
         id: userId,

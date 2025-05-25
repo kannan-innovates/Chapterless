@@ -69,10 +69,58 @@ const orderItemSchema = new mongoose.Schema(
       required: true,
       min: 0,
     },
+    discountedPrice: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
     quantity: {
       type: Number,
       required: true,
       min: 1,
+    },
+    // Price breakdown fields
+    priceBreakdown: {
+      originalPrice: {
+        type: Number,
+        required: true,
+        min: 0
+      },
+      subtotal: {
+        type: Number,
+        required: true,
+        min: 0
+      },
+      offerDiscount: {
+        type: Number,
+        default: 0,
+        min: 0
+      },
+      offerTitle: {
+        type: String,
+        default: null
+      },
+      priceAfterOffer: {
+        type: Number,
+        required: true,
+        min: 0
+      },
+      couponDiscount: {
+        type: Number,
+        default: 0,
+        min: 0
+      },
+      couponProportion: {
+        type: Number,
+        default: 0,
+        min: 0,
+        max: 1
+      },
+      finalPrice: {
+        type: Number,
+        required: true,
+        min: 0
+      }
     },
     // Updated status field to include Return Requested
     status: {
