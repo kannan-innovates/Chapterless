@@ -3,20 +3,57 @@ document.addEventListener("DOMContentLoaded", function() {
      // Get the form element
      const productForm = document.getElementById("addProductForm");
      
-     // Error message display function
+     // Constants for validation
+     const VALIDATION_RULES = {
+       TITLE: {
+         MIN_LENGTH: 3,
+         MAX_LENGTH: 100,
+         PATTERN: /^[a-zA-Z0-9\s\-:,.'&()]+$/
+       },
+       AUTHOR: {
+         MIN_LENGTH: 2,
+         MAX_LENGTH: 50,
+         PATTERN: /^[a-zA-Z\s\-.']+$/
+       },
+       DESCRIPTION: {
+         MIN_LENGTH: 20,
+         MAX_LENGTH: 2000
+       },
+       PRICE: {
+         MIN: 0,
+         MAX: 100000,
+         DECIMALS: 2
+       },
+       STOCK: {
+         MIN: 0,
+         MAX: 10000
+       },
+       PAGES: {
+         MIN: 1,
+         MAX: 10000
+       },
+       IMAGE: {
+         MAX_SIZE: 5 * 1024 * 1024, // 5MB
+         ALLOWED_TYPES: ['image/jpeg', 'image/png', 'image/jpg', 'image/webp'],
+         MIN_DIMENSIONS: { width: 200, height: 200 },
+         MAX_DIMENSIONS: { width: 4000, height: 4000 }
+       }
+     };
+     
+     // Error message display function with improved styling
      function showError(input, message) {
        const formControl = input.parentElement;
        let errorElement = formControl.querySelector('.error-message');
        
-       // Create error element if it doesn't exist
        if (!errorElement) {
          errorElement = document.createElement('div');
-         errorElement.className = 'error-message text-danger mt-1';
+         errorElement.className = 'error-message text-danger mt-1 small';
          formControl.appendChild(errorElement);
        }
        
        errorElement.textContent = message;
        input.classList.add('is-invalid');
+       input.classList.remove('is-valid');
      }
      
      // Clear error messages
@@ -32,81 +69,218 @@ document.addEventListener("DOMContentLoaded", function() {
        input.classList.add('is-valid');
      }
      
-     // Validate required field
-     function validateRequired(input, message) {
-       if (input.value.trim() === '') {
-         showError(input, message || `${getFieldName(input)} is required`);
+     // Validate text field with pattern and length
+     function validateTextField(input, rules, fieldName) {
+       const value = input.value.trim();
+       
+       if (value === '') {
+         showError(input, `${fieldName} is required`);
          return false;
-       } else {
-         clearError(input);
-         return true;
        }
-     }
-     
-     // Validate number field
-     function validateNumber(input, message, min = 0) {
-       if (isNaN(input.value) || parseFloat(input.value) < min) {
-         showError(input, message || `${getFieldName(input)} must be a number greater than or equal to ${min}`);
+       
+       if (value.length < rules.MIN_LENGTH) {
+         showError(input, `${fieldName} must be at least ${rules.MIN_LENGTH} characters`);
          return false;
-       } else {
-         clearError(input);
-         return true;
        }
-     }
-     
-     // Validate price comparison (sale price <= regular price)
-     function validatePriceComparison(regularPrice, salePrice) {
-       if (parseFloat(salePrice.value) > parseFloat(regularPrice.value)) {
-         showError(salePrice, 'Sale price cannot be greater than regular price');
+       
+       if (value.length > rules.MAX_LENGTH) {
+         showError(input, `${fieldName} must not exceed ${rules.MAX_LENGTH} characters`);
          return false;
-       } else {
-         clearError(salePrice);
-         return true;
        }
-     }
-     
-     // Validate ISBN format (simple check)
-     function validateISBN(input) {
-       if (input.value.trim() !== '') {
-         const isbnRegex = /^(?:\d[- ]?){9}[\dXx]$|^(?:\d[- ]?){13}$/;
-         if (!isbnRegex.test(input.value.trim())) {
-           showError(input, 'Please enter a valid 10 or 13 digit ISBN');
-           return false;
-         } else {
-           clearError(input);
-           return true;
-         }
-       }
-       return true; // ISBN is optional
-     }
-     
-     // Validate image upload
-     function validateImageUpload(input, isRequired = false) {
-       if (isRequired && (!input.files || input.files.length === 0)) {
-         showError(input, 'Please select an image');
+       
+       if (rules.PATTERN && !rules.PATTERN.test(value)) {
+         showError(input, `${fieldName} contains invalid characters`);
          return false;
-       } else if (input.files && input.files.length > 0) {
-         const file = input.files[0];
-         const fileType = file.type;
-         const validImageTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp'];
-         
-         if (!validImageTypes.includes(fileType)) {
-           showError(input, 'Please select a valid image file (JPEG, PNG, WebP)');
-           return false;
-         } else if (file.size > 5 * 1024 * 1024) {
-           showError(input, 'Image size should be less than 5MB');
-           return false;
-         } else {
-           clearError(input);
-           return true;
-         }
        }
+       
+       clearError(input);
        return true;
      }
      
-     // Helper function to get field name
-     function getFieldName(input) {
-       return input.id.charAt(0).toUpperCase() + input.id.slice(1).replace(/([A-Z])/g, ' $1');
+     // Validate number field with range
+     function validateNumberField(input, rules, fieldName) {
+       const value = parseFloat(input.value);
+       
+       if (isNaN(value)) {
+         showError(input, `${fieldName} must be a valid number`);
+         return false;
+       }
+       
+       if (value < rules.MIN) {
+         showError(input, `${fieldName} must be at least ${rules.MIN}`);
+         return false;
+       }
+       
+       if (value > rules.MAX) {
+         showError(input, `${fieldName} must not exceed ${rules.MAX}`);
+         return false;
+       }
+       
+       if (rules.DECIMALS) {
+         const decimals = value.toString().split('.')[1]?.length || 0;
+         if (decimals > rules.DECIMALS) {
+           showError(input, `${fieldName} must not have more than ${rules.DECIMALS} decimal places`);
+           return false;
+         }
+       }
+       
+       clearError(input);
+       return true;
+     }
+     
+     // Validate price comparison
+     function validatePriceComparison(regularPrice, salePrice) {
+       const regularValue = parseFloat(regularPrice.value);
+       const saleValue = parseFloat(salePrice.value);
+       
+       if (saleValue > regularValue) {
+         showError(salePrice, 'Sale price cannot be greater than regular price');
+         return false;
+       }
+       
+       if (saleValue < regularValue * 0.1) {
+         showError(salePrice, 'Sale price cannot be less than 10% of regular price');
+         return false;
+       }
+       
+       clearError(salePrice);
+       return true;
+     }
+     
+     // Validate ISBN format (comprehensive check)
+     function validateISBN(input) {
+       if (input.value.trim() === '') {
+         return true; // ISBN is optional
+       }
+       
+       const isbn = input.value.replace(/[-\s]/g, '').toUpperCase();
+       
+       // ISBN-10 validation
+       if (isbn.length === 10) {
+         if (!/^\d{9}[\dX]$/.test(isbn)) {
+           showError(input, 'Invalid ISBN-10 format');
+           return false;
+         }
+         
+         let sum = 0;
+         for (let i = 0; i < 9; i++) {
+           sum += (10 - i) * parseInt(isbn.charAt(i));
+         }
+         
+         const lastChar = isbn.charAt(9);
+         sum += (lastChar === 'X') ? 10 : parseInt(lastChar);
+         
+         if (sum % 11 !== 0) {
+           showError(input, 'Invalid ISBN-10 checksum');
+           return false;
+         }
+       }
+       // ISBN-13 validation
+       else if (isbn.length === 13) {
+         if (!/^\d{13}$/.test(isbn)) {
+           showError(input, 'Invalid ISBN-13 format');
+           return false;
+         }
+         
+         let sum = 0;
+         for (let i = 0; i < 12; i++) {
+           sum += (i % 2 === 0 ? 1 : 3) * parseInt(isbn.charAt(i));
+         }
+         
+         const checksum = (10 - (sum % 10)) % 10;
+         if (checksum !== parseInt(isbn.charAt(12))) {
+           showError(input, 'Invalid ISBN-13 checksum');
+           return false;
+         }
+       } else {
+         showError(input, 'ISBN must be either 10 or 13 digits');
+         return false;
+       }
+       
+       clearError(input);
+       return true;
+     }
+     
+     // Validate image upload with dimensions check
+     async function validateImageUpload(input, isRequired = false) {
+       if (isRequired && (!input.files || input.files.length === 0)) {
+         showError(input, 'Please select an image');
+         return false;
+       }
+       
+       if (input.files && input.files.length > 0) {
+         const file = input.files[0];
+         
+         // Check file type
+         if (!VALIDATION_RULES.IMAGE.ALLOWED_TYPES.includes(file.type)) {
+           showError(input, 'Please select a valid image file (JPEG, PNG, WebP)');
+           return false;
+         }
+         
+         // Check file size
+         if (file.size > VALIDATION_RULES.IMAGE.MAX_SIZE) {
+           showError(input, 'Image size should be less than 5MB');
+           return false;
+         }
+         
+         // Check image dimensions
+         try {
+           const dimensions = await getImageDimensions(file);
+           
+           if (dimensions.width < VALIDATION_RULES.IMAGE.MIN_DIMENSIONS.width ||
+               dimensions.height < VALIDATION_RULES.IMAGE.MIN_DIMENSIONS.height) {
+             showError(input, `Image dimensions must be at least ${VALIDATION_RULES.IMAGE.MIN_DIMENSIONS.width}x${VALIDATION_RULES.IMAGE.MIN_DIMENSIONS.height}`);
+             return false;
+           }
+           
+           if (dimensions.width > VALIDATION_RULES.IMAGE.MAX_DIMENSIONS.width ||
+               dimensions.height > VALIDATION_RULES.IMAGE.MAX_DIMENSIONS.height) {
+             showError(input, `Image dimensions must not exceed ${VALIDATION_RULES.IMAGE.MAX_DIMENSIONS.width}x${VALIDATION_RULES.IMAGE.MAX_DIMENSIONS.height}`);
+             return false;
+           }
+         } catch (error) {
+           showError(input, 'Error validating image dimensions');
+           return false;
+         }
+         
+         clearError(input);
+         return true;
+       }
+       
+       return true;
+     }
+     
+     // Helper function to get image dimensions
+     function getImageDimensions(file) {
+       return new Promise((resolve, reject) => {
+         const img = new Image();
+         img.onload = () => resolve({ width: img.width, height: img.height });
+         img.onerror = () => reject(new Error('Failed to load image'));
+         img.src = URL.createObjectURL(file);
+       });
+     }
+     
+     // Validate date field
+     function validateDate(input) {
+       if (input.value) {
+         const selectedDate = new Date(input.value);
+         const today = new Date();
+         
+         if (selectedDate > today) {
+           showError(input, 'Published date cannot be in the future');
+           return false;
+         }
+         
+         const minDate = new Date('1800-01-01');
+         if (selectedDate < minDate) {
+           showError(input, 'Published date cannot be before 1800');
+           return false;
+         }
+         
+         clearError(input);
+         return true;
+       }
+       return true; // Date is optional
      }
      
      // Real-time validation for important fields
@@ -116,135 +290,191 @@ document.addEventListener("DOMContentLoaded", function() {
      const regularPrice = document.getElementById('regularPrice');
      const salePrice = document.getElementById('salePrice');
      const stock = document.getElementById('stock');
+     const pages = document.getElementById('pages');
      const category = document.getElementById('category');
      const isbn = document.getElementById('isbn');
+     const publishedDate = document.getElementById('publishedDate');
+     const language = document.getElementById('language');
+     const publisher = document.getElementById('publisher');
      const mainImage = document.getElementById('mainImage');
      
      // Add event listeners for real-time validation
-     title.addEventListener('blur', () => validateRequired(title));
-     author.addEventListener('blur', () => validateRequired(author));
-     description.addEventListener('blur', () => validateRequired(description));
-     regularPrice.addEventListener('blur', () => validateNumber(regularPrice, null, 0));
+     title.addEventListener('input', () => validateTextField(title, VALIDATION_RULES.TITLE, 'Title'));
+     author.addEventListener('input', () => validateTextField(author, VALIDATION_RULES.AUTHOR, 'Author'));
+     description.addEventListener('input', () => validateTextField(description, VALIDATION_RULES.DESCRIPTION, 'Description'));
      
-     salePrice.addEventListener('blur', () => {
-       validateNumber(salePrice, null, 0);
-       if (regularPrice.value) {
+     regularPrice.addEventListener('input', () => {
+       if (validateNumberField(regularPrice, VALIDATION_RULES.PRICE, 'Regular price') && salePrice.value) {
          validatePriceComparison(regularPrice, salePrice);
        }
      });
      
-     regularPrice.addEventListener('change', () => {
-       if (salePrice.value) {
+     salePrice.addEventListener('input', () => {
+       if (validateNumberField(salePrice, VALIDATION_RULES.PRICE, 'Sale price') && regularPrice.value) {
          validatePriceComparison(regularPrice, salePrice);
        }
      });
      
-     stock.addEventListener('blur', () => validateNumber(stock, null, 0));
+     stock.addEventListener('input', () => validateNumberField(stock, VALIDATION_RULES.STOCK, 'Stock'));
+     pages.addEventListener('input', () => validateNumberField(pages, VALIDATION_RULES.PAGES, 'Pages'));
      category.addEventListener('change', () => validateRequired(category, 'Please select a category'));
-     isbn.addEventListener('blur', () => validateISBN(isbn));
+     isbn.addEventListener('input', () => validateISBN(isbn));
+     publishedDate.addEventListener('change', () => validateDate(publishedDate));
+     language.addEventListener('input', () => validateTextField(language, { MIN_LENGTH: 2, MAX_LENGTH: 30 }, 'Language'));
+     publisher.addEventListener('input', () => validateTextField(publisher, { MIN_LENGTH: 2, MAX_LENGTH: 50 }, 'Publisher'));
+     
+     // Debounce function for image validation
+     function debounce(func, wait) {
+       let timeout;
+       return function executedFunction(...args) {
+         const later = () => {
+           clearTimeout(timeout);
+           func(...args);
+         };
+         clearTimeout(timeout);
+         timeout = setTimeout(later, wait);
+       };
+     }
+     
+     // Add debounced image validation
+     const debouncedImageValidation = debounce(async (input, isRequired) => {
+       await validateImageUpload(input, isRequired);
+     }, 300);
+     
+     mainImage.addEventListener('change', () => debouncedImageValidation(mainImage, true));
+     
+     const subImages = [
+       document.getElementById('subImage1'),
+       document.getElementById('subImage2'),
+       document.getElementById('subImage3')
+     ];
+     
+     subImages.forEach(img => {
+       img.addEventListener('change', () => debouncedImageValidation(img, false));
+     });
      
      // Form submission validation
-     productForm.addEventListener('submit', function(e) {
+     productForm.addEventListener('submit', async function(e) {
        e.preventDefault();
        
-       // Validate all required fields
-       let isValid = true;
+       // Disable submit button and show loading state
+       const submitButton = document.getElementById('addProductButton');
+       const originalButtonText = submitButton.innerHTML;
+       submitButton.disabled = true;
+       submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Validating...';
        
-       isValid = validateRequired(title) && isValid;
-       isValid = validateRequired(author) && isValid;
-       isValid = validateRequired(description) && isValid;
-       isValid = validateRequired(category, 'Please select a category') && isValid;
-       isValid = validateRequired(document.getElementById('language')) && isValid;
-       isValid = validateRequired(document.getElementById('publisher')) && isValid;
-       isValid = validateRequired(document.getElementById('pages')) && isValid;
-       
-       // Validate numbers
-       isValid = validateNumber(regularPrice, null, 0) && isValid;
-       isValid = validateNumber(salePrice, null, 0) && isValid;
-       isValid = validateNumber(stock, null, 0) && isValid;
-       isValid = validateNumber(document.getElementById('pages'), null, 1) && isValid;
-       
-       // Validate price comparison
-       isValid = validatePriceComparison(regularPrice, salePrice) && isValid;
-       
-       // Validate ISBN if provided
-       isValid = validateISBN(isbn) && isValid;
-       
-       // Validate main image (required)
-       isValid = validateImageUpload(mainImage, true) && isValid;
-       
-       // Validate optional sub images
-       const subImages = [
-         document.getElementById('subImage1'),
-         document.getElementById('subImage2'),
-         document.getElementById('subImage3')
-       ];
-       
-       subImages.forEach(img => {
-         if (img.files && img.files.length > 0) {
-           isValid = validateImageUpload(img) && isValid;
+       try {
+         // Validate all fields
+         let isValid = true;
+         
+         // Text fields validation
+         isValid = validateTextField(title, VALIDATION_RULES.TITLE, 'Title') && isValid;
+         isValid = validateTextField(author, VALIDATION_RULES.AUTHOR, 'Author') && isValid;
+         isValid = validateTextField(description, VALIDATION_RULES.DESCRIPTION, 'Description') && isValid;
+         isValid = validateTextField(language, { MIN_LENGTH: 2, MAX_LENGTH: 30 }, 'Language') && isValid;
+         isValid = validateTextField(publisher, { MIN_LENGTH: 2, MAX_LENGTH: 50 }, 'Publisher') && isValid;
+         
+         // Number fields validation
+         isValid = validateNumberField(regularPrice, VALIDATION_RULES.PRICE, 'Regular price') && isValid;
+         isValid = validateNumberField(salePrice, VALIDATION_RULES.PRICE, 'Sale price') && isValid;
+         isValid = validateNumberField(stock, VALIDATION_RULES.STOCK, 'Stock') && isValid;
+         isValid = validateNumberField(pages, VALIDATION_RULES.PAGES, 'Pages') && isValid;
+         
+         // Price comparison
+         isValid = validatePriceComparison(regularPrice, salePrice) && isValid;
+         
+         // Category validation
+         isValid = validateRequired(category, 'Please select a category') && isValid;
+         
+         // ISBN validation
+         isValid = validateISBN(isbn) && isValid;
+         
+         // Date validation
+         isValid = validateDate(publishedDate) && isValid;
+         
+         // Image validation
+         isValid = await validateImageUpload(mainImage, true) && isValid;
+         
+         for (const img of subImages) {
+           if (img.files.length > 0) {
+             isValid = await validateImageUpload(img, false) && isValid;
+           }
          }
-       });
-       
-       // If all validations pass, submit the form
-       if (isValid) {
-         const formData = new FormData(productForm);
-         submitProductForm(formData);
-       } else {
-         // Scroll to the first error
-         const firstError = document.querySelector('.is-invalid');
-         if (firstError) {
-           firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
-           firstError.focus();
+         
+         // If all validations pass, submit the form
+         if (isValid) {
+           submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Adding Product...';
+           
+           const formData = new FormData(productForm);
+           await submitProductForm(formData);
+         } else {
+           // Scroll to the first error
+           const firstError = document.querySelector('.is-invalid');
+           if (firstError) {
+             firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+             firstError.focus();
+           }
+           
+           // Show error toast
+           Swal.fire({
+             icon: 'error',
+             title: 'Validation Error',
+             text: 'Please check the form for errors',
+             toast: true,
+             position: 'top-end',
+             showConfirmButton: false,
+             timer: 3000
+           });
          }
+       } catch (error) {
+         console.error('Validation error:', error);
+         Swal.fire({
+           icon: 'error',
+           title: 'Error',
+           text: 'An error occurred during validation',
+           toast: true,
+           position: 'top-end',
+           showConfirmButton: false,
+           timer: 3000
+         });
+       } finally {
+         // Reset button state
+         submitButton.disabled = false;
+         submitButton.innerHTML = originalButtonText;
        }
      });
      
      // Form submission function
      async function submitProductForm(formData) {
-       const addProductButton = document.getElementById("addProductButton");
-       const btnText = addProductButton.querySelector(".btn-text");
-       
        try {
-         btnText.textContent = "Adding Product...";
-         addProductButton.disabled = true;
-         
          const response = await fetch("/admin/products", {
            method: "POST",
-           body: formData,
-           headers: {
-             'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-           }
+           body: formData
          });
          
          const data = await response.json();
          
          if (response.ok) {
            Swal.fire({
-             title: "Success!",
-             text: data.message || "Product added successfully",
-             icon: "success",
-             timer: 2000,
-             showConfirmButton: false
+             icon: 'success',
+             title: 'Success!',
+             text: data.message || 'Product added successfully',
+             showConfirmButton: false,
+             timer: 2000
            }).then(() => {
              window.location.href = "/admin/getProducts";
            });
          } else {
-           Swal.fire({
-             title: "Error!",
-             text: data.error || "Failed to add product",
-             icon: "error"
-           });
+           throw new Error(data.error || 'Failed to add product');
          }
        } catch (error) {
+         console.error('Submission error:', error);
          Swal.fire({
-           title: "Error!",
-           text: "Server Error: " + error.message,
-           icon: "error"
+           icon: 'error',
+           title: 'Error!',
+           text: error.message || 'Failed to add product',
+           showConfirmButton: true
          });
-       } finally {
-         btnText.textContent = "Add Product";
-         addProductButton.disabled = false;
        }
      }
      

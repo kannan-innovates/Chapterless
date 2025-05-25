@@ -678,6 +678,10 @@
   }
 </style>
 
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.19/dist/sweetalert2.all.min.js"></script>
+<!-- Add validation script -->
+<script src="/validators/admin/coupon-validation.js"></script>
 <script>
   document.addEventListener('DOMContentLoaded', function() {
     // Discount type toggle for Add Coupon Modal
@@ -1112,85 +1116,85 @@
       });
     });
 
-
     // Fix for both the HTML template issue and JavaScript logic
 
-// First, find all the icon elements and fix them immediately
-document.addEventListener('DOMContentLoaded', function() {
-  // Fix the existing icons
-  document.querySelectorAll('.btn-toggle-status').forEach(button => {
-    const iconElement = button.querySelector('i');
-    const rowElement = button.closest('tr');
-    const statusElement = rowElement.querySelector('.status-badge');
-    
-    // Check if the coupon is active based on the status badge
-    const isActive = statusElement.classList.contains('active');
-    
-    // Fix the icon class - eye for active, eye-off for inactive
-    if (isActive) {
-      // If active, should show eye icon (so user can click to deactivate)
-      iconElement.className = 'ri-eye-line';
-      button.setAttribute('title', 'Deactivate');
-    } else {
-      // If inactive, should show eye-off icon (so user can click to activate)
-      iconElement.className = 'ri-eye-off-line';
-      button.setAttribute('title', 'Activate');
-    }
-  });
-  
-  // Fix the toggle status event handler
-  document.querySelectorAll('.btn-toggle-status').forEach(button => {
-    // Remove any existing event listeners
-    const newButton = button.cloneNode(true);
-    button.parentNode.replaceChild(newButton, button);
-    
-    newButton.addEventListener('click', function() {
-      const couponId = this.getAttribute('data-coupon-id');
-      const iconElement = this.querySelector('i');
-      
-      // Determine action based on current icon
-      const isCurrentlyActive = iconElement.classList.contains('ri-eye-line');
-      const action = isCurrentlyActive ? 'deactivate' : 'activate';
-      
-      Swal.fire({
-        title: 'Are you sure?',
-        text: `Do you want to ${action} this coupon?`,
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#3085d6',
-        cancelButtonColor: '#d33',
-        confirmButtonText: `Yes, ${action} it!`
-      }).then((result) => {
-        if (result.isConfirmed) {
-          fetch(`/admin/coupons/${couponId}/toggle-status`, {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-          })
-          .then(response => response.json())
-          .then(data => {
-            if (data.success) {
-              const fullActionText = action === 'activate' ? 'activated' : 'deactivated';
-              Swal.fire(
-                `${fullActionText.charAt(0).toUpperCase() + fullActionText.slice(1)}!`,
-                `Coupon has been ${fullActionText}.`,
-                'success'
-              ).then(() => {
-                window.location.reload();
-              });
-            } else {
-              Swal.fire('Error!', data.message, 'error');
-            }
-          })
-          .catch(error => {
-            Swal.fire('Error!', 'Failed to toggle coupon status.', 'error');
-          });
+    // First, find all the icon elements and fix them immediately
+    document.addEventListener('DOMContentLoaded', function() {
+      // Fix the existing icons
+      document.querySelectorAll('.btn-toggle-status').forEach(button => {
+        const iconElement = button.querySelector('i');
+        const rowElement = button.closest('tr');
+        const statusElement = rowElement.querySelector('.status-badge');
+        
+        // Check if the coupon is active based on the status badge
+        const isActive = statusElement.classList.contains('active');
+        
+        // Fix the icon class - eye for active, eye-off for inactive
+        if (isActive) {
+          // If active, should show eye icon (so user can click to deactivate)
+          iconElement.className = 'ri-eye-line';
+          button.setAttribute('title', 'Deactivate');
+        } else {
+          // If inactive, should show eye-off icon (so user can click to activate)
+          iconElement.className = 'ri-eye-off-line';
+          button.setAttribute('title', 'Activate');
         }
       });
+      
+      // Fix the toggle status event handler
+      document.querySelectorAll('.btn-toggle-status').forEach(button => {
+        // Remove any existing event listeners
+        const newButton = button.cloneNode(true);
+        button.parentNode.replaceChild(newButton, button);
+        
+        newButton.addEventListener('click', function() {
+          const couponId = this.getAttribute('data-coupon-id');
+          const iconElement = this.querySelector('i');
+          
+          // Determine action based on current icon
+          const isCurrentlyActive = iconElement.classList.contains('ri-eye-line');
+          const action = isCurrentlyActive ? 'deactivate' : 'activate';
+          
+          Swal.fire({
+            title: 'Are you sure?',
+            text: `Do you want to ${action} this coupon?`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: `Yes, ${action} it!`
+          }).then((result) => {
+            if (result.isConfirmed) {
+              fetch(`/admin/coupons/${couponId}/toggle-status`, {
+                method: 'PUT',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+              })
+              .then(response => response.json())
+              .then(data => {
+                if (data.success) {
+                  const fullActionText = action === 'activate' ? 'activated' : 'deactivated';
+                  Swal.fire(
+                    `${fullActionText.charAt(0).toUpperCase() + fullActionText.slice(1)}!`,
+                    `Coupon has been ${fullActionText}.`,
+                    'success'
+                  ).then(() => {
+                    window.location.reload();
+                  });
+                } else {
+                  Swal.fire('Error!', data.message, 'error');
+                }
+              })
+              .catch(error => {
+                Swal.fire('Error!', 'Failed to toggle coupon status.', 'error');
+              });
+            }
+          });
+        });
+      });
     });
-  });
-});
+
     // Initialize Bootstrap tooltips
     const tooltipTriggerList = document.querySelectorAll('[title]');
     if (typeof bootstrap !== 'undefined' && bootstrap.Tooltip) {
@@ -1199,7 +1203,4 @@ document.addEventListener('DOMContentLoaded', function() {
       });
     }
   });
-
-
-  
 </script>
