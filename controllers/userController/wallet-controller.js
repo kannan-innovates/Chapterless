@@ -66,23 +66,17 @@ const calculateItemRefundAmount = (item, order) => {
 
     // Case 1: Use priceBreakdown if available
     if (item.priceBreakdown) {
-      // Get the base amount after all discounts
+      // Calculate base amount (after all discounts)
       const baseAmount = Number(item.priceBreakdown.finalPrice || 0);
       
-      // Calculate tax proportion for this item
+      // Calculate tax proportion
       let taxAmount = 0;
-      if (order.tax && order.tax > 0) {
-        // If this is the only item in the order, use full tax
-        if (order.items.length === 1) {
-          taxAmount = Number(order.tax);
-        } else {
-          // Calculate tax proportion based on item's contribution to total
-          const itemContribution = baseAmount / order.totalAmount;
-          taxAmount = Number(order.tax) * itemContribution;
-        }
+      if (order.tax && order.totalAmount && order.totalAmount > 0) {
+        // Calculate this item's proportion of total order
+        const itemProportion = baseAmount / (order.totalAmount - order.tax);
+        taxAmount = Number(order.tax) * itemProportion;
       }
 
-      // Total refund is base amount plus tax
       const totalRefund = baseAmount + taxAmount;
 
       console.log('Calculated refund breakdown:', {
@@ -98,14 +92,13 @@ const calculateItemRefundAmount = (item, order) => {
     // Case 2: Use discountedPrice as fallback
     else if (typeof item.discountedPrice === 'number') {
       const baseAmount = item.discountedPrice * quantity;
-      let taxRate = 0;
+      let taxAmount = 0;
       
-      // Calculate tax rate from order if available
-      if (order.tax && order.totalAmount) {
-        taxRate = order.tax / (order.totalAmount - order.tax);
+      if (order.tax && order.totalAmount && order.totalAmount > 0) {
+        const taxRate = order.tax / (order.totalAmount - order.tax);
+        taxAmount = baseAmount * taxRate;
       }
       
-      const taxAmount = baseAmount * taxRate;
       const totalRefund = baseAmount + taxAmount;
 
       console.log('Using discountedPrice for refund:', {
@@ -122,14 +115,13 @@ const calculateItemRefundAmount = (item, order) => {
     // Case 3: Use original price as last resort
     else if (typeof item.price === 'number') {
       const baseAmount = item.price * quantity;
-      let taxRate = 0;
+      let taxAmount = 0;
       
-      // Calculate tax rate from order if available
-      if (order.tax && order.totalAmount) {
-        taxRate = order.tax / (order.totalAmount - order.tax);
+      if (order.tax && order.totalAmount && order.totalAmount > 0) {
+        const taxRate = order.tax / (order.totalAmount - order.tax);
+        taxAmount = baseAmount * taxRate;
       }
       
-      const taxAmount = baseAmount * taxRate;
       const totalRefund = baseAmount + taxAmount;
 
       console.log('Using original price for refund:', {
@@ -158,17 +150,15 @@ const processCancelRefund = async (userId, order, itemId = null) => {
       userId,
       orderId: order._id,
       itemId,
-      orderStatus: order.orderStatus
+      orderStatus: order.orderStatus,
+      totalAmount: order.totalAmount,
+      tax: order.tax
     });
 
     if (!userId || !order) {
       console.error('Missing required parameters in processCancelRefund');
       return false;
     }
-
-    let refundAmount = 0;
-    let refundReason = '';
-    let refundedItemsForThisTransaction = [];
 
     // Get existing wallet to check for previous refunds
     const existingWallet = await Wallet.findOne({ userId });
@@ -181,6 +171,10 @@ const processCancelRefund = async (userId, order, itemId = null) => {
         }
       });
     }
+
+    let refundAmount = 0;
+    let refundReason = '';
+    let refundedItemsForThisTransaction = [];
 
     if (itemId) {
       // Single item cancellation
@@ -232,7 +226,15 @@ const processCancelRefund = async (userId, order, itemId = null) => {
         items: refundedItemsForThisTransaction
       });
 
-      wallet.balance += refundAmount;
+      // Ensure refundAmount is a valid number
+      refundAmount = Number(refundAmount.toFixed(2));
+      
+      if (isNaN(refundAmount)) {
+        console.error('Invalid refund amount calculated');
+        return false;
+      }
+
+      wallet.balance = Number(wallet.balance) + refundAmount;
       
       wallet.transactions.push({
         type: 'credit',
@@ -244,7 +246,10 @@ const processCancelRefund = async (userId, order, itemId = null) => {
       });
 
       await wallet.save();
-      console.log('Refund processed successfully');
+      console.log('Refund processed successfully:', {
+        newBalance: wallet.balance,
+        refundAmount
+      });
       return true;
     }
 

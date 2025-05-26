@@ -144,9 +144,11 @@ const getOrderDetails = async (req, res) => {
       if (item.priceBreakdown) {
         const breakdown = {
           originalPrice: Number(item.priceBreakdown.originalPrice),
-          priceAfterOffer: Number(item.priceBreakdown.priceAfterOffer),
+          subtotal: Number(item.priceBreakdown.subtotal),
           offerDiscount: Number(item.priceBreakdown.offerDiscount || 0),
+          priceAfterOffer: Number(item.priceBreakdown.priceAfterOffer),
           couponDiscount: Number(item.priceBreakdown.couponDiscount || 0),
+          couponProportion: Number(item.priceBreakdown.couponProportion || 0),
           finalPrice: Number(item.priceBreakdown.finalPrice),
           offerTitle: item.priceBreakdown.offerTitle || ''
         };
@@ -156,16 +158,15 @@ const getOrderDetails = async (req, res) => {
         item.formattedPriceAfterOffer = `₹${breakdown.priceAfterOffer.toFixed(2)}`;
         item.formattedFinalPrice = `₹${breakdown.finalPrice.toFixed(2)}`;
         
-        // Calculate per unit savings
-        const offerSavingsPerUnit = breakdown.offerDiscount;
-        const couponSavingsPerUnit = breakdown.couponDiscount;
+        // Calculate per unit prices
+        const finalPricePerUnit = breakdown.finalPrice;
         
         // Calculate total amounts
         item.totalOriginalPrice = breakdown.originalPrice * quantity;
         item.totalPriceAfterOffer = breakdown.priceAfterOffer * quantity;
         item.totalFinalPrice = breakdown.finalPrice * quantity;
-        item.totalOfferSavings = offerSavingsPerUnit * quantity;
-        item.totalCouponSavings = couponSavingsPerUnit * quantity;
+        item.totalOfferSavings = breakdown.offerDiscount * quantity;
+        item.totalCouponSavings = breakdown.couponDiscount * quantity;
 
         // Format total amounts
         item.formattedTotalOriginalPrice = `₹${item.totalOriginalPrice.toFixed(2)}`;
@@ -179,8 +180,20 @@ const getOrderDetails = async (req, res) => {
 
         // Handle refund amount for cancelled/returned items
         if (item.status === 'Cancelled' || item.status === 'Returned') {
-          item.refundAmount = breakdown.finalPrice * quantity;
+          // Calculate tax proportion for this item
+          let taxAmount = 0;
+          if (order.tax && order.totalAmount && order.totalAmount > 0) {
+            // Calculate this item's proportion of total order
+            const itemProportion = finalPricePerUnit / (order.totalAmount - order.tax);
+            taxAmount = Number(order.tax) * itemProportion;
+          }
+
+          item.refundAmount = finalPricePerUnit + taxAmount;
           item.formattedRefund = `₹${item.refundAmount.toFixed(2)}`;
+          
+          // Store tax details for display
+          item.taxAmount = taxAmount;
+          item.formattedTaxAmount = `₹${taxAmount.toFixed(2)}`;
         }
 
       } else {
@@ -201,9 +214,22 @@ const getOrderDetails = async (req, res) => {
           item.savingText = `Save ${savingPercent.toFixed(0)}%`;
         }
 
+        // Handle refund amount for cancelled/returned items
         if (item.status === 'Cancelled' || item.status === 'Returned') {
-          item.refundAmount = discountedPrice * quantity;
+          // Calculate tax proportion for this item
+          let taxAmount = 0;
+          if (order.tax && order.totalAmount && order.totalAmount > 0) {
+            // Calculate this item's proportion of total order
+            const itemProportion = discountedPrice / (order.totalAmount - order.tax);
+            taxAmount = Number(order.tax) * itemProportion;
+          }
+
+          item.refundAmount = discountedPrice + taxAmount;
           item.formattedRefund = `₹${item.refundAmount.toFixed(2)}`;
+          
+          // Store tax details for display
+          item.taxAmount = taxAmount;
+          item.formattedTaxAmount = `₹${taxAmount.toFixed(2)}`;
         }
       }
 
