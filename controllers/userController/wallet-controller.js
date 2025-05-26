@@ -66,16 +66,16 @@ const calculateItemRefundAmount = (item, order) => {
 
     // Case 1: Use priceBreakdown if available
     if (item.priceBreakdown) {
-      // Get the final price after all discounts
+      // Calculate base amount using the final price (after all discounts)
       const finalPricePerUnit = Number(item.priceBreakdown.finalPrice || 0);
       const baseAmount = finalPricePerUnit * quantity;
-      
-      // Calculate tax proportion for this item
+
+      // Calculate tax proportion
       let taxAmount = 0;
       if (order.tax && order.totalAmount) {
-        // Calculate tax rate based on total order
-        const taxRate = order.tax / (order.totalAmount - order.tax);
-        taxAmount = baseAmount * taxRate;
+        // Calculate tax proportion based on this item's contribution to total
+        const itemContribution = baseAmount / (order.totalAmount - order.tax);
+        taxAmount = order.tax * itemContribution;
       }
 
       const totalRefund = baseAmount + taxAmount;
@@ -97,8 +97,8 @@ const calculateItemRefundAmount = (item, order) => {
       let taxAmount = 0;
       
       if (order.tax && order.totalAmount) {
-        const taxRate = order.tax / (order.totalAmount - order.tax);
-        taxAmount = baseAmount * taxRate;
+        const itemContribution = baseAmount / (order.totalAmount - order.tax);
+        taxAmount = order.tax * itemContribution;
       }
       
       const totalRefund = baseAmount + taxAmount;
@@ -120,8 +120,8 @@ const calculateItemRefundAmount = (item, order) => {
       let taxAmount = 0;
       
       if (order.tax && order.totalAmount) {
-        const taxRate = order.tax / (order.totalAmount - order.tax);
-        taxAmount = baseAmount * taxRate;
+        const itemContribution = baseAmount / (order.totalAmount - order.tax);
+        taxAmount = order.tax * itemContribution;
       }
       
       const totalRefund = baseAmount + taxAmount;
