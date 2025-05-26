@@ -1,6 +1,7 @@
 const Order = require("../../models/orderSchema")
 const User = require("../../models/userSchema")
 const Product = require("../../models/productSchema")
+const { processReturnRefund } = require("../userController/wallet-controller")
 
 const getManageOrders = async (req, res) => {
   try {
@@ -133,50 +134,122 @@ const getOrderDetails = async (req, res) => {
       day: 'numeric'
     });
 
-    // Process each item to include offer and coupon details
+    // Process each item to include price details
     order.items = order.items.map(item => {
-      // Format prices
-      item.formattedOriginalPrice = `₹${item.price.toFixed(2)}`;
-      item.formattedDiscountedPrice = `₹${item.discountedPrice.toFixed(2)}`;
+      // Basic price formatting
+      const originalPrice = Number(item.price);
+      const quantity = Number(item.quantity || 1);
 
-      // Set ISBN and Author to N/A if not available
-      item.isbn = item.isbn || 'N/A';
-      item.author = item.author || 'N/A';
-
-      // Calculate individual item savings
-      let itemSavings = 0;
+      // Handle price breakdown if available
       if (item.priceBreakdown) {
-        if (item.priceBreakdown.offerDiscount) {
-          itemSavings += item.priceBreakdown.offerDiscount;
+        const breakdown = {
+          originalPrice: Number(item.priceBreakdown.originalPrice),
+          priceAfterOffer: Number(item.priceBreakdown.priceAfterOffer),
+          offerDiscount: Number(item.priceBreakdown.offerDiscount || 0),
+          couponDiscount: Number(item.priceBreakdown.couponDiscount || 0),
+          finalPrice: Number(item.priceBreakdown.finalPrice),
+          offerTitle: item.priceBreakdown.offerTitle || ''
+        };
+
+        // Format all prices
+        item.formattedOriginalPrice = `₹${breakdown.originalPrice.toFixed(2)}`;
+        item.formattedPriceAfterOffer = `₹${breakdown.priceAfterOffer.toFixed(2)}`;
+        item.formattedFinalPrice = `₹${breakdown.finalPrice.toFixed(2)}`;
+        
+        // Calculate per unit savings
+        const offerSavingsPerUnit = breakdown.offerDiscount;
+        const couponSavingsPerUnit = breakdown.couponDiscount;
+        
+        // Calculate total amounts
+        item.totalOriginalPrice = breakdown.originalPrice * quantity;
+        item.totalPriceAfterOffer = breakdown.priceAfterOffer * quantity;
+        item.totalFinalPrice = breakdown.finalPrice * quantity;
+        item.totalOfferSavings = offerSavingsPerUnit * quantity;
+        item.totalCouponSavings = couponSavingsPerUnit * quantity;
+
+        // Format total amounts
+        item.formattedTotalOriginalPrice = `₹${item.totalOriginalPrice.toFixed(2)}`;
+        item.formattedTotalFinalPrice = `₹${item.totalFinalPrice.toFixed(2)}`;
+
+        // Calculate and format savings percentage
+        if (breakdown.offerDiscount > 0) {
+          const offerSavingPercent = (breakdown.offerDiscount / breakdown.originalPrice) * 100;
+          item.offerSavingText = `Save ${offerSavingPercent.toFixed(0)}% with ${breakdown.offerTitle}`;
         }
-        if (item.priceBreakdown.couponDiscount) {
-          itemSavings += item.priceBreakdown.couponDiscount;
+
+        // Handle refund amount for cancelled/returned items
+        if (item.status === 'Cancelled' || item.status === 'Returned') {
+          item.refundAmount = breakdown.finalPrice * quantity;
+          item.formattedRefund = `₹${item.refundAmount.toFixed(2)}`;
+        }
+
+      } else {
+        // Fallback for orders without price breakdown
+        const discountedPrice = Number(item.discountedPrice || item.price);
+        
+        item.formattedOriginalPrice = `₹${originalPrice.toFixed(2)}`;
+        item.formattedDiscountedPrice = `₹${discountedPrice.toFixed(2)}`;
+        
+        item.totalOriginalPrice = originalPrice * quantity;
+        item.totalDiscountedPrice = discountedPrice * quantity;
+        
+        item.formattedTotalOriginalPrice = `₹${item.totalOriginalPrice.toFixed(2)}`;
+        item.formattedTotalDiscountedPrice = `₹${item.totalDiscountedPrice.toFixed(2)}`;
+
+        if (originalPrice > discountedPrice) {
+          const savingPercent = ((originalPrice - discountedPrice) / originalPrice) * 100;
+          item.savingText = `Save ${savingPercent.toFixed(0)}%`;
+        }
+
+        if (item.status === 'Cancelled' || item.status === 'Returned') {
+          item.refundAmount = discountedPrice * quantity;
+          item.formattedRefund = `₹${item.refundAmount.toFixed(2)}`;
         }
       }
-      item.formattedSavings = itemSavings > 0 ? `Saved: ₹${itemSavings.toFixed(2)}` : '';
 
       return item;
     });
 
+    // Calculate order totals
+    const totals = {
+      subtotal: 0,
+      offerDiscount: 0,
+      couponDiscount: 0,
+      tax: Number(order.tax || 0),
+      shipping: Number(order.shipping || 0),
+      totalRefunded: 0
+    };
+
+    // Calculate totals from items
+    order.items.forEach(item => {
+      if (item.priceBreakdown) {
+        totals.subtotal += item.totalOriginalPrice;
+        totals.offerDiscount += item.totalOfferSavings;
+        totals.couponDiscount += item.totalCouponSavings;
+        
+        if (item.status === 'Cancelled' || item.status === 'Returned') {
+          totals.totalRefunded += item.refundAmount;
+        }
+      } else {
+        totals.subtotal += item.totalOriginalPrice;
+        totals.offerDiscount += (item.totalOriginalPrice - item.totalDiscountedPrice);
+        
+        if (item.status === 'Cancelled' || item.status === 'Returned') {
+          totals.totalRefunded += item.refundAmount;
+        }
+      }
+    });
+
     // Format order totals
-    order.formattedSubtotal = `₹${order.subtotal.toFixed(2)}`;
-    
-    // Format offer discount
-    if (order.discount && order.discount > 0) {
-      order.formattedDiscount = `-₹${order.discount.toFixed(2)}`;
-    }
-
-    // Format coupon discount
-    if (order.couponDiscount && order.couponDiscount > 0) {
-      order.formattedCouponDiscount = `-₹${order.couponDiscount.toFixed(2)}`;
-    }
-
-    // Format shipping and tax
-    order.formattedShipping = `₹${order.shipping ? order.shipping.toFixed(2) : '0.00'}`;
-    order.formattedTax = `₹${order.tax.toFixed(2)}`;
+    order.formattedSubtotal = `₹${totals.subtotal.toFixed(2)}`;
+    order.formattedOfferDiscount = totals.offerDiscount > 0 ? `₹${totals.offerDiscount.toFixed(2)}` : null;
+    order.formattedCouponDiscount = totals.couponDiscount > 0 ? `₹${totals.couponDiscount.toFixed(2)}` : null;
+    order.formattedTax = `₹${totals.tax.toFixed(2)}`;
+    order.formattedShipping = totals.shipping > 0 ? `₹${totals.shipping.toFixed(2)}` : 'Free';
     order.formattedTotal = `₹${order.total.toFixed(2)}`;
+    order.formattedTotalRefunded = totals.totalRefunded > 0 ? `₹${totals.totalRefunded.toFixed(2)}` : null;
 
-    // Check if any items can be cancelled or returned
+    // Check item statuses
     const hasActiveItems = order.items.some(item => 
       item.status !== 'Cancelled' && item.status !== 'Returned'
     );
@@ -188,7 +261,6 @@ const getOrderDetails = async (req, res) => {
     // Generate timeline data
     const timeline = [];
     
-    // Add order placed
     timeline.push({
       status: 'Order Placed',
       timestamp: new Date(order.createdAt).toLocaleDateString('en-US', {
@@ -202,7 +274,6 @@ const getOrderDetails = async (req, res) => {
       completed: true
     });
 
-    // Add processing if applicable
     if (order.processedAt || order.orderStatus === 'Processing') {
       timeline.push({
         status: 'Processing',
@@ -218,7 +289,6 @@ const getOrderDetails = async (req, res) => {
       });
     }
 
-    // Add shipped if applicable
     if (order.shippedAt || order.orderStatus === 'Shipped') {
       timeline.push({
         status: 'Shipped',
@@ -229,12 +299,11 @@ const getOrderDetails = async (req, res) => {
           hour: '2-digit',
           minute: '2-digit'
         }) : 'Pending',
-        message: 'Order has been shipped',
+        message: order.trackingId ? `Order shipped with tracking ID: ${order.trackingId}` : 'Order has been shipped',
         completed: !!order.shippedAt
       });
     }
 
-    // Add delivered if applicable
     if (order.deliveredAt || order.orderStatus === 'Delivered') {
       timeline.push({
         status: 'Delivered',
@@ -250,32 +319,20 @@ const getOrderDetails = async (req, res) => {
       });
     }
 
-    // Add cancelled/returned if applicable
-    if (order.orderStatus === 'Cancelled' || order.orderStatus === 'Partially Cancelled') {
+    if (order.orderStatus.includes('Cancelled') || order.orderStatus.includes('Returned')) {
       timeline.push({
         status: order.orderStatus,
-        timestamp: order.cancelledAt ? new Date(order.cancelledAt).toLocaleDateString('en-US', {
-          year: 'numeric',
-          month: 'short',
-          day: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit'
-        }) : 'N/A',
+        timestamp: (order.cancelledAt || order.returnedAt) ? 
+          new Date(order.cancelledAt || order.returnedAt).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          }) : 'N/A',
         message: `Order has been ${order.orderStatus.toLowerCase()}`,
-        completed: true
-      });
-    } else if (order.orderStatus === 'Returned' || order.orderStatus === 'Partially Returned') {
-      timeline.push({
-        status: order.orderStatus,
-        timestamp: order.returnedAt ? new Date(order.returnedAt).toLocaleDateString('en-US', {
-          year: 'numeric',
-          month: 'short',
-          day: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit'
-        }) : 'N/A',
-        message: `Order has been ${order.orderStatus.toLowerCase()}`,
-        completed: true
+        completed: true,
+        refundAmount: order.formattedTotalRefunded
       });
     }
 
@@ -1004,6 +1061,19 @@ const approveReturnRequest = async (req, res) => {
           item.product,
           { $inc: { stock: item.quantity } }
         );
+
+        // Process refund to wallet if payment was made
+        if (order.paymentStatus === 'Paid') {
+          const refundSuccess = await processReturnRefund(order.user, order, itemId);
+          if (refundSuccess) {
+            const allItemsRefunded = order.items.every(i => 
+              i.status === 'Returned' || i.status === 'Cancelled'
+            );
+            order.paymentStatus = allItemsRefunded ? 'Refunded' : 'Partially Refunded';
+          } else {
+            order.paymentStatus = 'Refund Processing';
+          }
+        }
       } else {
         // Reject the return request
         item.status = 'Active';
@@ -1018,7 +1088,6 @@ const approveReturnRequest = async (req, res) => {
       const hasReturnedItems = order.items.some(i => i.status === 'Returned');
 
       if (!hasActiveItems && !hasReturnRequestedItems) {
-        // If no active or requested items remain
         if (hasReturnedItems && !hasCancelledItems) {
           order.orderStatus = 'Returned';
         } else if (hasCancelledItems && !hasReturnedItems) {
@@ -1026,32 +1095,19 @@ const approveReturnRequest = async (req, res) => {
         } else if (hasReturnedItems && hasCancelledItems) {
           order.orderStatus = 'Partially Returned';
         }
-      } else if (!hasReturnRequestedItems) {
-        // If no return requests remain
-        if (hasReturnedItems && hasCancelledItems) {
-          order.orderStatus = 'Partially Returned';
-        } else if (hasReturnedItems) {
-          order.orderStatus = 'Partially Returned';
-        } else if (hasCancelledItems) {
-          order.orderStatus = 'Partially Cancelled';
-        } else {
-          order.orderStatus = 'Delivered'; // Back to delivered if all returns rejected
-        }
       } else {
-        // Some return requests still remain
-        if (hasReturnedItems || hasCancelledItems) {
+        if (hasReturnRequestedItems) {
           order.orderStatus = 'Partially Return Requested';
+        } else if (hasReturnedItems || hasCancelledItems) {
+          if (hasReturnedItems && hasCancelledItems) {
+            order.orderStatus = 'Partially Returned';
+          } else if (hasReturnedItems) {
+            order.orderStatus = 'Partially Returned';
+          } else {
+            order.orderStatus = 'Partially Cancelled';
+          }
         } else {
-          order.orderStatus = 'Return Requested';
-        }
-      }
-
-      // Update payment status if needed
-      if (approved && order.paymentStatus === 'Paid') {
-        if (!hasActiveItems && !hasReturnRequestedItems) {
-          order.paymentStatus = 'Refund Processing';
-        } else {
-          order.paymentStatus = 'Partially Refunded';
+          order.orderStatus = 'Delivered';
         }
       }
 
@@ -1061,88 +1117,96 @@ const approveReturnRequest = async (req, res) => {
         orderStatus: order.orderStatus,
         paymentStatus: order.paymentStatus
       });
-    } else {
-      // Handle entire order return request
-      if (order.orderStatus !== 'Return Requested' && order.orderStatus !== 'Partially Return Requested') {
-        return res.status(400).json({
-          message: `Cannot process return for order with status ${order.orderStatus}`
-        });
-      }
+    }
 
-      const now = new Date();
-      
-      if (approved) {
-        // Process all return requested items
-        order.items.forEach(item => {
-          if (item.status === 'Return Requested') {
-            item.status = 'Returned';
-            item.returnedAt = now;
-            
-            // Restore product stock
-            Product.findByIdAndUpdate(
-              item.product,
-              { $inc: { stock: item.quantity } }
-            ).catch(err => console.error("Error updating product stock:", err));
-          }
-        });
-        
-        // Update order status
-        const hasActiveItems = order.items.some(i => i.status === 'Active');
-        const hasCancelledItems = order.items.some(i => i.status === 'Cancelled');
-        
-        if (!hasActiveItems) {
-          if (hasCancelledItems) {
-            order.orderStatus = 'Partially Returned';
-          } else {
-            order.orderStatus = 'Returned';
-          }
-        } else {
-          order.orderStatus = 'Partially Returned';
-        }
-        
-        // Update payment status
-        if (order.paymentStatus === 'Paid') {
-          if (!hasActiveItems) {
-            order.paymentStatus = 'Refund Processing';
-          } else {
-            order.paymentStatus = 'Partially Refunded';
-          }
-        }
-        
-        order.returnedAt = now;
-      } else {
-        // Reject all return requests
-        order.items.forEach(item => {
-          if (item.status === 'Return Requested') {
-            item.status = 'Active';
-            item.returnRequestedAt = null;
-            item.returnReason = null;
-          }
-        });
-        
-        // Update order status
-        const hasCancelledItems = order.items.some(i => i.status === 'Cancelled');
-        const hasReturnedItems = order.items.some(i => i.status === 'Returned');
-        
-        if (hasCancelledItems && hasReturnedItems) {
-          order.orderStatus = 'Partially Returned';
-        } else if (hasCancelledItems) {
-          order.orderStatus = 'Partially Cancelled';
-        } else if (hasReturnedItems) {
-          order.orderStatus = 'Partially Returned';
-        } else {
-          order.orderStatus = 'Delivered'; // Back to delivered if all returns rejected
-        }
-      }
-      
-      await order.save();
-      
-      return res.status(200).json({
-        message: approved ? "All return requests approved" : "All return requests rejected",
-        orderStatus: order.orderStatus,
-        paymentStatus: order.paymentStatus
+    // Handle entire order return request
+    if (order.orderStatus !== 'Return Requested' && order.orderStatus !== 'Partially Return Requested') {
+      return res.status(400).json({
+        message: `Cannot process return for order with status ${order.orderStatus}`
       });
     }
+
+    const now = new Date();
+    
+    if (approved) {
+      // Process all return requested items
+      let allItemsProcessed = true;
+      for (const item of order.items) {
+        if (item.status === 'Return Requested') {
+          item.status = 'Returned';
+          item.returnedAt = now;
+          
+          try {
+            // Restore product stock
+            await Product.findByIdAndUpdate(
+              item.product,
+              { $inc: { stock: item.quantity } }
+            );
+          } catch (error) {
+            console.error('Error restoring stock:', error);
+            allItemsProcessed = false;
+          }
+        }
+      }
+      
+      // Update order status
+      const hasActiveItems = order.items.some(i => i.status === 'Active');
+      const hasCancelledItems = order.items.some(i => i.status === 'Cancelled');
+      const hasReturnedItems = order.items.some(i => i.status === 'Returned');
+      
+      if (!hasActiveItems) {
+        if (hasCancelledItems) {
+          order.orderStatus = 'Partially Returned';
+        } else {
+          order.orderStatus = 'Returned';
+        }
+      } else {
+        order.orderStatus = 'Partially Returned';
+      }
+      
+      // Process refund to wallet if payment was made
+      if (order.paymentStatus === 'Paid') {
+        const refundSuccess = await processReturnRefund(order.user, order);
+        if (refundSuccess) {
+          order.paymentStatus = hasActiveItems ? 'Partially Refunded' : 'Refunded';
+        } else {
+          order.paymentStatus = 'Refund Processing';
+        }
+      }
+      
+      order.returnedAt = now;
+    } else {
+      // Reject all return requests
+      order.items.forEach(item => {
+        if (item.status === 'Return Requested') {
+          item.status = 'Active';
+          item.returnRequestedAt = null;
+          item.returnReason = null;
+        }
+      });
+      
+      // Update order status
+      const hasCancelledItems = order.items.some(i => i.status === 'Cancelled');
+      const hasReturnedItems = order.items.some(i => i.status === 'Returned');
+      
+      if (hasCancelledItems && hasReturnedItems) {
+        order.orderStatus = 'Partially Returned';
+      } else if (hasCancelledItems) {
+        order.orderStatus = 'Partially Cancelled';
+      } else if (hasReturnedItems) {
+        order.orderStatus = 'Partially Returned';
+      } else {
+        order.orderStatus = 'Delivered';
+      }
+    }
+    
+    await order.save();
+    
+    return res.status(200).json({
+      message: approved ? "All return requests approved" : "All return requests rejected",
+      orderStatus: order.orderStatus,
+      paymentStatus: order.paymentStatus
+    });
   } catch (error) {
     console.error("Error processing return request:", error);
     res.status(500).json({ message: "Internal server error" });

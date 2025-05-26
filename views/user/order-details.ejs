@@ -482,7 +482,7 @@
                       <p>Are you sure you want to cancel this item?</p>
                       <p><strong><%= item.title %></strong></p>
                       <p>Quantity: <%= item.quantity %></p>
-                      <p>Price: <%= item.formattedPrice %></p>
+                      <p>Price: <%= item.formattedFinalPrice %></p>
                       
                       <form id="cancelItemForm<%= item.product._id || item.product %>">
                         <div class="mb-3">
@@ -524,7 +524,7 @@
                       <p>Are you sure you want to return this item?</p>
                       <p><strong><%= item.title %></strong></p>
                       <p>Quantity: <%= item.quantity %></p>
-                      <p>Price: <%= item.formattedPrice %></p>
+                      <p>Price: <%= item.formattedFinalPrice %></p>
                       
                       <form id="returnItemForm<%= item.product._id || item.product %>">
                         <div class="mb-3">

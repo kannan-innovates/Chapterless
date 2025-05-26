@@ -300,6 +300,60 @@ const getItemPriceDetails = (item, couponInfo = null) => {
   }
 }
 
+/**
+ * Calculate final price for an item considering all discounts
+ * @param {Object} item - The item object with price, quantity, and discounts
+ * @param {Object} order - The order object containing coupon information
+ * @returns {Object} - Object containing all price calculations
+ */
+const calculateFinalItemPrice = (item, order = null) => {
+  try {
+    // Start with base price
+    const originalPrice = item.price || item.priceAtAddition;
+    const quantity = item.quantity || 1;
+    const subtotal = originalPrice * quantity;
+    
+    // Get offer discount
+    const offerDiscount = item.offerDiscount || 0;
+    const priceAfterOffer = (item.discountedPrice || originalPrice) * quantity;
+    
+    // Calculate coupon discount if applicable
+    let couponDiscount = 0;
+    let couponProportion = 0;
+    
+    if (order && order.couponDiscount > 0 && item.priceBreakdown?.couponProportion) {
+      couponProportion = item.priceBreakdown.couponProportion;
+      couponDiscount = order.couponDiscount * couponProportion;
+    }
+    
+    // Calculate final price
+    const finalPrice = priceAfterOffer - couponDiscount;
+    
+    return {
+      originalPrice,
+      quantity,
+      subtotal,
+      offerDiscount,
+      priceAfterOffer,
+      couponDiscount,
+      couponProportion,
+      finalPrice: Math.max(0, Number(finalPrice.toFixed(2)))
+    };
+  } catch (error) {
+    console.error('Error in calculateFinalItemPrice:', error);
+    return {
+      originalPrice: item.price || 0,
+      quantity: item.quantity || 1,
+      subtotal: (item.price || 0) * (item.quantity || 1),
+      offerDiscount: 0,
+      priceAfterOffer: (item.price || 0) * (item.quantity || 1),
+      couponDiscount: 0,
+      couponProportion: 0,
+      finalPrice: (item.price || 0) * (item.quantity || 1)
+    };
+  }
+};
+
 module.exports = {
   getActiveOfferForProduct,
   calculateDiscount,
@@ -308,5 +362,6 @@ module.exports = {
   getOfferStatus,
   getOfferPriority,
   calculateProportionalCouponDiscount,
-  getItemPriceDetails
+  getItemPriceDetails,
+  calculateFinalItemPrice
 }

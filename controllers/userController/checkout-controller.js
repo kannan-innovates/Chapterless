@@ -9,7 +9,8 @@ const {
   getActiveOfferForProduct, 
   calculateDiscount,
   calculateProportionalCouponDiscount,
-  getItemPriceDetails 
+  getItemPriceDetails,
+  calculateFinalItemPrice 
 } = require("../../utils/offer-helper");
 
 // Initialize Razorpay
@@ -541,7 +542,7 @@ const createRazorpayOrder = async (req, res) => {
         totalOfferDiscount += itemDiscount;
         subtotalAfterOffers += itemTotalAfterOffer;
 
-        orderItems.push({
+        const orderItem = {
           product: item.product._id,
           title: item.product.title,
           image: item.product.mainImage,
@@ -554,12 +555,18 @@ const createRazorpayOrder = async (req, res) => {
             originalPrice: item.priceAtAddition,
             subtotal: originalItemTotal,
             offerDiscount: itemDiscount,
-            finalPrice: itemTotalAfterOffer
+            offerTitle: offer.title,
+            priceAfterOffer: itemTotalAfterOffer,
+            couponDiscount: 0, // Will be updated if coupon is applied
+            couponProportion: 0, // Will be updated if coupon is applied
+            finalPrice: itemTotalAfterOffer // Will be updated if coupon is applied
           }
-        });
+        };
+
+        orderItems.push(orderItem);
       } else {
         subtotalAfterOffers += originalItemTotal;
-        orderItems.push({
+        const orderItem = {
           product: item.product._id,
           title: item.product.title,
           image: item.product.mainImage,
@@ -572,9 +579,15 @@ const createRazorpayOrder = async (req, res) => {
             originalPrice: item.priceAtAddition,
             subtotal: originalItemTotal,
             offerDiscount: 0,
+            offerTitle: null,
+            priceAfterOffer: originalItemTotal,
+            couponDiscount: 0,
+            couponProportion: 0,
             finalPrice: originalItemTotal
           }
-        });
+        };
+
+        orderItems.push(orderItem);
       }
     }
 
@@ -602,7 +615,15 @@ const createRazorpayOrder = async (req, res) => {
             if (itemCouponInfo) {
               item.couponDiscount = itemCouponInfo.amount;
               item.couponProportion = itemCouponInfo.proportion;
-              item.finalPrice = item.priceBreakdown.finalPrice - itemCouponInfo.amount;
+              
+              // Update priceBreakdown with coupon info
+              item.priceBreakdown.couponDiscount = itemCouponInfo.amount;
+              item.priceBreakdown.couponProportion = itemCouponInfo.proportion;
+              item.priceBreakdown.finalPrice = item.priceBreakdown.priceAfterOffer - itemCouponInfo.amount;
+              
+              // Recalculate final price using the helper
+              const finalPriceDetails = calculateFinalItemPrice(item, { couponDiscount });
+              item.finalPrice = finalPriceDetails.finalPrice / item.quantity;
             }
           });
         }
@@ -929,6 +950,8 @@ const placeOrder = async (req, res) => {
         price: item.priceAtAddition,
         discountedPrice: itemPrice,
         quantity: item.quantity,
+        offerDiscount: itemDiscount,
+        offerTitle: offerTitle,
         priceBreakdown: {
           originalPrice: item.priceAtAddition,
           subtotal: item.priceAtAddition * item.quantity,
@@ -938,8 +961,7 @@ const placeOrder = async (req, res) => {
           couponDiscount: 0, // Will be updated if coupon is applied
           couponProportion: 0, // Will be updated if coupon is applied
           finalPrice: itemPrice * item.quantity // Will be updated if coupon is applied
-        },
-        status: "Active"
+        }
       };
 
       orderItems.push(orderItem);
@@ -962,9 +984,17 @@ const placeOrder = async (req, res) => {
           orderItems.forEach(item => {
             const itemCouponInfo = couponResult.itemDiscounts[item.product.toString()];
             if (itemCouponInfo) {
+              item.couponDiscount = itemCouponInfo.amount;
+              item.couponProportion = itemCouponInfo.proportion;
+              
+              // Update priceBreakdown with coupon info
               item.priceBreakdown.couponDiscount = itemCouponInfo.amount;
               item.priceBreakdown.couponProportion = itemCouponInfo.proportion;
               item.priceBreakdown.finalPrice = item.priceBreakdown.priceAfterOffer - itemCouponInfo.amount;
+              
+              // Recalculate final price using the helper
+              const finalPriceDetails = calculateFinalItemPrice(item, { couponDiscount });
+              item.finalPrice = finalPriceDetails.finalPrice / item.quantity;
             }
           });
 

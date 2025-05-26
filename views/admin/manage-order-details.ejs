@@ -662,6 +662,120 @@
           padding: 0.75rem;
         }
       }
+
+      /* Price breakdown styles */
+      .price-breakdown {
+        padding: 1rem;
+        border-radius: 0.5rem;
+        background-color: #f8f9fa;
+        margin-bottom: 1rem;
+      }
+
+      .price-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.5rem;
+      }
+
+      .price-row.total {
+        margin-top: 0.75rem;
+        padding-top: 0.75rem;
+        border-top: 1px solid #dee2e6;
+      }
+
+      .price-label {
+        color: #6c757d;
+        font-size: 0.875rem;
+      }
+
+      .price-original {
+        text-decoration: line-through;
+        color: #6c757d;
+        margin-right: 0.5rem;
+      }
+
+      .price-discounted,
+      .price-final,
+      .price-total {
+        color: #198754;
+        font-weight: 600;
+      }
+
+      .price-row.discount {
+        color: #198754;
+        font-size: 0.875rem;
+      }
+
+      .refund-info {
+        margin-top: 0.75rem;
+        padding: 0.5rem;
+        background-color: #fff3cd;
+        border-radius: 0.375rem;
+        color: #842029;
+        font-size: 0.875rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .refund-amount {
+        font-weight: 600;
+      }
+
+      .coupon-badge {
+        display: inline-block;
+        padding: 0.25rem 0.5rem;
+        background-color: #e0e7ff;
+        color: #4338ca;
+        border-radius: 0.25rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        margin-left: 0.5rem;
+      }
+
+      /* Summary styles */
+      .order-summary {
+        background-color: white;
+        border-radius: 0.5rem;
+        padding: 1.5rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      }
+
+      .summary-title {
+        font-weight: 600;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid #dee2e6;
+      }
+
+      .summary-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+      }
+
+      .summary-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.875rem;
+      }
+
+      .summary-item.total {
+        margin-top: 0.75rem;
+        padding-top: 0.75rem;
+        border-top: 1px solid #dee2e6;
+        font-size: 1rem;
+      }
+
+      .summary-item.refund {
+        margin-top: 0.5rem;
+        padding: 0.75rem;
+        background-color: #fff3cd;
+        border-radius: 0.375rem;
+        color: #842029;
+      }
     </style>
   </head>
   <body>
@@ -856,12 +970,101 @@
                       </div>
                     </td>
                     <td class="price-cell">
-                      <% if (item.discountedPrice && item.discountedPrice < item.price) { %>
-                        <span class="price-original"><%= item.formattedOriginalPrice %></span>
-                        <span class="price-discounted"><%= item.formattedDiscountedPrice %></span>
-                      <% } else { %>
-                        <%= item.formattedOriginalPrice %>
-                      <% } %>
+                      <div class="price-details">
+                        <% if (item.priceBreakdown) { %>
+                          <div class="price-breakdown">
+                            <!-- Original Price -->
+                            <div class="price-row">
+                              <span class="price-label">Original Price:</span>
+                              <span class="price-original"><%= item.formattedOriginalPrice %></span>
+                            </div>
+
+                            <!-- Offer Discount -->
+                            <% if (item.priceBreakdown.offerDiscount > 0) { %>
+                              <div class="price-row discount">
+                                <span class="price-label">
+                                  <i class="bi bi-tag-fill"></i>
+                                  <%= item.priceBreakdown.offerTitle %>:
+                                </span>
+                                <span class="price-discount text-success">
+                                  -<%= item.formattedPriceAfterOffer %>
+                                  (<%= item.offerSavingText %>)
+                                </span>
+                              </div>
+                            <% } %>
+
+                            <!-- Coupon Discount -->
+                            <% if (item.priceBreakdown.couponDiscount > 0) { %>
+                              <div class="price-row discount">
+                                <span class="price-label">
+                                  <i class="bi bi-ticket-perforated-fill"></i>
+                                  Coupon Discount:
+                                </span>
+                                <span class="price-discount text-success">
+                                  -₹<%= item.priceBreakdown.couponDiscount.toFixed(2) %>
+                                  <% if (order.couponCode) { %>
+                                    <span class="coupon-badge"><%= order.couponCode %></span>
+                                  <% } %>
+                                </span>
+                              </div>
+                            <% } %>
+
+                            <!-- Final Price -->
+                            <div class="price-row final">
+                              <span class="price-label">Final Price:</span>
+                              <span class="price-final">
+                                <%= item.formattedFinalPrice %>
+                                <small class="text-muted">(Qty: <%= item.quantity %>)</small>
+                              </span>
+                            </div>
+
+                            <!-- Total Amount -->
+                            <div class="price-row total">
+                              <span class="price-label">Total Amount:</span>
+                              <span class="price-total"><%= item.formattedTotalFinalPrice %></span>
+                            </div>
+
+                            <!-- Refund Info -->
+                            <% if (item.status === 'Cancelled' || item.status === 'Returned') { %>
+                              <div class="refund-info">
+                                <i class="bi bi-arrow-return-right"></i>
+                                <span class="refund-label">Refunded:</span>
+                                <span class="refund-amount"><%= item.formattedRefund %></span>
+                              </div>
+                            <% } %>
+                          </div>
+                        <% } else { %>
+                          <!-- Fallback for orders without price breakdown -->
+                          <div class="price-breakdown simple">
+                            <div class="price-row">
+                              <% if (item.discountedPrice < item.price) { %>
+                                <span class="price-original"><%= item.formattedOriginalPrice %></span>
+                                <span class="price-discounted"><%= item.formattedDiscountedPrice %></span>
+                                <% if (item.savingText) { %>
+                                  <small class="text-success d-block"><%= item.savingText %></small>
+                                <% } %>
+                              <% } else { %>
+                                <span class="price-regular"><%= item.formattedOriginalPrice %></span>
+                              <% } %>
+                            </div>
+                            
+                            <div class="price-row total">
+                              <span class="price-label">Total Amount:</span>
+                              <span class="price-total">
+                                <%= item.formattedTotalDiscountedPrice %>
+                                <small class="text-muted">(Qty: <%= item.quantity %>)</small>
+                              </span>
+                            </div>
+
+                            <% if (item.status === 'Cancelled' || item.status === 'Returned') { %>
+                              <div class="refund-info">
+                                <i class="bi bi-arrow-return-right"></i>
+                                <span class="refund-label">Refunded:</span>
+                                <span class="refund-amount"><%= item.formattedRefund %></span>
+                              </div>
+                            <% } %>
+                          </div>
+                        <% } %>
                     </td>
                     <td><%= item.quantity || 1 %></td>
                     <td>
@@ -869,6 +1072,12 @@
                         <span class="item-status cancelled">Cancelled</span>
                       <% } else if (item.status === 'Returned') { %>
                         <span class="item-status returned">Returned</span>
+                      <% } else if (item.status === 'Return Requested') { %>
+                        <span class="item-status return-requested">Return Requested</span>
+                        <div class="item-actions">
+                          <button class="btn-item-action btn-approve-return" data-item-id="<%= item._id %>" data-order-id="<%= order._id %>">Approve Return</button>
+                          <button class="btn-item-action btn-reject-return" data-item-id="<%= item._id %>" data-order-id="<%= order._id %>">Reject Return</button>
+                        </div>
                       <% } else { %>
                         <span class="item-status active">Active</span>
                         <% if (hasActiveItems && (order.orderStatus === 'Delivered' || order.orderStatus === 'Partially Returned')) { %>
@@ -904,7 +1113,7 @@
               <span class="summary-value"><%= order.formattedSubtotal %></span>
             </div>
             
-            <% if (order.discount > 0) { %>
+            <% if (order.formattedOfferDiscount) { %>
             <div class="summary-row">
               <span class="summary-label">
                 Offer Discount
@@ -912,11 +1121,11 @@
                   <span class="offer-badge"><%= order.items[0].priceBreakdown.offerTitle %></span>
                 <% } %>
               </span>
-              <span class="summary-value discount-text"><%= order.formattedDiscount %></span>
+              <span class="summary-value discount-text"><%= order.formattedOfferDiscount %></span>
             </div>
             <% } %>
             
-            <% if (order.couponDiscount > 0) { %>
+            <% if (order.formattedCouponDiscount) { %>
             <div class="summary-row">
               <span class="summary-label">
                 Coupon Discount

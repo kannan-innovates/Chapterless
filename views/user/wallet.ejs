@@ -44,7 +44,7 @@
               </div>
             </div>
             <div class="mb-3">
-              <span class="display-6 fw-bold balance-amount" data-balance="1250">₹0.00</span>
+              <span class="display-6 fw-bold balance-amount" data-balance="<%= wallet.balance %>">₹<%= wallet.balance.toFixed(2) %></span>
             </div>
             <div class="d-flex justify-content-center gap-3 mt-3">
               <button type="button" class="btn btn-dark px-4 py-2 add-money-btn" data-bs-toggle="modal" data-bs-target="#addMoneyModal">
@@ -64,10 +64,10 @@
               <i class="bi bi-funnel me-1"></i>Filter
             </button>
             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="filterDropdown">
-              <li><a class="dropdown-item" href="#"><i class="bi bi-arrow-up me-2"></i>Credits</a></li>
-              <li><a class="dropdown-item" href="#"><i class="bi bi-arrow-down me-2"></i>Debits</a></li>
+              <li><a class="dropdown-item filter-link" href="#" data-type="credit"><i class="bi bi-arrow-up me-2"></i>Credits</a></li>
+              <li><a class="dropdown-item filter-link" href="#" data-type="debit"><i class="bi bi-arrow-down me-2"></i>Debits</a></li>
               <li><hr class="dropdown-divider"></li>
-              <li><a class="dropdown-item" href="#"><i class="bi bi-filter-circle me-2"></i>All Transactions</a></li>
+              <li><a class="dropdown-item filter-link active" href="#" data-type="all"><i class="bi bi-filter-circle me-2"></i>All Transactions</a></li>
             </ul>
           </div>
         </div>
@@ -77,57 +77,36 @@
               <thead class="table-light">
                 <tr>
                   <th scope="col" class="ps-4">Date</th>
-                  <th scope="col">Transaction ID</th>
                   <th scope="col">Description</th>
                   <th scope="col">Type</th>
                   <th scope="col" class="text-end pe-4">Amount</th>
                 </tr>
               </thead>
               <tbody>
-                <!-- Credit Transaction -->
-                <tr class="transaction-row">
-                  <td class="ps-4">12 May 2025</td>
-                  <td><span class="small text-muted">TXN82739452</span></td>
-                  <td>Wallet Topup</td>
-                  <td><span class="badge bg-success-subtle text-success">Credit</span></td>
-                  <td class="text-end pe-4 fw-medium text-success transaction-amount">+₹500.00</td>
-                </tr>
-                
-                <!-- Debit Transaction -->
-                <tr class="transaction-row">
-                  <td class="ps-4">10 May 2025</td>
-                  <td><span class="small text-muted">TXN82736290</span></td>
-                  <td>Order #ORD29845</td>
-                  <td><span class="badge bg-danger-subtle text-danger">Debit</span></td>
-                  <td class="text-end pe-4 fw-medium text-danger transaction-amount">-₹250.00</td>
-                </tr>
-                
-                <!-- Refund Transaction -->
-                <tr class="transaction-row">
-                  <td class="ps-4">28 Apr 2025</td>
-                  <td><span class="small text-muted">TXN82701245</span></td>
-                  <td>Refund for Order #ORD28712</td>
-                  <td><span class="badge bg-success-subtle text-success">Credit</span></td>
-                  <td class="text-end pe-4 fw-medium text-success transaction-amount">+₹350.00</td>
-                </tr>
-                
-                <!-- Debit Transaction -->
-                <tr class="transaction-row">
-                  <td class="ps-4">15 Apr 2025</td>
-                  <td><span class="small text-muted">TXN82698431</span></td>
-                  <td>Order #ORD28712</td>
-                  <td><span class="badge bg-danger-subtle text-danger">Debit</span></td>
-                  <td class="text-end pe-4 fw-medium text-danger transaction-amount">-₹350.00</td>
-                </tr>
-                
-                <!-- Credit Transaction -->
-                <tr class="transaction-row">
-                  <td class="ps-4">05 Apr 2025</td>
-                  <td><span class="small text-muted">TXN82695123</span></td>
-                  <td>Wallet Topup</td>
-                  <td><span class="badge bg-success-subtle text-success">Credit</span></td>
-                  <td class="text-end pe-4 fw-medium text-success transaction-amount">+₹1,000.00</td>
-                </tr>
+                <% if (wallet.transactions && wallet.transactions.length > 0) { %>
+                  <% wallet.transactions.forEach(transaction => { %>
+                    <tr class="transaction-row" data-type="<%= transaction.type %>">
+                      <td class="ps-4"><%= transaction.date %></td>
+                      <td><%= transaction.reason %></td>
+                      <td>
+                        <% if (transaction.type === 'credit') { %>
+                          <span class="badge bg-success-subtle text-success">Credit</span>
+                        <% } else if (transaction.type === 'debit') { %>
+                          <span class="badge bg-danger-subtle text-danger">Debit</span>
+                        <% } else { %>
+                          <span class="badge bg-primary-subtle text-primary">Add</span>
+                        <% } %>
+                      </td>
+                      <td class="text-end pe-4 fw-medium <%= transaction.type === 'credit' || transaction.type === 'add' ? 'text-success' : 'text-danger' %>">
+                        <%= transaction.type === 'credit' || transaction.type === 'add' ? '+' : '-' %>₹<%= transaction.amount %>
+                      </td>
+                    </tr>
+                  <% }); %>
+                <% } else { %>
+                  <tr>
+                    <td colspan="4" class="text-center py-4">No transactions found</td>
+                  </tr>
+                <% } %>
               </tbody>
             </table>
           </div>
@@ -618,15 +597,55 @@ function animateBalance() {
 
 // Initialize animations on page load
 document.addEventListener('DOMContentLoaded', function() {
-  // Animate balance counter
-  setTimeout(animateBalance, 500);
-  
-  // Animate transaction rows
+  // Animate balance on load
+  const balanceElement = document.querySelector('.balance-amount');
+  const targetBalance = parseFloat(balanceElement.getAttribute('data-balance'));
+  animateBalance(0, targetBalance, balanceElement);
+
+  // Transaction filtering
+  const filterLinks = document.querySelectorAll('.filter-link');
   const transactionRows = document.querySelectorAll('.transaction-row');
-  transactionRows.forEach((row, index) => {
-    row.style.animationDelay = `${index * 0.1}s`;
+
+  filterLinks.forEach(link => {
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      
+      // Update active state
+      filterLinks.forEach(l => l.classList.remove('active'));
+      link.classList.add('active');
+
+      const filterType = link.getAttribute('data-type');
+      
+      transactionRows.forEach(row => {
+        if (filterType === 'all') {
+          row.style.display = '';
+        } else {
+          const rowType = row.getAttribute('data-type');
+          row.style.display = rowType === filterType ? '' : 'none';
+        }
+      });
+    });
   });
 });
+
+function animateBalance(start, end, element) {
+  const duration = 1000;
+  const startTime = performance.now();
+  
+  function update(currentTime) {
+    const elapsed = currentTime - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+
+    const current = start + (end - start) * progress;
+    element.textContent = `₹${current.toFixed(2)}`;
+
+    if (progress < 1) {
+      requestAnimationFrame(update);
+    }
+  }
+
+  requestAnimationFrame(update);
+}
 
 // Quick amount selection
 const quickAmountInputs = document.querySelectorAll('input[name="quickAmount"]');

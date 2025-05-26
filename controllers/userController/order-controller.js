@@ -5,6 +5,7 @@ const Cart = require("../../models/cartSchema"); // Added Cart import
 const PDFDocument = require('pdfkit');
 const path = require('path');
 const { getActiveOfferForProduct, calculateDiscount, getItemPriceDetails } = require("../../utils/offer-helper");
+const { processCancelRefund, processReturnRefund } = require("./wallet-controller");
 
 /**
  * Get all orders for the current user with pagination, filtering, and sorting
@@ -939,8 +940,6 @@ const cancelOrder = async (req, res) => {
         item.cancellationReason = reason;
       }
     });
-    
-    await order.save();
 
     // Restore product stock for each item
     for (const item of order.items) {
@@ -952,15 +951,17 @@ const cancelOrder = async (req, res) => {
       }
     }
 
-    // If payment was made, initiate refund process
+    // If payment was made, process refund to wallet
     if (order.paymentStatus === 'Paid') {
-      order.paymentStatus = 'Refund Initiated';
-      await order.save();
-      
-      // Here you would integrate with your payment gateway to process the refund
-      // This is a placeholder for the actual refund logic
-      console.log(`Refund initiated for order ${order.orderNumber}`);
+      const refundSuccess = await processCancelRefund(userId, order);
+      if (refundSuccess) {
+        order.paymentStatus = 'Refunded';
+      } else {
+        order.paymentStatus = 'Refund Failed';
+      }
     }
+    
+    await order.save();
 
     return res.status(200).json({
       success: true,
@@ -1005,57 +1006,41 @@ const cancelOrderItem = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Order not found' });
     }
 
-    // Find the specific product in the order
-    const orderItem = order.items.find(item => item.product.toString() === productId);
-    
+    // Find the order item
+    const orderItem = order.items.find(item => 
+      item.product.toString() === productId && item.status === 'Active'
+    );
+
     if (!orderItem) {
-      return res.status(404).json({ success: false, message: 'Product not found in this order' });
-    }
-    
-    // FIXED: Check individual item status instead of overall order status
-    if (orderItem.status !== 'Active') {
-      return res.status(400).json({ 
-        success: false, 
-        message: `This item is already ${orderItem.status.toLowerCase()}` 
-      });
+      return res.status(404).json({ success: false, message: 'Item not found or already cancelled' });
     }
 
-    // FIXED: Check if this specific item can be cancelled based on order progress
-    // Items can be cancelled if the order hasn't been shipped or delivered yet
-    const canCancelItem = ['Placed', 'Processing', 'Partially Cancelled', 'Partially Returned', 'Partially Return Requested'].includes(order.orderStatus);
-    
-    if (!canCancelItem) {
+    // Check if item can be cancelled based on order status
+    const allowedStatuses = ['Placed', 'Processing'];
+    if (!allowedStatuses.includes(order.orderStatus)) {
       return res.status(400).json({
         success: false,
-        message: `Items cannot be cancelled when order status is ${order.orderStatus}`
+        message: `Items cannot be cancelled when order is in ${order.orderStatus} status`
       });
     }
 
-    // Calculate refund amount for this item
-    const itemTotal = orderItem.price * orderItem.quantity;
-    
-    // Update the item status
+    // Update item status
     orderItem.status = 'Cancelled';
     orderItem.cancelledAt = new Date();
     orderItem.cancellationReason = reason;
-    
-    // Check if there are any active items left
+
+    // Update overall order status
     const hasActiveItems = order.items.some(item => item.status === 'Active');
-    const hasReturnedItems = order.items.some(item => item.status === 'Returned');
+    const hasReturnedItems = order.items.some(item => item.status === 'Returned' || item.status === 'Return Requested');
     const hasReturnRequestedItems = order.items.some(item => item.status === 'Return Requested');
-    
-    // Update order status based on item statuses
+
     if (!hasActiveItems) {
-      // If no active items remain
-      if (hasReturnedItems && !hasReturnRequestedItems) {
-        order.orderStatus = 'Returned';
-      } else if (hasReturnRequestedItems) {
+      if (hasReturnedItems || hasReturnRequestedItems) {
         order.orderStatus = 'Partially Return Requested';
       } else {
         order.orderStatus = 'Cancelled';
       }
     } else {
-      // Some active items remain
       if (hasReturnedItems || hasReturnRequestedItems) {
         order.orderStatus = 'Partially Returned';
       } else {
@@ -1063,9 +1048,6 @@ const cancelOrderItem = async (req, res) => {
       }
     }
     
-    order.cancelledAt = new Date();
-    await order.save();
-
     // Restore product stock
     await Product.findByIdAndUpdate(
       productId,
@@ -1074,15 +1056,19 @@ const cancelOrderItem = async (req, res) => {
 
     // Handle refund if payment was made
     if (order.paymentStatus === 'Paid') {
-      if (!hasActiveItems) {
-        order.paymentStatus = 'Refund Initiated';
+      const refundSuccess = await processCancelRefund(userId, order, orderItem._id);
+      if (refundSuccess) {
+        if (!hasActiveItems) {
+          order.paymentStatus = 'Refunded';
+        } else {
+          order.paymentStatus = 'Partially Refunded';
+        }
       } else {
-        order.paymentStatus = 'Partially Refunded';
+        order.paymentStatus = 'Refund Processing';
       }
-      await order.save();
-      
-      console.log(`Partial refund of ₹${itemTotal} initiated for item in order ${order.orderNumber}`);
     }
+
+    await order.save();
 
     return res.status(200).json({
       success: true,
@@ -1147,19 +1133,27 @@ const returnOrder = async (req, res) => {
       });
     }
 
-    // CHANGE: Update order status to Return Requested instead of Returned
+    // Update order status to Return Requested
     order.orderStatus = 'Return Requested';
     order.returnReason = reason;
-    order.returnRequestedAt = new Date(); // Add a new field to track when return was requested
+    order.returnRequestedAt = new Date();
     
     // Update all active items to Return Requested status
+    let hasNonActiveItems = false;
     order.items.forEach(item => {
       if (item.status === 'Active') {
         item.status = 'Return Requested';
         item.returnReason = reason;
         item.returnRequestedAt = new Date();
+      } else {
+        hasNonActiveItems = true;
       }
     });
+
+    // If there are any non-active items, update status to Partially Return Requested
+    if (hasNonActiveItems) {
+      order.orderStatus = 'Partially Return Requested';
+    }
     
     await order.save();
 
@@ -1240,13 +1234,12 @@ const returnOrderItem = async (req, res) => {
       });
     }
 
-    // CHANGE: Instead of marking as Returned, mark as "Return Requested"
-    // We'll add a new status to track return requests
+    // Update item status to Return Requested
     orderItem.status = 'Return Requested';
     orderItem.returnReason = reason;
     orderItem.returnRequestedAt = new Date();
     
-    // Check if there are any active items left
+    // Check item statuses to determine order status
     const hasActiveItems = order.items.some(item => item.status === 'Active');
     const hasReturnRequestedItems = order.items.some(item => item.status === 'Return Requested');
     const hasCancelledItems = order.items.some(item => item.status === 'Cancelled');
@@ -1257,7 +1250,7 @@ const returnOrderItem = async (req, res) => {
       // If all items are in return requested state
       order.orderStatus = 'Return Requested';
     } else if (hasReturnRequestedItems) {
-      // If some items are active and some are return requested
+      // If some items are active/cancelled/returned and some are return requested
       order.orderStatus = 'Partially Return Requested';
     }
     

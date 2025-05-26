@@ -32,6 +32,10 @@ const walletSchema = new mongoose.Schema({
         type: String,
         required: true,
       },
+      refundedItems: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Product"
+      }],
       date: {
         type: Date,
         default: Date.now,

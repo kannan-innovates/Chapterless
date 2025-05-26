@@ -125,8 +125,14 @@ const orderItemSchema = new mongoose.Schema(
     // Updated status field to include Return Requested
     status: {
       type: String,
-      enum: ["Active", "Cancelled", "Returned", "Return Requested"],
-      default: "Active"
+      enum: [
+        "Active",
+        "Cancelled", 
+        "Return Requested",
+        "Returned"
+      ],
+      default: "Active",
+      required: true
     },
     // Fields for cancellation or return
     cancelledAt: {
@@ -188,13 +194,14 @@ const orderSchema = new mongoose.Schema({
       "Shipped",
       "Delivered",
       "Cancelled",
-      "Returned",
       "Partially Cancelled",
-      "Partially Returned",
-      "Return Requested",       // Added new status
-      "Partially Return Requested" // Added new status
+      "Return Requested",
+      "Partially Return Requested",
+      "Returned",
+      "Partially Returned"
     ],
     default: "Placed",
+    required: true
   },
   subtotal: {
     type: Number,
