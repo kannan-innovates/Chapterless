@@ -66,24 +66,26 @@ const calculateItemRefundAmount = (item, order) => {
 
     // Case 1: Use priceBreakdown if available
     if (item.priceBreakdown) {
-      // Calculate base amount (after all discounts)
-      const baseAmount = Number(item.priceBreakdown.finalPrice || 0);
+      // Get the final price after all discounts
+      const finalPricePerUnit = Number(item.priceBreakdown.finalPrice || 0);
+      const baseAmount = finalPricePerUnit * quantity;
       
-      // Calculate tax proportion
+      // Calculate tax proportion for this item
       let taxAmount = 0;
-      if (order.tax && order.totalAmount && order.totalAmount > 0) {
-        // Calculate this item's proportion of total order
-        const itemProportion = baseAmount / (order.totalAmount - order.tax);
-        taxAmount = Number(order.tax) * itemProportion;
+      if (order.tax && order.totalAmount) {
+        // Calculate tax rate based on total order
+        const taxRate = order.tax / (order.totalAmount - order.tax);
+        taxAmount = baseAmount * taxRate;
       }
 
       const totalRefund = baseAmount + taxAmount;
 
-      console.log('Calculated refund breakdown:', {
+      console.log('Calculated refund from priceBreakdown:', {
+        finalPricePerUnit,
+        quantity,
         baseAmount,
         taxAmount,
-        totalRefund,
-        quantity
+        totalRefund
       });
 
       return Number(totalRefund.toFixed(2));
@@ -94,7 +96,7 @@ const calculateItemRefundAmount = (item, order) => {
       const baseAmount = item.discountedPrice * quantity;
       let taxAmount = 0;
       
-      if (order.tax && order.totalAmount && order.totalAmount > 0) {
+      if (order.tax && order.totalAmount) {
         const taxRate = order.tax / (order.totalAmount - order.tax);
         taxAmount = baseAmount * taxRate;
       }
@@ -117,7 +119,7 @@ const calculateItemRefundAmount = (item, order) => {
       const baseAmount = item.price * quantity;
       let taxAmount = 0;
       
-      if (order.tax && order.totalAmount && order.totalAmount > 0) {
+      if (order.tax && order.totalAmount) {
         const taxRate = order.tax / (order.totalAmount - order.tax);
         taxAmount = baseAmount * taxRate;
       }
@@ -282,7 +284,6 @@ const processReturnRefund = async (userId, order, itemId = null) => {
     // Get existing wallet to check for previous refunds
     const existingWallet = await Wallet.findOne({ userId });
     const previouslyRefundedItems = new Set();
-    
     if (existingWallet && existingWallet.transactions) {
       existingWallet.transactions.forEach(txn => {
         if (txn.orderId.toString() === order._id.toString() && txn.refundedItems) {
@@ -298,51 +299,42 @@ const processReturnRefund = async (userId, order, itemId = null) => {
         console.error(`Item ${itemId} not found in order ${order._id}`);
         return false;
       }
-
       // Check if item was already refunded
       if (previouslyRefundedItems.has(item.product.toString())) {
         console.warn(`Item ${item.title} already refunded for order ${order._id}`);
         return true;
       }
-
+      // Only refund if item.status is 'Returned'
+      if (item.status !== 'Returned') {
+        console.warn(`Item ${item.title} is not marked as Returned`);
+        return false;
+      }
       refundAmount = calculateItemRefundAmount(item, order);
       refundReason = `Refund for returned item: ${item.title} from order #${order.orderNumber}`;
       refundedItemsForThisTransaction = [item.product];
     } else {
       // Full/partial order return
-      const returnedItems = order.items.filter(item => 
+      const returnedItems = order.items.filter(item =>
         item.status === 'Returned' && !previouslyRefundedItems.has(item.product.toString())
       );
-
       if (returnedItems.length === 0) {
         console.warn(`No new items to refund in order ${order._id}`);
         return true;
       }
-
       refundAmount = returnedItems.reduce((total, item) => {
         return total + calculateItemRefundAmount(item, order);
       }, 0);
-
       refundReason = returnedItems.length === 1
         ? `Refund for returned item: ${returnedItems[0].title} from order #${order.orderNumber}`
         : `Refund for returned items in order #${order.orderNumber}`;
-
       refundedItemsForThisTransaction = returnedItems.map(item => item.product);
     }
 
     // Process wallet update if there's an amount to refund
     if (refundAmount > 0) {
       let wallet = existingWallet || new Wallet({ userId, balance: 0, transactions: [] });
-      
-      console.log('Processing refund:', {
-        currentBalance: wallet.balance,
-        refundAmount,
-        reason: refundReason,
-        items: refundedItemsForThisTransaction
-      });
-
-      wallet.balance += refundAmount;
-      
+      refundAmount = Number(refundAmount.toFixed(2));
+      wallet.balance = Number(wallet.balance) + refundAmount;
       wallet.transactions.push({
         type: 'credit',
         amount: refundAmount,
@@ -351,12 +343,9 @@ const processReturnRefund = async (userId, order, itemId = null) => {
         refundedItems: refundedItemsForThisTransaction,
         date: new Date()
       });
-
       await wallet.save();
-      console.log('Refund processed successfully');
       return true;
     }
-
     return refundedItemsForThisTransaction.length === 0;
   } catch (error) {
     console.error('Error processing return refund:', error);
