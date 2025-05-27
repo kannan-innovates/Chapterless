@@ -838,13 +838,13 @@
             <div class="data-grid">
               <div class="data-label">Name</div>
               <div class="data-value"><%= customer.fullName || 'N/A' %></div>
-              
+
               <div class="data-label">Email</div>
               <div class="data-value"><%= customer.email || 'N/A' %></div>
-              
+
               <div class="data-label">Phone</div>
               <div class="data-value"><%= order.shippingAddress.phone || 'N/A' %></div>
-              
+
               <div class="data-label">Account</div>
               <div class="data-value">Registered</div>
             </div>
@@ -879,15 +879,15 @@
             <div class="data-grid">
               <div class="data-label">Method</div>
               <div class="data-value"><%= order.paymentMethod || 'Cash on Delivery' %></div>
-              
+
               <div class="data-label">Status</div>
               <div class="data-value"><%= order.paymentStatus || 'Pending' %></div>
-              
+
               <div class="data-label">Date</div>
               <div class="data-value"><%= order.formattedDate %></div>
             </div>
           </div>
-          
+
           <!-- Order Summary -->
           <div class="order-info-card">
             <h3 class="card-title">
@@ -896,16 +896,16 @@
             <div class="data-grid">
               <div class="data-label">Order ID</div>
               <div class="data-value">#<%= order.orderNumber %></div>
-              
+
               <div class="data-label">Date Placed</div>
               <div class="data-value"><%= order.formattedDate %></div>
-              
+
               <div class="data-label">Items</div>
               <div class="data-value"><%= order.items.length %> items</div>
-              
+
               <div class="data-label">Total</div>
               <div class="data-value"><%= order.formattedTotal %></div>
-              
+
               <% if (order.couponCode) { %>
               <div class="data-label">Coupon Applied</div>
               <div class="data-value"><%= order.couponCode %></div>
@@ -954,9 +954,9 @@
                   <tr>
                     <td>
                       <div class="product-cell">
-                        <img 
-                          src="<%= item.image || '/api/placeholder/60/75' %>" 
-                          alt="<%= item.title || 'Product' %>" 
+                        <img
+                          src="<%= item.image || '/api/placeholder/60/75' %>"
+                          alt="<%= item.title || 'Product' %>"
                           class="product-image"
                           onerror="this.src='/api/placeholder/60/75'"
                         >
@@ -1047,7 +1047,7 @@
                                 <span class="price-regular"><%= item.formattedOriginalPrice %></span>
                               <% } %>
                             </div>
-                            
+
                             <div class="price-row total">
                               <span class="price-label">Total Amount:</span>
                               <span class="price-total">
@@ -1068,28 +1068,68 @@
                     </td>
                     <td><%= item.quantity || 1 %></td>
                     <td>
-                      <% if (item.status === 'Cancelled') { %>
-                        <span class="item-status cancelled">Cancelled</span>
-                      <% } else if (item.status === 'Returned') { %>
-                        <span class="item-status returned">Returned</span>
-                      <% } else if (item.status === 'Return Requested') { %>
-                        <span class="item-status return-requested">Return Requested</span>
-                        <div class="item-actions">
-                          <button class="btn-item-action btn-approve-return" data-item-id="<%= item._id %>" data-order-id="<%= order._id %>">Approve Return</button>
-                          <button class="btn-item-action btn-reject-return" data-item-id="<%= item._id %>" data-order-id="<%= order._id %>">Reject Return</button>
-                        </div>
-                      <% } else { %>
-                        <span class="item-status active">Active</span>
-                        <% if (hasActiveItems && (order.orderStatus === 'Delivered' || order.orderStatus === 'Partially Returned')) { %>
-                          <div class="item-actions">
-                            <button class="btn-item-action btn-return-item" data-item-id="<%= item._id %>" data-order-id="<%= order._id %>">Return</button>
+                      <div class="status-info">
+                        <% if (item.status === 'Cancelled') { %>
+                          <span class="item-status cancelled">Cancelled</span>
+                          <% if (item.cancelledAt) { %>
+                            <small class="d-block text-muted mt-1">
+                              Cancelled on <%= new Date(item.cancelledAt).toLocaleDateString() %>
+                            </small>
+                          <% } %>
+                          <% if (item.cancellationReason) { %>
+                            <small class="d-block text-muted">
+                              Reason: <%= item.cancellationReason %>
+                            </small>
+                          <% } %>
+                        <% } else if (item.status === 'Returned') { %>
+                          <span class="item-status returned">Returned</span>
+                          <% if (item.returnedAt) { %>
+                            <small class="d-block text-muted mt-1">
+                              Returned on <%= new Date(item.returnedAt).toLocaleDateString() %>
+                            </small>
+                          <% } %>
+                          <% if (item.returnReason) { %>
+                            <small class="d-block text-muted">
+                              Reason: <%= item.returnReason %>
+                            </small>
+                          <% } %>
+                        <% } else if (item.status === 'Return Requested') { %>
+                          <span class="item-status return-requested">Return Requested</span>
+                          <% if (item.returnRequestedAt) { %>
+                            <small class="d-block text-muted mt-1">
+                              Requested on <%= new Date(item.returnRequestedAt).toLocaleDateString() %>
+                            </small>
+                          <% } %>
+                          <% if (item.returnReason) { %>
+                            <small class="d-block text-muted">
+                              Reason: <%= item.returnReason %>
+                            </small>
+                          <% } %>
+                          <div class="item-actions mt-2">
+                            <a href="/admin/return-management/<%= order._id %>" class="btn btn-info btn-sm">
+                              <i class="ri-external-link-line"></i> Manage Return
+                            </a>
                           </div>
-                        <% } else if (hasActiveItems && (order.orderStatus === 'Placed' || order.orderStatus === 'Processing' || order.orderStatus === 'Partially Cancelled')) { %>
-                          <div class="item-actions">
-                            <button class="btn-item-action btn-cancel-item" data-item-id="<%= item._id %>" data-order-id="<%= order._id %>">Cancel</button>
-                          </div>
+                        <% } else { %>
+                          <span class="item-status active">Active</span>
+                          <small class="d-block text-muted mt-1">
+                            Current Status: <%= order.orderStatus %>
+                          </small>
+                          <% if (order.orderStatus === 'Delivered' && item.status === 'Active') { %>
+                            <div class="item-actions mt-2">
+                              <button class="btn btn-warning btn-sm btn-return-item" data-item-id="<%= item._id %>" data-order-id="<%= order._id %>">
+                                <i class="ri-arrow-go-back-line"></i> Return Item
+                              </button>
+                            </div>
+                          <% } else if ((order.orderStatus === 'Placed' || order.orderStatus === 'Processing') && item.status === 'Active') { %>
+                            <div class="item-actions mt-2">
+                              <button class="btn btn-danger btn-sm btn-cancel-item" data-item-id="<%= item._id %>" data-order-id="<%= order._id %>">
+                                <i class="ri-close-line"></i> Cancel Item
+                              </button>
+                            </div>
+                          <% } %>
                         <% } %>
-                      <% } %>
+                      </div>
                     </td>
                     <td class="subtotal-cell" style="text-align: right;">
                       <% const itemTotal = item.discountedPrice * item.quantity %>
@@ -1112,7 +1152,7 @@
               <span class="summary-label">Subtotal</span>
               <span class="summary-value"><%= order.formattedSubtotal %></span>
             </div>
-            
+
             <% if (order.formattedOfferDiscount) { %>
             <div class="summary-row">
               <span class="summary-label">
@@ -1124,7 +1164,7 @@
               <span class="summary-value discount-text"><%= order.formattedOfferDiscount %></span>
             </div>
             <% } %>
-            
+
             <% if (order.formattedCouponDiscount) { %>
             <div class="summary-row">
               <span class="summary-label">
@@ -1136,21 +1176,45 @@
               <span class="summary-value discount-text"><%= order.formattedCouponDiscount %></span>
             </div>
             <% } %>
-            
+
             <div class="summary-row">
               <span class="summary-label">Shipping</span>
               <span class="summary-value"><%= order.formattedShipping %></span>
             </div>
-            
+
             <div class="summary-row">
               <span class="summary-label">Tax</span>
               <span class="summary-value"><%= order.formattedTax %></span>
             </div>
-            
+
             <div class="total-row">
               <span class="total-label">Total</span>
               <span class="total-value"><%= order.formattedTotal %></span>
             </div>
+
+            <!-- Refund Information -->
+            <%
+              let totalRefunded = 0;
+              order.items.forEach(item => {
+                if (item.status === 'Cancelled' || item.status === 'Returned') {
+                  if (item.priceBreakdown && item.priceBreakdown.finalPrice) {
+                    totalRefunded += item.priceBreakdown.finalPrice * item.quantity;
+                  } else {
+                    totalRefunded += item.discountedPrice * item.quantity;
+                  }
+                }
+              });
+            %>
+            <% if (totalRefunded > 0) { %>
+              <div class="summary-row" style="color: #dc3545; border-top: 1px solid #dee2e6; padding-top: 0.5rem; margin-top: 0.5rem;">
+                <span class="summary-label">Total Refunded</span>
+                <span class="summary-value">₹<%= totalRefunded.toFixed(2) %></span>
+              </div>
+              <div class="summary-row">
+                <span class="summary-label">Net Amount</span>
+                <span class="summary-value">₹<%= (order.total - totalRefunded).toFixed(2) %></span>
+              </div>
+            <% } %>
           </div>
         </div>
 
@@ -1158,16 +1222,27 @@
         <% if (hasReturnRequestedItems) { %>
         <div class="order-card mb-4">
           <div class="card-body p-4">
-            <h5 class="fw-bold mb-3">Return Requests</h5>
+            <h5 class="fw-bold mb-3">
+              <i class="ri-arrow-go-back-line"></i>
+              Return Requests
+              <span class="badge bg-warning ms-2">
+                <%= order.items.filter(item => item.status === 'Return Requested').length %> item(s)
+              </span>
+            </h5>
+            <div class="alert alert-info mb-3">
+              <i class="ri-information-line"></i>
+              Review and approve/reject return requests. Approved returns will refund the amount to customer's wallet.
+            </div>
             <div class="table-container">
               <table>
                 <thead>
                   <tr>
-                    <th style="width: 50%;">Product</th>
+                    <th style="width: 40%;">Product</th>
                     <th>Price</th>
-                    <th>Quantity</th>
+                    <th>Qty</th>
                     <th>Return Reason</th>
-                    <th>Actions</th>
+                    <th>Requested Date</th>
+                    <th style="text-align: center;">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1176,9 +1251,9 @@
                       <tr>
                         <td>
                           <div class="product-cell">
-                            <img 
-                              src="<%= item.image || '/api/placeholder/60/75' %>" 
-                              alt="<%= item.title || 'Product' %>" 
+                            <img
+                              src="<%= item.image || '/api/placeholder/60/75' %>"
+                              alt="<%= item.title || 'Product' %>"
                               class="product-image"
                               onerror="this.src='/api/placeholder/60/75'"
                             >
@@ -1195,15 +1270,30 @@
                           <%= item.formattedPrice %>
                         </td>
                         <td><%= item.quantity || 1 %></td>
-                        <td><%= item.returnReason || 'No reason provided' %></td>
                         <td>
+                          <div class="return-reason">
+                            <%= item.returnReason || 'No reason provided' %>
+                          </div>
+                        </td>
+                        <td>
+                          <% if (item.returnRequestedAt) { %>
+                            <small class="text-muted">
+                              <%= new Date(item.returnRequestedAt).toLocaleDateString('en-US', {
+                                year: 'numeric',
+                                month: 'short',
+                                day: 'numeric'
+                              }) %>
+                            </small>
+                          <% } else { %>
+                            <small class="text-muted">N/A</small>
+                          <% } %>
+                        </td>
+                        <td style="text-align: center;">
                           <div class="return-actions">
-                            <button class="btn btn-success btn-sm approve-return-btn" data-item-id="<%= item._id %>" data-order-id="<%= order._id %>">
-                              <i class="ri-check-line"></i> Approve
-                            </button>
-                            <button class="btn btn-danger btn-sm reject-return-btn" data-item-id="<%= item._id %>" data-order-id="<%= order._id %>">
-                              <i class="ri-close-line"></i> Reject
-                            </button>
+                            <a href="/admin/return-management/<%= order._id %>" class="btn btn-info btn-sm"
+                               title="Manage this return request">
+                              <i class="ri-external-link-line"></i> Manage Return
+                            </a>
                           </div>
                         </td>
                       </tr>
@@ -1212,15 +1302,12 @@
                 </tbody>
               </table>
             </div>
-            
+
             <% if (order.orderStatus === 'Return Requested') { %>
               <div class="d-flex justify-content-end mt-3">
-                <button class="btn btn-success me-2 approve-all-returns-btn" data-order-id="<%= order._id %>">
-                  <i class="ri-check-double-line"></i> Approve All Returns
-                </button>
-                <button class="btn btn-danger reject-all-returns-btn" data-order-id="<%= order._id %>">
-                  <i class="ri-close-line"></i> Reject All Returns
-                </button>
+                <a href="/admin/return-management/<%= order._id %>" class="btn btn-info">
+                  <i class="ri-external-link-line"></i> Manage All Returns
+                </a>
               </div>
             <% } %>
           </div>
@@ -1248,7 +1335,7 @@
       document.addEventListener('DOMContentLoaded', () => {
         // Update Status Button Functionality
         const updateStatusBtn = document.getElementById('update-status-btn');
-        
+
         updateStatusBtn.addEventListener('click', function() {
           // Define allowed status transitions based on current status
           const currentStatus = '<%= order.orderStatus %>';
@@ -1260,11 +1347,9 @@
           } else if (currentStatus === 'Shipped') {
             allowedStatuses = ['Delivered'];
           } else if (currentStatus === 'Delivered') {
-            allowedStatuses = ['Returned'];
-          } else if (currentStatus === 'Partially Cancelled') {
-            allowedStatuses = ['Shipped', 'Cancelled'];
-          } else if (currentStatus === 'Partially Returned') {
-            allowedStatuses = ['Returned'];
+            allowedStatuses = ['Return Requested'];
+          } else if (currentStatus === 'Return Requested') {
+            allowedStatuses = ['Returned', 'Delivered'];
           } else {
             allowedStatuses = []; // Cancelled or Returned are terminal states
           }
@@ -1281,7 +1366,7 @@
           }
 
           // Build the status dropdown options
-          let statusOptions = allowedStatuses.map(status => 
+          let statusOptions = allowedStatuses.map(status =>
             `<option value="${status}">${status}</option>`
           ).join('');
 
@@ -1311,7 +1396,7 @@
             preConfirm: () => {
               const statusSelect = document.getElementById('status-select');
               const statusMessage = document.getElementById('status-message');
-              
+
               return {
                 status: statusSelect.value,
                 message: statusMessage.value
@@ -1357,14 +1442,14 @@
             }
           });
         });
-        
+
         // Item status update functionality
         document.querySelectorAll('.btn-cancel-item, .btn-return-item').forEach(button => {
           button.addEventListener('click', function() {
             const itemId = this.getAttribute('data-item-id');
             const orderId = this.getAttribute('data-order-id');
             const action = this.classList.contains('btn-cancel-item') ? 'cancel' : 'return';
-            
+
             Swal.fire({
               title: `${action === 'cancel' ? 'Cancel' : 'Return'} Item`,
               html: `
@@ -1398,7 +1483,7 @@
                   headers: {
                     'Content-Type': 'application/json',
                   },
-                  body: JSON.stringify({ 
+                  body: JSON.stringify({
                     status: action === 'cancel' ? 'Cancelled' : 'Returned',
                     reason: result.value.reason
                   }),
@@ -1434,12 +1519,12 @@
             });
           });
         });
-        
+
         // Invoice download button
         document.querySelectorAll('.btn-outline').forEach(btn => {
           btn.addEventListener('click', function(e) {
             e.preventDefault();
-            
+
             Swal.fire({
               title: 'Generating Invoice',
               text: 'Please wait while we generate the invoice...',
@@ -1448,10 +1533,10 @@
                 Swal.showLoading();
               }
             });
-            
+
             // Initiate the download
             window.location.href = this.href;
-            
+
             // Close the loader after 2 seconds (assuming download has started)
             setTimeout(() => {
               Swal.close();
@@ -1464,7 +1549,7 @@
           button.addEventListener('click', function() {
             const itemId = this.getAttribute('data-item-id');
             const orderId = this.getAttribute('data-order-id');
-            
+
             Swal.fire({
               title: 'Approve Return',
               text: 'Are you sure you want to approve this return request?',
@@ -1481,7 +1566,7 @@
                   headers: {
                     'Content-Type': 'application/json',
                   },
-                  body: JSON.stringify({ 
+                  body: JSON.stringify({
                     itemId: itemId,
                     approved: true
                   }),
@@ -1514,13 +1599,13 @@
             });
           });
         });
-        
+
         // Reject single return
         document.querySelectorAll('.reject-return-btn').forEach(button => {
           button.addEventListener('click', function() {
             const itemId = this.getAttribute('data-item-id');
             const orderId = this.getAttribute('data-order-id');
-            
+
             Swal.fire({
               title: 'Reject Return',
               text: 'Are you sure you want to reject this return request?',
@@ -1537,7 +1622,7 @@
                   headers: {
                     'Content-Type': 'application/json',
                   },
-                  body: JSON.stringify({ 
+                  body: JSON.stringify({
                     itemId: itemId,
                     approved: false
                   }),
@@ -1570,13 +1655,13 @@
             });
           });
         });
-        
+
         // Approve all returns
         const approveAllBtn = document.querySelector('.approve-all-returns-btn');
         if (approveAllBtn) {
           approveAllBtn.addEventListener('click', function() {
             const orderId = this.getAttribute('data-order-id');
-            
+
             Swal.fire({
               title: 'Approve All Returns',
               text: 'Are you sure you want to approve all return requests for this order?',
@@ -1623,13 +1708,13 @@
             });
           });
         }
-        
+
         // Reject all returns
         const rejectAllBtn = document.querySelector('.reject-all-returns-btn');
         if (rejectAllBtn) {
           rejectAllBtn.addEventListener('click', function() {
             const orderId = this.getAttribute('data-order-id');
-            
+
             Swal.fire({
               title: 'Reject All Returns',
               text: 'Are you sure you want to reject all return requests for this order?',

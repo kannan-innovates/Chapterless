@@ -8,6 +8,7 @@ const productController = require('../../controllers/adminController/productCont
 const manageProductController = require('../../controllers/adminController/manageProducts');
 
 const manageOrderController = require('../../controllers/adminController/manage-orders.js')
+const returnManagementController = require('../../controllers/adminController/return-management.js')
 
 const couponController = require('../../controllers/adminController/coupon-controller');
 
@@ -68,6 +69,7 @@ adminRoute.get('/categories/list', async (req, res) => {
 
 adminRoute.get('/products/:id/edit', productController.getEditProduct);
 adminRoute.post('/products/:id', upload.fields([{ name: 'mainImage' }, { name: 'subImages', maxCount: 3 }]), productController.updateProduct);
+adminRoute.put('/products/:id', upload.fields([{ name: 'mainImage' }, { name: 'subImages', maxCount: 3 }]), productController.updateProduct);
 adminRoute.put('/products/:id/soft-delete', productController.softDeleteProduct);
 
 // Order Management
@@ -76,6 +78,12 @@ adminRoute.get('/orders/:id', manageOrderController.getOrderDetails);
 adminRoute.put('/orders/:id/status', manageOrderController.updateOrderStatus);
 adminRoute.get('/orders/:id/invoice', manageOrderController.downloadInvoice);
 adminRoute.put('/orders/:id/return-request', manageOrderController.approveReturnRequest);
+
+// Return Management
+adminRoute.get('/return-management', returnManagementController.getReturnRequests);
+adminRoute.get('/return-management/:id', returnManagementController.getReturnRequestDetails);
+adminRoute.put('/return-management/:id/process', returnManagementController.processReturnRequest);
+adminRoute.post('/return-management/bulk-process', returnManagementController.bulkProcessReturns);
 
 // Coupon Management
 adminRoute.get('/coupons', couponController.getCoupons);

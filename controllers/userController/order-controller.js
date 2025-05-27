@@ -90,7 +90,7 @@ const getOrders = async (req, res) => {
         month: 'long',
         day: 'numeric',
       });
-      
+
       // Calculate estimated delivery date
       if (!['Delivered', 'Cancelled', 'Returned'].includes(order.orderStatus)) {
         const deliveryDate = new Date(order.createdAt);
@@ -107,7 +107,7 @@ const getOrders = async (req, res) => {
           day: 'numeric'
         });
       }
-      
+
       // Format order totals
       order.formattedSubtotal = `₹${order.subtotal.toFixed(2)}`;
       order.formattedTax = `₹${order.tax.toFixed(2)}`;
@@ -118,7 +118,7 @@ const getOrders = async (req, res) => {
       // Format items with price breakdowns
       for (const item of order.items) {
         const priceBreakdown = item.priceBreakdown || {};
-        
+
         // Format all price values
         item.formattedOriginalPrice = `₹${priceBreakdown.originalPrice?.toFixed(2) || item.price.toFixed(2)}`;
         item.formattedSubtotal = `₹${priceBreakdown.subtotal?.toFixed(2) || (item.price * item.quantity).toFixed(2)}`;
@@ -126,23 +126,24 @@ const getOrders = async (req, res) => {
         item.formattedPriceAfterOffer = `₹${priceBreakdown.priceAfterOffer?.toFixed(2) || item.discountedPrice.toFixed(2)}`;
         item.formattedCouponDiscount = priceBreakdown.couponDiscount ? `₹${priceBreakdown.couponDiscount.toFixed(2)}` : '₹0.00';
         item.formattedFinalPrice = `₹${priceBreakdown.finalPrice?.toFixed(2) || item.discountedPrice.toFixed(2)}`;
-        
+
         // Store discount percentages and proportions
         item.offerTitle = priceBreakdown.offerTitle || null;
         item.couponProportion = priceBreakdown.couponProportion || 0;
-        
+
         // Calculate effective discount percentage
         const totalDiscount = (priceBreakdown.offerDiscount || 0) + (priceBreakdown.couponDiscount || 0);
         const originalTotal = priceBreakdown.subtotal || (item.price * item.quantity);
-        item.effectiveDiscountPercentage = originalTotal > 0 ? 
+        item.effectiveDiscountPercentage = originalTotal > 0 ?
           ((totalDiscount / originalTotal) * 100).toFixed(1) : '0';
 
-        // Add flags for cancellation and return
+        // Add flags for cancellation and return - simplified
         item.canBeCancelled = (
-          item.status === 'Active' && 
-          ['Placed', 'Processing', 'Partially Cancelled', 'Partially Returned'].includes(order.orderStatus)
+          item.status === 'Active' &&
+          ['Placed', 'Processing'].includes(order.orderStatus)
         );
 
+        // Check if item can be returned
         if (order.orderStatus === 'Delivered' && item.status === 'Active') {
           const deliveredDate = order.deliveredAt || order.updatedAt;
           const returnPeriod = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
@@ -230,7 +231,7 @@ const getOrderDetails = async (req, res) => {
 
       // Calculate discount if offer exists
       const { discountPercentage, discountAmount, finalPrice } = calculateDiscount(offer, item.price);
-      
+
       // Calculate coupon proportion and discount
       if (order.couponDiscount && order.couponDiscount > 0) {
         const itemValue = item.price * item.quantity;
@@ -258,10 +259,10 @@ const getOrderDetails = async (req, res) => {
       item.formattedOfferDiscount = `₹${(item.offerDiscount || 0).toFixed(2)}`;
       item.formattedCouponDiscount = `₹${(item.couponDiscount || 0).toFixed(2)}`;
 
-      // Check if item can be cancelled
+      // Check if item can be cancelled - simplified
       item.canBeCancelled = (
-        item.status === 'Active' && 
-        ['Placed', 'Processing', 'Partially Cancelled', 'Partially Returned'].includes(order.orderStatus)
+        item.status === 'Active' &&
+        ['Placed', 'Processing'].includes(order.orderStatus)
       );
 
       // Check if item can be returned
@@ -297,7 +298,7 @@ const getOrderDetails = async (req, res) => {
       },
       {
         status: 'Processing',
-        timestamp: order.processingDate ? new Date(order.processingDate).toLocaleDateString('en-US', {
+        timestamp: order.processedAt ? new Date(order.processedAt).toLocaleDateString('en-US', {
           year: 'numeric',
           month: 'short',
           day: 'numeric',
@@ -309,7 +310,7 @@ const getOrderDetails = async (req, res) => {
       },
       {
         status: 'Shipped',
-        timestamp: order.shippedDate ? new Date(order.shippedDate).toLocaleDateString('en-US', {
+        timestamp: order.shippedAt ? new Date(order.shippedAt).toLocaleDateString('en-US', {
           year: 'numeric',
           month: 'short',
           day: 'numeric',
@@ -321,7 +322,7 @@ const getOrderDetails = async (req, res) => {
       },
       {
         status: 'Delivered',
-        timestamp: order.deliveredDate ? new Date(order.deliveredDate).toLocaleDateString('en-US', {
+        timestamp: order.deliveredAt ? new Date(order.deliveredAt).toLocaleDateString('en-US', {
           year: 'numeric',
           month: 'short',
           day: 'numeric',
@@ -337,7 +338,7 @@ const getOrderDetails = async (req, res) => {
     if (order.orderStatus === 'Cancelled' || order.orderStatus === 'Partially Cancelled') {
       timeline.push({
         status: order.orderStatus,
-        timestamp: order.cancelledDate ? new Date(order.cancelledDate).toLocaleDateString('en-US', {
+        timestamp: order.cancelledAt ? new Date(order.cancelledAt).toLocaleDateString('en-US', {
           year: 'numeric',
           month: 'short',
           day: 'numeric',
@@ -350,11 +351,11 @@ const getOrderDetails = async (req, res) => {
     }
 
     // Add return status if order is returned or return requested
-    if (order.orderStatus === 'Return Requested' || order.orderStatus === 'Returned' || 
+    if (order.orderStatus === 'Return Requested' || order.orderStatus === 'Returned' ||
         order.orderStatus === 'Partially Return Requested' || order.orderStatus === 'Partially Returned') {
       timeline.push({
         status: order.orderStatus,
-        timestamp: order.returnRequestedDate ? new Date(order.returnRequestedDate).toLocaleDateString('en-US', {
+        timestamp: order.returnRequestedAt ? new Date(order.returnRequestedAt).toLocaleDateString('en-US', {
           year: 'numeric',
           month: 'short',
           day: 'numeric',
@@ -447,9 +448,9 @@ const getOrderSuccess = async (req, res) => {
     });
   } catch (error) {
     console.error('Error rendering order success page:', error);
-    res.status(500).render('error', { 
-      message: 'Internal server error', 
-      isAuthenticated: req.session.user_id ? true : false 
+    res.status(500).render('error', {
+      message: 'Internal server error',
+      isAuthenticated: req.session.user_id ? true : false
     });
   }
 };
@@ -496,9 +497,9 @@ const getPaymentFailure = async (req, res) => {
     });
   } catch (error) {
     console.error('Error rendering payment failure page:', error);
-    res.status(500).render('error', { 
-      message: 'Internal server error', 
-      isAuthenticated: req.session.user_id ? true : false 
+    res.status(500).render('error', {
+      message: 'Internal server error',
+      isAuthenticated: req.session.user_id ? true : false
     });
   }
 };
@@ -555,7 +556,7 @@ const downloadInvoice = async (req, res) => {
 
       // Calculate discount if offer exists
       const { discountPercentage, discountAmount, finalPrice } = calculateDiscount(offer, item.price);
-      
+
       const itemOriginalTotal = item.price * item.quantity;
       const itemDiscountTotal = discountAmount * item.quantity;
       const itemFinalTotal = finalPrice * item.quantity;
@@ -576,7 +577,7 @@ const downloadInvoice = async (req, res) => {
     order.subtotal = totalBeforeDiscount;
     order.discount = totalDiscount;
     order.total = totalAfterDiscount + (order.tax || 0) - (order.couponDiscount || 0);
-    
+
     order.formattedSubtotal = `₹${order.subtotal.toFixed(2)}`;
     order.formattedTotal = `₹${order.total.toFixed(2)}`;
     order.formattedTax = `₹${(order.tax || 0).toFixed(2)}`;
@@ -584,11 +585,11 @@ const downloadInvoice = async (req, res) => {
     order.formattedCouponDiscount = `₹${(order.couponDiscount || 0).toFixed(2)}`;
 
     // Create PDF document
-    const doc = new PDFDocument({ 
+    const doc = new PDFDocument({
       margin: 50,
       size: 'A4'
     });
-    
+
     const filename = `invoice-${order.orderNumber}.pdf`;
 
     // Set response headers
@@ -649,7 +650,7 @@ const downloadInvoice = async (req, res) => {
 
     // Add billing and shipping info
     const billingStartY = 170;
-    
+
     // Billing info
     doc.font('Helvetica-Bold')
        .fontSize(14)
@@ -685,36 +686,36 @@ const downloadInvoice = async (req, res) => {
     const tableTop = billingStartY + 140;
     const tableHeaders = ['Item', 'Price', 'Quantity', 'Discount', 'Total'];
     const colWidths = [0.40, 0.15, 0.15, 0.15, 0.15]; // Proportions of contentWidth
-    
+
     // Calculate column positions
     const colPositions = [];
     let currentPosition = leftMargin;
-    
+
     colWidths.forEach(width => {
       colPositions.push(currentPosition);
       currentPosition += width * contentWidth;
     });
-    
+
     // Add table header
     doc.fillColor(colors.light)
        .rect(leftMargin, tableTop, contentWidth, 25)
        .fill();
-    
+
     doc.font('Helvetica-Bold')
        .fontSize(10)
        .fillColor(colors.dark);
-    
+
     tableHeaders.forEach((header, i) => {
       const align = i === 0 ? 'left' : 'right';
       const x = colPositions[i];
       const width = colWidths[i] * contentWidth;
-      
+
       doc.text(header, x + 5, tableTop + 8, { width: width - 10, align });
     });
-    
+
     // Add table rows
     let y = tableTop + 25;
-    
+
     order.items.forEach((item, index) => {
       // Alternate row background for better readability
       if (index % 2 === 1) {
@@ -722,20 +723,20 @@ const downloadInvoice = async (req, res) => {
            .rect(leftMargin, y, contentWidth, 35)
            .fill();
       }
-      
+
       doc.fillColor(colors.dark)
          .font('Helvetica')
          .fontSize(10);
-      
+
       // Item name with status
       let itemTitle = item.title || 'Unknown Product';
       if (item.status !== 'Active') {
         itemTitle += ` (${item.status})`;
       }
-      
-      doc.text(itemTitle, colPositions[0] + 5, y + 5, { 
-        width: colWidths[0] * contentWidth - 10, 
-        align: 'left' 
+
+      doc.text(itemTitle, colPositions[0] + 5, y + 5, {
+        width: colWidths[0] * contentWidth - 10,
+        align: 'left'
       });
 
       // Add offer title if exists
@@ -747,45 +748,45 @@ const downloadInvoice = async (req, res) => {
              align: 'left'
            });
       }
-      
+
       // Price
       doc.fillColor(colors.dark)
          .fontSize(10)
-         .text(`₹${item.price.toFixed(2)}`, colPositions[1] + 5, y + 12, { 
-           width: colWidths[1] * contentWidth - 10, 
-           align: 'right' 
+         .text(`₹${item.price.toFixed(2)}`, colPositions[1] + 5, y + 12, {
+           width: colWidths[1] * contentWidth - 10,
+           align: 'right'
          });
-      
+
       // Quantity
-      doc.text(item.quantity.toString(), colPositions[2] + 5, y + 12, { 
-        width: colWidths[2] * contentWidth - 10, 
-        align: 'right' 
+      doc.text(item.quantity.toString(), colPositions[2] + 5, y + 12, {
+        width: colWidths[2] * contentWidth - 10,
+        align: 'right'
       });
-      
+
       // Discount
       const itemDiscount = (item.offerDiscount || 0) * item.quantity;
       doc.fillColor(colors.success)
-         .text(`₹${itemDiscount.toFixed(2)}`, colPositions[3] + 5, y + 12, { 
-           width: colWidths[3] * contentWidth - 10, 
-           align: 'right' 
+         .text(`₹${itemDiscount.toFixed(2)}`, colPositions[3] + 5, y + 12, {
+           width: colWidths[3] * contentWidth - 10,
+           align: 'right'
          });
-      
+
       // Total
       doc.fillColor(colors.dark)
-         .text(`₹${item.finalTotal.toFixed(2)}`, colPositions[4] + 5, y + 12, { 
-           width: colWidths[4] * contentWidth - 10, 
-           align: 'right' 
+         .text(`₹${item.finalTotal.toFixed(2)}`, colPositions[4] + 5, y + 12, {
+           width: colWidths[4] * contentWidth - 10,
+           align: 'right'
          });
-      
+
       y += 35;
     });
-    
+
     // Add table border
     doc.strokeColor(colors.border)
        .lineWidth(1)
        .rect(leftMargin, tableTop, contentWidth, y - tableTop)
        .stroke();
-    
+
     // Add horizontal lines for each row
     let lineY = tableTop + 25;
     for (let i = 0; i < order.items.length; i++) {
@@ -794,7 +795,7 @@ const downloadInvoice = async (req, res) => {
          .stroke();
       lineY += 35;
     }
-    
+
     // Add vertical lines for columns
     colPositions.forEach((x, i) => {
       if (i === 0) return; // Skip first column
@@ -802,12 +803,12 @@ const downloadInvoice = async (req, res) => {
          .lineTo(x, y)
          .stroke();
     });
-    
+
     // Add order summary
     const summaryStartY = y + 20;
     const summaryWidth = 200;
     const summaryX = rightMargin - summaryWidth;
-    
+
     // Subtotal
     doc.font('Helvetica')
        .fontSize(10)
@@ -815,13 +816,13 @@ const downloadInvoice = async (req, res) => {
        .text('Subtotal:', summaryX, summaryStartY, { width: 100, align: 'left' })
        .fillColor(colors.dark)
        .text(`₹${order.subtotal.toFixed(2)}`, summaryX + 100, summaryStartY, { width: 100, align: 'right' });
-    
+
     // Tax
     doc.fillColor(colors.secondary)
        .text('Tax (8%):', summaryX, summaryStartY + 20, { width: 100, align: 'left' })
        .fillColor(colors.dark)
        .text(`₹${order.tax.toFixed(2)}`, summaryX + 100, summaryStartY + 20, { width: 100, align: 'right' });
-    
+
     // Offer discount
     if (order.discount > 0) {
       doc.fillColor(colors.secondary)
@@ -829,7 +830,7 @@ const downloadInvoice = async (req, res) => {
          .fillColor(colors.success)
          .text(`- ₹${order.discount.toFixed(2)}`, summaryX + 100, summaryStartY + 40, { width: 100, align: 'right' });
     }
-    
+
     // Coupon discount
     if (order.couponDiscount && order.couponDiscount > 0) {
       const yPos = order.discount > 0 ? summaryStartY + 60 : summaryStartY + 40;
@@ -838,39 +839,39 @@ const downloadInvoice = async (req, res) => {
          .fillColor(colors.success)
          .text(`- ₹${order.couponDiscount.toFixed(2)}`, summaryX + 100, yPos, { width: 100, align: 'right' });
     }
-    
+
     // Total
     const totalY = summaryStartY + (order.discount > 0 ? 80 : 60);
-    
+
     // Add separator line before total
     doc.strokeColor(colors.border)
        .lineWidth(1)
        .moveTo(summaryX, totalY - 10)
        .lineTo(rightMargin, totalY - 10)
        .stroke();
-    
+
     doc.font('Helvetica-Bold')
        .fontSize(12)
        .fillColor(colors.primary)
        .text('Total:', summaryX, totalY, { width: 100, align: 'left' })
        .text(`₹${order.total.toFixed(2)}`, summaryX + 100, totalY, { width: 100, align: 'right' });
-    
+
     // Add footer
     const footerY = Math.max(y + 200, totalY + 100);
-    
+
     // Add separator line
     doc.strokeColor(colors.border)
        .lineWidth(1)
        .moveTo(leftMargin, footerY - 30)
        .lineTo(rightMargin, footerY - 30)
        .stroke();
-    
+
     doc.fontSize(10)
        .font('Helvetica')
        .fillColor(colors.secondary)
        .text('Thank you for shopping with Chapterless!', leftMargin, footerY, { align: 'center', width: contentWidth })
        .text('This is a computer-generated invoice and does not require a signature.', leftMargin, footerY + 15, { align: 'center', width: contentWidth });
-    
+
     // Add page numbers
     const pageCount = doc.bufferedPageRange().count;
     for (let i = 0; i < pageCount; i++) {
@@ -931,7 +932,7 @@ const cancelOrder = async (req, res) => {
     order.orderStatus = 'Cancelled';
     order.cancelledAt = new Date();
     order.cancellationReason = reason;
-    
+
     // Update all items to Cancelled status
     order.items.forEach(item => {
       if (item.status === 'Active') {
@@ -960,7 +961,7 @@ const cancelOrder = async (req, res) => {
         order.paymentStatus = 'Refund Failed';
       }
     }
-    
+
     await order.save();
 
     return res.status(200).json({
@@ -1007,7 +1008,7 @@ const cancelOrderItem = async (req, res) => {
     }
 
     // Find the order item
-    const orderItem = order.items.find(item => 
+    const orderItem = order.items.find(item =>
       item.product.toString() === productId && item.status === 'Active'
     );
 
@@ -1015,7 +1016,7 @@ const cancelOrderItem = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Item not found or already cancelled' });
     }
 
-    // Check if item can be cancelled based on order status
+    // Check if item can be cancelled based on order status - simplified
     const allowedStatuses = ['Placed', 'Processing'];
     if (!allowedStatuses.includes(order.orderStatus)) {
       return res.status(400).json({
@@ -1029,43 +1030,51 @@ const cancelOrderItem = async (req, res) => {
     orderItem.cancelledAt = new Date();
     orderItem.cancellationReason = reason;
 
-    // Update overall order status
+    // Update overall order status - simplified logic
     const hasActiveItems = order.items.some(item => item.status === 'Active');
-    const hasReturnedItems = order.items.some(item => item.status === 'Returned' || item.status === 'Return Requested');
-    const hasReturnRequestedItems = order.items.some(item => item.status === 'Return Requested');
 
     if (!hasActiveItems) {
-      if (hasReturnedItems || hasReturnRequestedItems) {
-        order.orderStatus = 'Partially Return Requested';
-      } else {
-        order.orderStatus = 'Cancelled';
-      }
-    } else {
-      if (hasReturnedItems || hasReturnRequestedItems) {
-        order.orderStatus = 'Partially Returned';
-      } else {
-        order.orderStatus = 'Partially Cancelled';
-      }
+      // All items are cancelled
+      order.orderStatus = 'Cancelled';
     }
-    
+    // If there are still active items, keep the current order status
+
     // Restore product stock
     await Product.findByIdAndUpdate(
       productId,
       { $inc: { stock: orderItem.quantity } }
     );
 
-    // Handle refund if payment was made
+    // Handle refund if payment was made - cancelled items should refund immediately
+    console.log('🔄 ATTEMPTING REFUND FOR CANCELLED ITEM:', {
+      orderId: order._id,
+      orderNumber: order.orderNumber,
+      itemId: orderItem._id,
+      itemTitle: orderItem.title,
+      paymentStatus: order.paymentStatus,
+      userId: userId
+    });
+
     if (order.paymentStatus === 'Paid') {
+      console.log('💰 Processing cancellation refund...');
       const refundSuccess = await processCancelRefund(userId, order, orderItem._id);
+      console.log('💰 Refund result:', refundSuccess);
+
       if (refundSuccess) {
         if (!hasActiveItems) {
           order.paymentStatus = 'Refunded';
+          console.log('✅ Order fully refunded');
         } else {
           order.paymentStatus = 'Partially Refunded';
+          console.log('✅ Order partially refunded');
         }
       } else {
-        order.paymentStatus = 'Refund Processing';
+        // For cancellations, if refund fails, log error but don't set "Refund Processing"
+        console.error(`❌ Failed to process refund for cancelled item ${orderItem._id} in order ${order._id}`);
+        // Keep the payment status as is and let the user contact support
       }
+    } else {
+      console.log('⚠️ Order payment status does not allow refunds:', order.paymentStatus);
     }
 
     await order.save();
@@ -1114,7 +1123,7 @@ const returnOrder = async (req, res) => {
     }
 
     // Check if order can be returned
-    if (order.orderStatus !== 'Delivered' && 
+    if (order.orderStatus !== 'Delivered' &&
         !order.orderStatus.includes('Partially')) {
       return res.status(400).json({
         success: false,
@@ -1125,7 +1134,7 @@ const returnOrder = async (req, res) => {
     // Check if return is within allowed time period (e.g., 7 days)
     const deliveredDate = order.deliveredAt || order.updatedAt;
     const returnPeriod = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
-    
+
     if (Date.now() - deliveredDate > returnPeriod) {
       return res.status(400).json({
         success: false,
@@ -1137,7 +1146,7 @@ const returnOrder = async (req, res) => {
     order.orderStatus = 'Return Requested';
     order.returnReason = reason;
     order.returnRequestedAt = new Date();
-    
+
     // Update all active items to Return Requested status
     let hasNonActiveItems = false;
     order.items.forEach(item => {
@@ -1154,7 +1163,7 @@ const returnOrder = async (req, res) => {
     if (hasNonActiveItems) {
       order.orderStatus = 'Partially Return Requested';
     }
-    
+
     await order.save();
 
     return res.status(200).json({
@@ -1200,9 +1209,8 @@ const returnOrderItem = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Order not found' });
     }
 
-    // Check if order can be returned
-    if (order.orderStatus !== 'Delivered' && 
-        !order.orderStatus.includes('Partially')) {
+    // Check if order can be returned - simplified
+    if (order.orderStatus !== 'Delivered') {
       return res.status(400).json({
         success: false,
         message: `Items in this order cannot be returned in ${order.orderStatus} status`
@@ -1212,7 +1220,7 @@ const returnOrderItem = async (req, res) => {
     // Check if return is within allowed time period (e.g., 7 days)
     const deliveredDate = order.deliveredAt || order.updatedAt;
     const returnPeriod = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
-    
+
     if (Date.now() - deliveredDate > returnPeriod) {
       return res.status(400).json({
         success: false,
@@ -1222,15 +1230,15 @@ const returnOrderItem = async (req, res) => {
 
     // Find the specific product in the order
     const orderItem = order.items.find(item => item.product.toString() === productId);
-    
+
     if (!orderItem) {
       return res.status(404).json({ success: false, message: 'Product not found in this order' });
     }
-    
+
     if (orderItem.status !== 'Active') {
-      return res.status(400).json({ 
-        success: false, 
-        message: `This item is already ${orderItem.status.toLowerCase()}` 
+      return res.status(400).json({
+        success: false,
+        message: `This item is already ${orderItem.status.toLowerCase()}`
       });
     }
 
@@ -1238,22 +1246,18 @@ const returnOrderItem = async (req, res) => {
     orderItem.status = 'Return Requested';
     orderItem.returnReason = reason;
     orderItem.returnRequestedAt = new Date();
-    
-    // Check item statuses to determine order status
+
+    // Check item statuses to determine order status - simplified
     const hasActiveItems = order.items.some(item => item.status === 'Active');
     const hasReturnRequestedItems = order.items.some(item => item.status === 'Return Requested');
-    const hasCancelledItems = order.items.some(item => item.status === 'Cancelled');
-    const hasReturnedItems = order.items.some(item => item.status === 'Returned');
-    
+
     // Update order status based on item statuses
     if (!hasActiveItems && hasReturnRequestedItems) {
       // If all items are in return requested state
       order.orderStatus = 'Return Requested';
-    } else if (hasReturnRequestedItems) {
-      // If some items are active/cancelled/returned and some are return requested
-      order.orderStatus = 'Partially Return Requested';
     }
-    
+    // If there are still active items, keep the order as delivered
+
     await order.save();
 
     return res.status(200).json({
@@ -1309,15 +1313,15 @@ const trackOrder = async (req, res) => {
       });
     }
 
-    if (['Processing', 'Shipped', 'Out for Delivery', 'Delivered', 'Partially Cancelled', 'Partially Returned'].includes(order.orderStatus)) {
+    if (['Processing', 'Shipped', 'Out for Delivery', 'Delivered'].includes(order.orderStatus)) {
       trackingInfo.timeline.push({
         status: 'Processing',
-        date: order.processingAt || new Date(order.createdAt.getTime() + 24 * 60 * 60 * 1000),
+        date: order.processedAt || new Date(order.createdAt.getTime() + 24 * 60 * 60 * 1000),
         description: 'Your order is being processed'
       });
     }
 
-    if (['Shipped', 'Out for Delivery', 'Delivered', 'Partially Returned'].includes(order.orderStatus)) {
+    if (['Shipped', 'Out for Delivery', 'Delivered'].includes(order.orderStatus)) {
       trackingInfo.timeline.push({
         status: 'Shipped',
         date: order.shippedAt || new Date(order.createdAt.getTime() + 2 * 24 * 60 * 60 * 1000),
@@ -1325,7 +1329,7 @@ const trackOrder = async (req, res) => {
       });
     }
 
-    if (['Out for Delivery', 'Delivered', 'Partially Returned'].includes(order.orderStatus)) {
+    if (['Out for Delivery', 'Delivered'].includes(order.orderStatus)) {
       trackingInfo.timeline.push({
         status: 'Out for Delivery',
         date: order.outForDeliveryAt || new Date(order.createdAt.getTime() + 4 * 24 * 60 * 60 * 1000),
@@ -1333,7 +1337,7 @@ const trackOrder = async (req, res) => {
       });
     }
 
-    if (['Delivered', 'Partially Returned'].includes(order.orderStatus)) {
+    if (order.orderStatus === 'Delivered') {
       trackingInfo.timeline.push({
         status: 'Delivered',
         date: order.deliveredAt || new Date(order.createdAt.getTime() + 5 * 24 * 60 * 60 * 1000),
@@ -1341,24 +1345,26 @@ const trackOrder = async (req, res) => {
       });
     }
 
-    if (order.orderStatus === 'Cancelled' || order.orderStatus === 'Partially Cancelled') {
+    if (order.orderStatus === 'Cancelled') {
       trackingInfo.timeline.push({
-        status: order.orderStatus,
+        status: 'Cancelled',
         date: order.cancelledAt || order.updatedAt,
-        description: `Order ${order.orderStatus.toLowerCase()}: ${order.cancellationReason || 'Customer request'}`
+        description: `Order cancelled: ${order.cancellationReason || 'Customer request'}`
       });
     }
 
-    if (order.orderStatus === 'Returned' || order.orderStatus === 'Partially Returned') {
+    if (order.orderStatus === 'Returned' || order.orderStatus === 'Return Requested') {
       trackingInfo.timeline.push({
         status: order.orderStatus,
-        date: order.returnedAt || order.updatedAt,
-        description: `Return ${order.orderStatus === 'Returned' ? 'processed' : 'requested'}: ${order.returnReason || 'Customer request'}`
+        date: order.returnedAt || order.returnRequestedAt || order.updatedAt,
+        description: order.orderStatus === 'Returned' ?
+          `Return processed: ${order.returnReason || 'Customer request'}` :
+          `Return requested: ${order.returnReason || 'Customer request'}`
       });
     }
 
     // Calculate estimated delivery date if not delivered yet
-    if (!['Delivered', 'Cancelled', 'Returned', 'Partially Returned'].includes(order.orderStatus)) {
+    if (!['Delivered', 'Cancelled', 'Returned', 'Return Requested'].includes(order.orderStatus)) {
       trackingInfo.estimatedDelivery = new Date(order.createdAt.getTime() + 5 * 24 * 60 * 60 * 1000);
     }
 
@@ -1434,17 +1440,17 @@ const reorder = async (req, res) => {
     for (const item of originalOrder.items) {
       // Only add active items or items from fully cancelled/returned orders
       const shouldAddItem = item.status === 'Active' || !originalOrder.items.some(i => i.status === 'Active');
-      
+
       if (shouldAddItem) {
         const product = await Product.findById(item.product).lean();
-        
+
         if (!product || !product.isListed || product.isDeleted) {
           continue; // Skip unavailable products
         }
 
         // Check stock availability
         const quantityToAdd = Math.min(item.quantity, product.stock);
-        
+
         if (quantityToAdd > 0) {
           // Add item to cart
           cart.items.push({
@@ -1455,7 +1461,7 @@ const reorder = async (req, res) => {
         }
       }
     }
-    
+
     // Save the updated cart
     await cart.save();
 

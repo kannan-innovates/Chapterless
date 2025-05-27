@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %> - Chapterless Admin</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.19/dist/sweetalert2.min.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Inter', sans-serif;
+    }
+
+    body {
+      background-color: #f9fafb;
+      color: #1f2937;
+    }
+
+    .container {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    .main-content {
+      flex: 1;
+      padding: 2rem;
+      margin-left: 250px;
+    }
+
+    .header {
+      background: white;
+      border-radius: 16px;
+      padding: 2rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .stat-card {
+      background: white;
+      border-radius: 16px;
+      padding: 1.5rem;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      border-left: 4px solid var(--primary-color);
+    }
+
+    .stat-value {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--primary-color);
+      margin-bottom: 0.5rem;
+    }
+
+    .stat-label {
+      color: #6c757d;
+      font-size: 0.9rem;
+      font-weight: 500;
+    }
+
+    .filter-section {
+      background: white;
+      border-radius: 16px;
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    }
+
+    .table-container {
+      background: white;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    }
+
+    .table {
+      margin-bottom: 0;
+    }
+
+    .table thead th {
+      background-color: #f8f9fa;
+      border: none;
+      font-weight: 600;
+      color: #495057;
+      padding: 1rem;
+    }
+
+    .table tbody td {
+      padding: 1rem;
+      border-color: #f1f3f4;
+      vertical-align: middle;
+    }
+
+    .status-badge {
+      padding: 0.5rem 1rem;
+      border-radius: 50px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .status-pending {
+      background-color: #fff3cd;
+      color: #856404;
+    }
+
+    .status-individual {
+      background-color: #d1ecf1;
+      color: #0c5460;
+    }
+
+    .btn-action {
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.2s ease;
+    }
+
+    .btn-view {
+      background-color: var(--primary-color);
+      color: white;
+    }
+
+    .btn-view:hover {
+      background-color: #5a32a3;
+      color: white;
+      transform: translateY(-1px);
+    }
+
+    .btn-approve {
+      background-color: var(--success-color);
+      color: white;
+    }
+
+    .btn-approve:hover {
+      background-color: #218838;
+      color: white;
+    }
+
+    .btn-reject {
+      background-color: var(--danger-color);
+      color: white;
+    }
+
+    .btn-reject:hover {
+      background-color: #c82333;
+      color: white;
+    }
+
+    .bulk-actions {
+      background: white;
+      border-radius: 16px;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      display: none;
+    }
+
+    .bulk-actions.show {
+      display: block;
+    }
+
+    .pagination-container {
+      background: white;
+      border-radius: 16px;
+      padding: 1.5rem;
+      margin-top: 2rem;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    }
+
+    .page-btn {
+      padding: 0.5rem 1rem;
+      margin: 0 0.25rem;
+      border-radius: 8px;
+      text-decoration: none;
+      color: #6c757d;
+      border: 1px solid #dee2e6;
+      transition: all 0.2s ease;
+    }
+
+    .page-btn:hover, .page-btn.active {
+      background-color: var(--primary-color);
+      color: white;
+      border-color: var(--primary-color);
+    }
+
+    .return-info {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .return-count {
+      font-size: 0.85rem;
+      color: #6c757d;
+    }
+
+    .return-type {
+      font-size: 0.75rem;
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      background-color: #e9ecef;
+      color: #495057;
+      width: fit-content;
+    }
+  </style>
+</head>
+<body>
+  <!-- Sidebar -->
+  <%- include('../partials/admin/sidebar') %>
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <!-- Header -->
+    <div class="header">
+      <div>
+        <h1 style="font-size: 42px; font-weight: 700; color: #1f2937; margin-bottom: 8px; line-height: 1.2;">
+          <%= title %>
+        </h1>
+        <p style="font-size: 20px; color: #6b7280; font-weight: 400; margin-top: 0;">
+          Manage customer return requests efficiently
+        </p>
+      </div>
+      <div class="d-flex gap-2">
+        <button class="btn btn-outline-primary" onclick="refreshData()">
+          <i class="ri-refresh-line"></i> Refresh
+        </button>
+        <a href="/admin/getOrders" class="btn btn-outline-secondary">
+          <i class="ri-arrow-left-line"></i> Back to Orders
+        </a>
+      </div>
+    </div>
+
+    <!-- Error Message -->
+    <% if (typeof errorMessage !== 'undefined' && errorMessage) { %>
+      <div class="alert alert-warning alert-dismissible fade show" role="alert">
+        <i class="ri-information-line"></i>
+        <%= errorMessage %>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    <% } %>
+
+    <!-- Stats -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-value"><%= totalReturnRequests %></div>
+        <div class="stat-label">Total Return Requests</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">
+          <%= orders.filter(o => o.hasIndividualReturns).length %>
+        </div>
+        <div class="stat-label">Individual Item Returns</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">
+          <%= orders.filter(o => o.hasFullOrderReturn).length %>
+        </div>
+        <div class="stat-label">Full Order Returns</div>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filter-section">
+      <form method="GET" class="row g-3">
+        <div class="col-md-4">
+          <label class="form-label">Return Type</label>
+          <select name="status" class="form-select">
+            <option value="">All Returns</option>
+            <option value="pending" <%= filters.status === 'pending' ? 'selected' : '' %>>Full Order Returns</option>
+            <option value="individual" <%= filters.status === 'individual' ? 'selected' : '' %>>Individual Item Returns</option>
+          </select>
+        </div>
+        <div class="col-md-4 d-flex align-items-end">
+          <button type="submit" class="btn btn-primary me-2">
+            <i class="ri-search-line"></i> Filter
+          </button>
+          <a href="/admin/return-management" class="btn btn-outline-secondary">
+            <i class="ri-refresh-line"></i> Clear
+          </a>
+        </div>
+      </form>
+    </div>
+
+    <!-- Bulk Actions -->
+    <div class="bulk-actions" id="bulkActions">
+      <div class="d-flex justify-content-between align-items-center">
+        <span id="selectedCount">0 orders selected</span>
+        <div class="d-flex gap-2">
+          <button class="btn btn-success btn-sm" onclick="bulkApprove()">
+            <i class="ri-check-line"></i> Approve Selected
+          </button>
+          <button class="btn btn-danger btn-sm" onclick="bulkReject()">
+            <i class="ri-close-line"></i> Reject Selected
+          </button>
+          <button class="btn btn-outline-secondary btn-sm" onclick="clearSelection()">
+            Clear Selection
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Orders Table -->
+    <div class="table-container">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>
+              <input type="checkbox" id="selectAll" onchange="toggleSelectAll()">
+            </th>
+            <th>Order Details</th>
+            <th>Customer</th>
+            <th>Return Info</th>
+            <th>Order Date</th>
+            <th>Total Amount</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (orders && orders.length > 0) { %>
+            <% orders.forEach(order => { %>
+              <tr>
+                <td>
+                  <input type="checkbox" class="order-checkbox" value="<%= order._id %>" onchange="updateSelection()">
+                </td>
+                <td>
+                  <div>
+                    <strong>#<%= order.orderNumber %></strong>
+                    <div class="return-info">
+                      <span class="status-badge <%= order.hasFullOrderReturn ? 'status-pending' : 'status-individual' %>">
+                        <%= order.hasFullOrderReturn ? 'Full Return' : 'Item Return' %>
+                      </span>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <div>
+                    <strong><%= order.customerName %></strong>
+                    <div class="text-muted small"><%= order.customerEmail %></div>
+                  </div>
+                </td>
+                <td>
+                  <div class="return-info">
+                    <span class="return-count">
+                      <%= order.returnRequestCount %> item(s) requested
+                    </span>
+                    <span class="return-type">
+                      <%= order.hasFullOrderReturn ? 'Full Order' : 'Individual Items' %>
+                    </span>
+                  </div>
+                </td>
+                <td><%= order.formattedDate %></td>
+                <td><%= order.formattedTotal %></td>
+                <td>
+                  <div class="d-flex gap-1">
+                    <a href="/admin/return-management/<%= order._id %>" class="btn-action btn-view">
+                      <i class="ri-eye-line"></i> View Details
+                    </a>
+                  </div>
+                </td>
+              </tr>
+            <% }) %>
+          <% } else { %>
+            <tr>
+              <td colspan="7" class="text-center py-4">
+                <i class="ri-inbox-line" style="font-size: 3rem; color: #dee2e6;"></i>
+                <div class="mt-2">No return requests found</div>
+              </td>
+            </tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    <% if (pagination.totalPages > 1) { %>
+      <div class="pagination-container">
+        <div class="d-flex justify-content-center align-items-center">
+          <% if (pagination.hasPrev) { %>
+            <a href="?page=<%= pagination.prevPage %>&status=<%= filters.status %>" class="page-btn">
+              <i class="ri-arrow-left-line"></i> Previous
+            </a>
+          <% } %>
+
+          <% pagination.pages.forEach(pageNum => { %>
+            <a href="?page=<%= pageNum %>&status=<%= filters.status %>"
+               class="page-btn <%= pagination.currentPage === pageNum ? 'active' : '' %>">
+              <%= pageNum %>
+            </a>
+          <% }) %>
+
+          <% if (pagination.hasNext) { %>
+            <a href="?page=<%= pagination.nextPage %>&status=<%= filters.status %>" class="page-btn">
+              Next <i class="ri-arrow-right-line"></i>
+            </a>
+          <% } %>
+        </div>
+      </div>
+    <% } %>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script>
+    let selectedOrders = [];
+
+    function toggleSelectAll() {
+      const selectAll = document.getElementById('selectAll');
+      const checkboxes = document.querySelectorAll('.order-checkbox');
+
+      checkboxes.forEach(checkbox => {
+        checkbox.checked = selectAll.checked;
+      });
+
+      updateSelection();
+    }
+
+    function updateSelection() {
+      const checkboxes = document.querySelectorAll('.order-checkbox:checked');
+      selectedOrders = Array.from(checkboxes).map(cb => cb.value);
+
+      const bulkActions = document.getElementById('bulkActions');
+      const selectedCount = document.getElementById('selectedCount');
+
+      if (selectedOrders.length > 0) {
+        bulkActions.classList.add('show');
+        selectedCount.textContent = `${selectedOrders.length} order(s) selected`;
+      } else {
+        bulkActions.classList.remove('show');
+      }
+
+      // Update select all checkbox
+      const allCheckboxes = document.querySelectorAll('.order-checkbox');
+      const selectAll = document.getElementById('selectAll');
+      selectAll.checked = selectedOrders.length === allCheckboxes.length;
+      selectAll.indeterminate = selectedOrders.length > 0 && selectedOrders.length < allCheckboxes.length;
+    }
+
+    function clearSelection() {
+      document.querySelectorAll('.order-checkbox').forEach(cb => cb.checked = false);
+      document.getElementById('selectAll').checked = false;
+      updateSelection();
+    }
+
+    function bulkApprove() {
+      if (selectedOrders.length === 0) return;
+
+      Swal.fire({
+        title: 'Approve Returns',
+        text: `Are you sure you want to approve ${selectedOrders.length} return request(s)?`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#28a745',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Yes, approve them!'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          processBulkAction('approve');
+        }
+      });
+    }
+
+    function bulkReject() {
+      if (selectedOrders.length === 0) return;
+
+      Swal.fire({
+        title: 'Reject Returns',
+        text: `Are you sure you want to reject ${selectedOrders.length} return request(s)?`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Yes, reject them!'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          processBulkAction('reject');
+        }
+      });
+    }
+
+    function processBulkAction(action) {
+      fetch('/admin/return-management/bulk-process', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          orderIds: selectedOrders,
+          action: action
+        })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          Swal.fire({
+            title: 'Success!',
+            text: data.message,
+            icon: 'success',
+            confirmButtonColor: '#6f42c1'
+          }).then(() => {
+            window.location.reload();
+          });
+        } else {
+          Swal.fire({
+            title: 'Error!',
+            text: data.message,
+            icon: 'error',
+            confirmButtonColor: '#6f42c1'
+          });
+        }
+      })
+      .catch(error => {
+        Swal.fire({
+          title: 'Error!',
+          text: 'An error occurred while processing the request',
+          icon: 'error',
+          confirmButtonColor: '#6f42c1'
+        });
+      });
+    }
+
+    function refreshData() {
+      window.location.reload();
+    }
+  </script>
+</body>
+</html>

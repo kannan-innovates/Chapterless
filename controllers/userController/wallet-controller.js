@@ -11,7 +11,7 @@ const getWallet = async (req, res) => {
 
     // Get wallet with transactions
     const wallet = await Wallet.findOne({ userId }).sort({ 'transactions.date': -1 });
-    
+
     // Format transactions for display
     const formattedWallet = {
       balance: wallet ? wallet.balance : 0,
@@ -29,7 +29,7 @@ const getWallet = async (req, res) => {
         orderId: transaction.orderId
       })) : []
     };
-    
+
     res.render('wallet', {
       wallet: formattedWallet
     });
@@ -72,9 +72,9 @@ const calculateItemRefundAmount = (item, order) => {
 
       // Calculate tax proportion
       let taxAmount = 0;
-      if (order.tax && order.totalAmount) {
+      if (order.tax && order.total) {
         // Calculate tax proportion based on this item's contribution to total
-        const itemContribution = baseAmount / (order.totalAmount - order.tax);
+        const itemContribution = baseAmount / (order.total - order.tax);
         taxAmount = order.tax * itemContribution;
       }
 
@@ -90,17 +90,17 @@ const calculateItemRefundAmount = (item, order) => {
 
       return Number(totalRefund.toFixed(2));
     }
-    
+
     // Case 2: Use discountedPrice as fallback
     else if (typeof item.discountedPrice === 'number') {
       const baseAmount = item.discountedPrice * quantity;
       let taxAmount = 0;
-      
-      if (order.tax && order.totalAmount) {
-        const itemContribution = baseAmount / (order.totalAmount - order.tax);
+
+      if (order.tax && order.total) {
+        const itemContribution = baseAmount / (order.total - order.tax);
         taxAmount = order.tax * itemContribution;
       }
-      
+
       const totalRefund = baseAmount + taxAmount;
 
       console.log('Using discountedPrice for refund:', {
@@ -113,17 +113,17 @@ const calculateItemRefundAmount = (item, order) => {
 
       return Number(totalRefund.toFixed(2));
     }
-    
+
     // Case 3: Use original price as last resort
     else if (typeof item.price === 'number') {
       const baseAmount = item.price * quantity;
       let taxAmount = 0;
-      
-      if (order.tax && order.totalAmount) {
-        const itemContribution = baseAmount / (order.totalAmount - order.tax);
+
+      if (order.tax && order.total) {
+        const itemContribution = baseAmount / (order.total - order.tax);
         taxAmount = order.tax * itemContribution;
       }
-      
+
       const totalRefund = baseAmount + taxAmount;
 
       console.log('Using original price for refund:', {
@@ -153,7 +153,7 @@ const processCancelRefund = async (userId, order, itemId = null) => {
       orderId: order._id,
       itemId,
       orderStatus: order.orderStatus,
-      totalAmount: order.totalAmount,
+      total: order.total,
       tax: order.tax
     });
 
@@ -165,10 +165,10 @@ const processCancelRefund = async (userId, order, itemId = null) => {
     // Get existing wallet to check for previous refunds
     const existingWallet = await Wallet.findOne({ userId });
     const previouslyRefundedItems = new Set();
-    
+
     if (existingWallet && existingWallet.transactions) {
       existingWallet.transactions.forEach(txn => {
-        if (txn.orderId.toString() === order._id.toString() && txn.refundedItems) {
+        if (txn.orderId && txn.orderId.toString() === order._id.toString() && txn.refundedItems) {
           txn.refundedItems.forEach(refItemId => previouslyRefundedItems.add(refItemId.toString()));
         }
       });
@@ -197,7 +197,7 @@ const processCancelRefund = async (userId, order, itemId = null) => {
       refundedItemsForThisTransaction = [item.product];
     } else {
       // Full/partial order cancellation
-      const cancelledItems = order.items.filter(item => 
+      const cancelledItems = order.items.filter(item =>
         item.status === 'Cancelled' && !previouslyRefundedItems.has(item.product.toString())
       );
 
@@ -219,9 +219,44 @@ const processCancelRefund = async (userId, order, itemId = null) => {
 
     // Process wallet update if there's an amount to refund
     if (refundAmount > 0) {
-      let wallet = existingWallet || new Wallet({ userId, balance: 0, transactions: [] });
-      
+      let wallet = existingWallet;
+
+      // If no existing wallet, create a new one with proper userId
+      if (!wallet) {
+        // Validate userId before creating wallet
+        if (!userId) {
+          console.error('Cannot create wallet: userId is null or undefined');
+          return false;
+        }
+
+        // Check if there's a corrupted wallet with null userId that needs cleanup
+        try {
+          const corruptedWallet = await Wallet.findOne({
+            $or: [
+              { userId: null },
+              { userId: { $exists: false } },
+              { user: { $exists: true } } // Check for old 'user' field
+            ]
+          });
+
+          if (corruptedWallet) {
+            console.log('Found corrupted wallet, cleaning up:', corruptedWallet._id);
+            await Wallet.deleteOne({ _id: corruptedWallet._id });
+          }
+        } catch (cleanupError) {
+          console.error('Error during wallet cleanup:', cleanupError);
+        }
+
+        wallet = new Wallet({
+          userId: userId,
+          balance: 0,
+          transactions: []
+        });
+      }
+
       console.log('Processing refund:', {
+        walletExists: !!existingWallet,
+        userId: userId,
         currentBalance: wallet.balance,
         refundAmount,
         reason: refundReason,
@@ -230,14 +265,14 @@ const processCancelRefund = async (userId, order, itemId = null) => {
 
       // Ensure refundAmount is a valid number
       refundAmount = Number(refundAmount.toFixed(2));
-      
+
       if (isNaN(refundAmount)) {
         console.error('Invalid refund amount calculated');
         return false;
       }
 
       wallet.balance = Number(wallet.balance) + refundAmount;
-      
+
       wallet.transactions.push({
         type: 'credit',
         amount: refundAmount,
@@ -247,10 +282,52 @@ const processCancelRefund = async (userId, order, itemId = null) => {
         date: new Date()
       });
 
-      await wallet.save();
-      console.log('Refund processed successfully:', {
+      console.log('About to save wallet with transaction:', {
+        walletId: wallet._id,
+        userId: wallet.userId,
+        oldBalance: wallet.balance - refundAmount,
         newBalance: wallet.balance,
-        refundAmount
+        refundAmount,
+        transactionCount: wallet.transactions.length
+      });
+
+      // Ensure userId is set before saving
+      if (!wallet.userId) {
+        wallet.userId = userId;
+      }
+
+      try {
+        await wallet.save();
+      } catch (saveError) {
+        if (saveError.code === 11000) {
+          console.error('Duplicate key error when saving wallet. Attempting to find existing wallet...');
+
+          // Try to find existing wallet and update it instead
+          const existingWalletRetry = await Wallet.findOne({ userId: userId });
+          if (existingWalletRetry) {
+            console.log('Found existing wallet, updating it instead');
+            existingWalletRetry.balance = Number(existingWalletRetry.balance) + refundAmount;
+            existingWalletRetry.transactions.push({
+              type: 'credit',
+              amount: refundAmount,
+              orderId: order._id,
+              reason: refundReason,
+              refundedItems: refundedItemsForThisTransaction,
+              date: new Date()
+            });
+            await existingWalletRetry.save();
+            wallet = existingWalletRetry;
+          } else {
+            throw saveError; // Re-throw if we can't find existing wallet
+          }
+        } else {
+          throw saveError; // Re-throw non-duplicate key errors
+        }
+      }
+      console.log('Refund processed successfully and saved to database:', {
+        newBalance: wallet.balance,
+        refundAmount,
+        walletId: wallet._id
       });
       return true;
     }
@@ -277,16 +354,28 @@ const processReturnRefund = async (userId, order, itemId = null) => {
       return false;
     }
 
+    // Only process refunds for paid orders (including partially refunded ones)
+    if (order.paymentStatus !== 'Paid' && order.paymentStatus !== 'Partially Refunded') {
+      console.log('Order payment status does not allow refunds, skipping refund:', order.paymentStatus);
+      return true; // Return true as this is not an error condition
+    }
+
     let refundAmount = 0;
     let refundReason = '';
     let refundedItemsForThisTransaction = [];
 
+    // Validate userId
+    if (!userId) {
+      console.error('Invalid userId provided to processCancelRefund');
+      return false;
+    }
+
     // Get existing wallet to check for previous refunds
-    const existingWallet = await Wallet.findOne({ userId });
+    const existingWallet = await Wallet.findOne({ userId: userId });
     const previouslyRefundedItems = new Set();
     if (existingWallet && existingWallet.transactions) {
       existingWallet.transactions.forEach(txn => {
-        if (txn.orderId.toString() === order._id.toString() && txn.refundedItems) {
+        if (txn.orderId && txn.orderId.toString() === order._id.toString() && txn.refundedItems) {
           txn.refundedItems.forEach(refItemId => previouslyRefundedItems.add(refItemId.toString()));
         }
       });
@@ -317,22 +406,74 @@ const processReturnRefund = async (userId, order, itemId = null) => {
       const returnedItems = order.items.filter(item =>
         item.status === 'Returned' && !previouslyRefundedItems.has(item.product.toString())
       );
+
+      console.log('Return refund analysis:', {
+        totalItems: order.items.length,
+        returnedItems: returnedItems.length,
+        itemStatuses: order.items.map(item => ({ id: item._id, status: item.status, title: item.title })),
+        previouslyRefundedItems: Array.from(previouslyRefundedItems)
+      });
+
       if (returnedItems.length === 0) {
         console.warn(`No new items to refund in order ${order._id}`);
         return true;
       }
+
       refundAmount = returnedItems.reduce((total, item) => {
-        return total + calculateItemRefundAmount(item, order);
+        const itemRefund = calculateItemRefundAmount(item, order);
+        console.log(`Item refund calculation for ${item.title}:`, itemRefund);
+        return total + itemRefund;
       }, 0);
+
       refundReason = returnedItems.length === 1
         ? `Refund for returned item: ${returnedItems[0].title} from order #${order.orderNumber}`
         : `Refund for returned items in order #${order.orderNumber}`;
       refundedItemsForThisTransaction = returnedItems.map(item => item.product);
     }
 
+    console.log('Refund calculation complete:', {
+      refundAmount,
+      refundReason,
+      itemsToRefund: refundedItemsForThisTransaction.length
+    });
+
     // Process wallet update if there's an amount to refund
     if (refundAmount > 0) {
-      let wallet = existingWallet || new Wallet({ userId, balance: 0, transactions: [] });
+      let wallet = existingWallet;
+
+      // If no existing wallet, create a new one with proper userId
+      if (!wallet) {
+        // Validate userId before creating wallet
+        if (!userId) {
+          console.error('Cannot create wallet: userId is null or undefined');
+          return false;
+        }
+
+        // Check if there's a corrupted wallet with null userId that needs cleanup
+        try {
+          const corruptedWallet = await Wallet.findOne({
+            $or: [
+              { userId: null },
+              { userId: { $exists: false } },
+              { user: { $exists: true } } // Check for old 'user' field
+            ]
+          });
+
+          if (corruptedWallet) {
+            console.log('Found corrupted wallet, cleaning up:', corruptedWallet._id);
+            await Wallet.deleteOne({ _id: corruptedWallet._id });
+          }
+        } catch (cleanupError) {
+          console.error('Error during wallet cleanup:', cleanupError);
+        }
+
+        wallet = new Wallet({
+          userId: userId,
+          balance: 0,
+          transactions: []
+        });
+      }
+
       refundAmount = Number(refundAmount.toFixed(2));
       wallet.balance = Number(wallet.balance) + refundAmount;
       wallet.transactions.push({
@@ -343,7 +484,54 @@ const processReturnRefund = async (userId, order, itemId = null) => {
         refundedItems: refundedItemsForThisTransaction,
         date: new Date()
       });
-      await wallet.save();
+
+      console.log('About to save return refund wallet with transaction:', {
+        walletId: wallet._id,
+        userId: wallet.userId,
+        oldBalance: wallet.balance - refundAmount,
+        newBalance: wallet.balance,
+        refundAmount,
+        transactionCount: wallet.transactions.length
+      });
+
+      // Ensure userId is set before saving
+      if (!wallet.userId) {
+        wallet.userId = userId;
+      }
+
+      try {
+        await wallet.save();
+      } catch (saveError) {
+        if (saveError.code === 11000) {
+          console.error('Duplicate key error when saving wallet. Attempting to find existing wallet...');
+
+          // Try to find existing wallet and update it instead
+          const existingWalletRetry = await Wallet.findOne({ userId: userId });
+          if (existingWalletRetry) {
+            console.log('Found existing wallet, updating it instead');
+            existingWalletRetry.balance = Number(existingWalletRetry.balance) + refundAmount;
+            existingWalletRetry.transactions.push({
+              type: 'credit',
+              amount: refundAmount,
+              orderId: order._id,
+              reason: refundReason,
+              refundedItems: refundedItemsForThisTransaction,
+              date: new Date()
+            });
+            await existingWalletRetry.save();
+            wallet = existingWalletRetry;
+          } else {
+            throw saveError; // Re-throw if we can't find existing wallet
+          }
+        } else {
+          throw saveError; // Re-throw non-duplicate key errors
+        }
+      }
+      console.log('Return refund processed successfully and saved to database:', {
+        newBalance: wallet.balance,
+        refundAmount,
+        walletId: wallet._id
+      });
       return true;
     }
     return refundedItemsForThisTransaction.length === 0;

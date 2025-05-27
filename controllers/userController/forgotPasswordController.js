@@ -33,7 +33,7 @@ const postForgotPassword = async (req, res) => {
       Math.floor(100000 + Math.random() * 900000).toString();
 
     const otp = otpGenerator();
-    console.log(otp);
+ 
 
     // Delete any existing OTP docs for this email and purpose
     await OTP.deleteMany({ email, purpose: 'password-reset' });
@@ -45,6 +45,7 @@ const postForgotPassword = async (req, res) => {
       purpose: 'password-reset',
       createdAt: new Date() // Will expire in 5 minutes by default
     });
+    console.log(otp)
     
     await otpDoc.save();
 

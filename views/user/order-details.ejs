@@ -156,16 +156,16 @@
     .order-item {
       flex-direction: column;
     }
-    
+
     .order-item-image {
       margin-bottom: 1rem;
       max-width: 100px;
     }
-    
+
     .summary-section {
       flex-direction: column;
     }
-    
+
     .info-container {
       margin-bottom: 1.5rem;
     }
@@ -176,28 +176,28 @@
     top: 20px;
     height: fit-content;
   }
-  
+
   .info-title {
     font-size: 0.875rem;
     color: #6c757d;
     margin-bottom: 0.25rem;
   }
-  
+
   .info-value {
     font-weight: 500;
     margin-bottom: 0;
   }
-  
+
   .price-summary dt {
     font-weight: normal;
     color: #6c757d;
   }
-  
+
   .price-summary dd {
     font-weight: 500;
     text-align: right;
   }
-  
+
   .total-row {
     border-top: 1px solid #dee2e6;
     font-weight: 600;
@@ -268,7 +268,7 @@
     border-color: #86b7fe;
     box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
   }
-  
+
   /* Toast notification styles */
   .toast-container {
     position: fixed;
@@ -276,45 +276,62 @@
     right: 20px;
     z-index: 9999;
   }
-  
+
   .toast {
     min-width: 300px;
   }
-  
+
   .toast-success {
     background-color: #d1e7dd;
     color: #0f5132;
     border-color: #badbcc;
   }
-  
+
   .toast-error {
     background-color: #f8d7da;
     color: #842029;
     border-color: #f5c2c7;
   }
-  
+
   .toast-warning {
     background-color: #fff3cd;
     color: #664d03;
     border-color: #ffecb5;
   }
-  
+
   .toast-info {
     background-color: #cff4fc;
     color: #055160;
     border-color: #b6effb;
   }
+
+  /* Item status display */
+  .item-status-info {
+    padding: 1rem;
+    background-color: #f8f9fa;
+    border-radius: 0.5rem;
+    border-left: 4px solid #6f42c1;
+  }
+
+  .status-display .badge {
+    font-size: 0.875rem;
+    padding: 0.5rem 0.75rem;
+  }
+
+  .status-display .badge i {
+    margin-right: 0.25rem;
+  }
 </style>
 
 <div class="container py-4">
   <div class="row">
-    <%- include("../partials/user/accountSidebar", { user: { 
+    <%- include("../partials/user/accountSidebar", { user: {
       id: user.id,
       fullName: user.fullName,
       email: user.email,
       profileImage: user.profileImage
     } }) %>
-    
+
     <!-- Main Content -->
     <div class="col-lg-9">
       <!-- Order Details Header -->
@@ -326,7 +343,7 @@
         </div>
         <h2 class="fs-4 fw-bold mb-0">Order Details</h2>
       </div>
-      
+
       <!-- Order Status Card -->
       <div class="order-card mb-4">
         <div class="order-header d-flex justify-content-between align-items-center p-3">
@@ -359,11 +376,11 @@
           </div>
         </div>
       </div>
-      
+
       <!-- Order Timeline -->
       <div class="order-card mb-4">
         <div class="card-body p-4">
-          <h5 class="fw-bold mb-3">Order Status</h5>
+          <h5 class="fw-bold mb-3">Order Status Timeline</h5>
           <div class="order-timeline">
             <% timeline.forEach(item => { %>
               <div class="timeline-item <%= item.completed ? 'completed' : item.active ? 'active' : item.cancelled ? 'cancelled' : item.returned ? 'returned' : item.return_requested ? 'return-requested' : 'pending' %>">
@@ -374,18 +391,18 @@
           </div>
         </div>
       </div>
-      
+
       <!-- Order Items -->
       <div class="order-card mb-4">
         <div class="card-body p-4">
           <h5 class="fw-bold mb-3">Items in Your Order</h5>
-          
+
           <% order.items.forEach(item => { %>
             <div class="d-flex mb-4 order-item">
               <div class="order-item-image me-3">
-                <img 
-                  src="<%= item.image || 'https://via.placeholder.com/120x160' %>" 
-                  alt="<%= item.title || 'Product' %>" 
+                <img
+                  src="<%= item.image || 'https://via.placeholder.com/120x160' %>"
+                  alt="<%= item.title || 'Product' %>"
                   class="img-fluid rounded"
                   onerror="this.src='https://via.placeholder.com/120x160'"
                 >
@@ -440,30 +457,101 @@
                   </p>
                 <% } %>
                 <p class="mb-2">Qty: <%= item.quantity || 1 %></p>
-                <div class="d-flex flex-wrap gap-2">
-                  <% if (item.canBeCancelled) { %>
-                    <button 
-                      class="btn btn-outline-danger btn-sm" 
-                      data-bs-toggle="modal" 
-                      data-bs-target="#cancelItemModal<%= item.product._id || item.product %>"
-                    >
-                      Cancel Item
-                    </button>
-                  <% } %>
-                  
-                  <% if (item.canBeReturned) { %>
-                    <button 
-                      class="btn btn-outline-danger btn-sm" 
-                      data-bs-toggle="modal" 
-                      data-bs-target="#returnItemModal<%= item.product._id || item.product %>"
-                    >
-                      Return Item
-                    </button>
-                  <% } %>
-                  
-                  <% if (order.orderStatus === 'Delivered' && item.status === 'Active') { %>
-                    <a href="#" class="btn btn-outline-dark btn-sm">Write a Review</a>
-                    <a href="#" class="btn btn-outline-dark btn-sm" onclick="reorder('<%= order._id %>')">Buy Again</a>
+
+                <!-- Individual Item Status -->
+                <div class="item-status-info mb-3">
+                  <h6 class="fw-semibold mb-2">Item Status:</h6>
+                  <div class="status-display">
+                    <% if (item.status === 'Active') { %>
+                      <% if (order.orderStatus === 'Delivered') { %>
+                        <span class="badge bg-success">
+                          <i class="ri-check-line"></i> Delivered
+                        </span>
+                      <% } else if (order.orderStatus === 'Shipped') { %>
+                        <span class="badge bg-info">
+                          <i class="ri-truck-line"></i> Shipped
+                        </span>
+                      <% } else if (order.orderStatus === 'Processing') { %>
+                        <span class="badge bg-warning">
+                          <i class="ri-time-line"></i> Processing
+                        </span>
+                      <% } else { %>
+                        <span class="badge bg-secondary">
+                          <i class="ri-shopping-bag-line"></i> Placed
+                        </span>
+                      <% } %>
+                    <% } else if (item.status === 'Cancelled') { %>
+                      <span class="badge bg-danger">
+                        <i class="ri-close-line"></i> Cancelled
+                      </span>
+                      <% if (item.cancelledAt) { %>
+                        <small class="text-muted d-block mt-1">
+                          Cancelled on <%= new Date(item.cancelledAt).toLocaleDateString() %>
+                        </small>
+                      <% } %>
+                    <% } else if (item.status === 'Returned') { %>
+                      <span class="badge bg-warning">
+                        <i class="ri-arrow-go-back-line"></i> Returned
+                      </span>
+                      <% if (item.returnedAt) { %>
+                        <small class="text-muted d-block mt-1">
+                          Returned on <%= new Date(item.returnedAt).toLocaleDateString() %>
+                        </small>
+                      <% } %>
+                    <% } else if (item.status === 'Return Requested') { %>
+                      <span class="badge bg-info">
+                        <i class="ri-question-line"></i> Return Requested
+                      </span>
+                      <small class="text-muted d-block mt-1">
+                        Awaiting admin approval
+                      </small>
+                    <% } %>
+                  </div>
+                </div>
+
+                <div class="d-flex flex-wrap gap-2 mt-2">
+                  <% if (item.status === 'Active') { %>
+                    <% if (item.canBeCancelled) { %>
+                      <button
+                        class="btn btn-outline-danger btn-sm"
+                        data-bs-toggle="modal"
+                        data-bs-target="#cancelItemModal<%= item.product._id || item.product %>"
+                      >
+                        <i class="ri-close-line"></i> Cancel Item
+                      </button>
+                    <% } %>
+
+                    <% if (item.canBeReturned) { %>
+                      <button
+                        class="btn btn-outline-warning btn-sm"
+                        data-bs-toggle="modal"
+                        data-bs-target="#returnItemModal<%= item.product._id || item.product %>"
+                      >
+                        <i class="ri-arrow-go-back-line"></i> Return Item
+                      </button>
+                    <% } %>
+
+                    <% if (order.orderStatus === 'Delivered') { %>
+                      <a href="#" class="btn btn-outline-dark btn-sm">
+                        <i class="ri-star-line"></i> Write Review
+                      </a>
+                      <a href="#" class="btn btn-outline-primary btn-sm" onclick="reorder('<%= order._id %>')">
+                        <i class="ri-shopping-cart-line"></i> Buy Again
+                      </a>
+                    <% } %>
+                  <% } else if (item.status === 'Cancelled') { %>
+                    <span class="badge bg-danger">Cancelled</span>
+                    <% if (item.cancellationReason) { %>
+                      <small class="text-muted">Reason: <%= item.cancellationReason %></small>
+                    <% } %>
+                  <% } else if (item.status === 'Returned') { %>
+                    <span class="badge bg-warning">Returned</span>
+                    <% if (item.returnReason) { %>
+                      <small class="text-muted">Reason: <%= item.returnReason %></small>
+                    <% } %>
+                  <% } else if (item.status === 'Return Requested') { %>
+                    <span class="badge bg-info">Return Requested</span>
+                    <small class="text-muted">Awaiting admin approval</small>
                   <% } %>
                 </div>
               </div>
@@ -483,7 +571,7 @@
                       <p><strong><%= item.title %></strong></p>
                       <p>Quantity: <%= item.quantity %></p>
                       <p>Price: <%= item.formattedFinalPrice %></p>
-                      
+
                       <form id="cancelItemForm<%= item.product._id || item.product %>">
                         <div class="mb-3">
                           <label for="cancelItemReason<%= item.product._id || item.product %>" class="form-label">Reason for Cancellation</label>
@@ -525,7 +613,7 @@
                       <p><strong><%= item.title %></strong></p>
                       <p>Quantity: <%= item.quantity %></p>
                       <p>Price: <%= item.formattedFinalPrice %></p>
-                      
+
                       <form id="returnItemForm<%= item.product._id || item.product %>">
                         <div class="mb-3">
                           <label for="returnItemReason<%= item.product._id || item.product %>" class="form-label">Reason for Return</label>
@@ -555,7 +643,7 @@
           <% }) %>
         </div>
       </div>
-      
+
       <!-- Order Summary and Shipping Info -->
       <div class="row g-4">
         <!-- Shipping and Billing -->
@@ -574,7 +662,7 @@
                   <p class="mb-1"><%= order.shippingAddress.district || '' %>, <%= order.shippingAddress.state || '' %> <%= order.shippingAddress.pincode || '' %></p>
                   <p class="mb-0"><span class="text-muted">Phone:</span> <%= order.shippingAddress.phone || 'N/A' %></p>
                 </div>
-                
+
                 <!-- Billing Information -->
                 <div class="info-container">
                   <h5 class="fw-bold mb-3">Payment Method</h5>
@@ -586,7 +674,7 @@
                       <p class="mb-0 fw-medium"><%= order.paymentMethod || 'Cash on Delivery' %></p>
                     </div>
                   </div>
-                  
+
                   <h5 class="fw-bold mb-3">Billing Address</h5>
                   <p class="fw-medium mb-1"><%= order.shippingAddress.fullName || 'N/A' %></p>
                   <p class="mb-1"><%= order.shippingAddress.street || '' %></p>
@@ -599,66 +687,66 @@
             </div>
           </div>
         </div>
-        
+
        <!-- Order Summary -->
       <div class="col-md-5">
         <div class="order-card h-100">
           <div class="card-body p-4">
             <h5 class="fw-bold mb-3">Order Summary</h5>
-            
+
             <dl class="row price-summary">
               <dt class="col-7">Items (<%= order.items.length %>):</dt>
               <dd class="col-5"><%= order.formattedSubtotal %></dd>
-              
+
               <% if (order.discount && order.discount > 0) { %>
               <dt class="col-7">Offer Discount:</dt>
               <dd class="col-5 text-success">-<%= order.formattedDiscount %></dd>
               <% } %>
-              
+
               <% if (order.couponDiscount && order.couponDiscount > 0) { %>
               <dt class="col-7">Coupon Discount<%= order.couponCode ? ` (${order.couponCode})` : '' %>:</dt>
               <dd class="col-5 text-success">-<%= order.formattedCouponDiscount %></dd>
               <% } %>
-              
+
               <dt class="col-7">Tax:</dt>
               <dd class="col-5"><%= order.formattedTax %></dd>
-              
+
               <dt class="col-7 total-row">Order Total:</dt>
               <dd class="col-5 total-row"><%= order.formattedTotal %></dd>
             </dl>
-            
+
             <hr class="my-3">
-            
+
             <div class="mb-3">
               <p class="info-title">Payment Method</p>
               <p class="info-value"><%= order.paymentMethod || 'Cash on Delivery' %></p>
             </div>
-            
+
             <div class="mb-3">
               <p class="info-title">Payment Status</p>
               <p class="info-value"><%= order.paymentStatus || 'Pending' %></p>
             </div>
-            
+
             <div>
               <a href="/orders/<%= order._id %>/invoice" class="btn btn-outline-dark btn-sm mb-2 w-100">Download Invoice</a>
-              <% 
+              <%
                 const orderNotTooFarProgressed = ['Placed', 'Processing', 'Partially Cancelled', 'Partially Returned', 'Partially Return Requested'].includes(order.orderStatus);
                 const hasActiveItems = order.items.some(item => item.status === 'Active');
                 const canCancelOrder = orderNotTooFarProgressed && hasActiveItems;
                 const canReturnOrder = order.orderStatus === 'Delivered' && hasActiveItems;
               %>
               <% if (canCancelOrder) { %>
-                <button 
-                  class="btn btn-outline-danger btn-sm w-100" 
-                  data-bs-toggle="modal" 
+                <button
+                  class="btn btn-outline-danger btn-sm w-100"
+                  data-bs-toggle="modal"
                   data-bs-target="#cancelOrderModal"
                 >
                   Cancel Order
                 </button>
               <% } else if (canReturnOrder) { %>
-                <button 
-                  class="btn btn-outline-danger btn-sm w-100" 
-                  data-bs-toggle="modal" 
+                <button
+                  class="btn btn-outline-danger btn-sm w-100"
+                  data-bs-toggle="modal"
                   data-bs-target="#returnOrderModal"
                 >
                   Return Order
@@ -691,7 +779,7 @@
         <p>Are you sure you want to cancel this entire order?</p>
         <p><strong>Order #<%= order.orderNumber %></strong></p>
         <p>Total: <%= order.formattedTotal %></p>
-        
+
         <form id="cancelOrderForm">
           <div class="mb-3">
             <label for="cancelOrderReason" class="form-label">Reason for Cancellation</label>
@@ -732,7 +820,7 @@
         <p>Are you sure you want to return this entire order?</p>
         <p><strong>Order #<%= order.orderNumber %></strong></p>
         <p>Total: <%= order.formattedTotal %></p>
-        
+
         <form id="returnOrderForm">
           <div class="mb-3">
             <label for="returnOrderReason" class="form-label">Reason for Return</label>
@@ -764,22 +852,22 @@
   // Toast notification function
   function showToast(message, type = 'info') {
     const toastContainer = document.querySelector('.toast-container');
-    
+
     // Create toast element
     const toast = document.createElement('div');
     toast.className = `toast toast-${type} show`;
     toast.setAttribute('role', 'alert');
     toast.setAttribute('aria-live', 'assertive');
     toast.setAttribute('aria-atomic', 'true');
-    
+
     // Create toast header
     const toastHeader = document.createElement('div');
     toastHeader.className = 'toast-header';
-    
+
     // Create toast title based on type
     let title = 'Notification';
     let icon = 'info-circle';
-    
+
     if (type === 'success') {
       title = 'Success';
       icon = 'check-circle';
@@ -790,30 +878,30 @@
       title = 'Warning';
       icon = 'exclamation-triangle';
     }
-    
+
     toastHeader.innerHTML = `
       <i class="bi bi-${icon} me-2"></i>
       <strong class="me-auto">${title}</strong>
       <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
     `;
-    
+
     // Create toast body
     const toastBody = document.createElement('div');
     toastBody.className = 'toast-body';
     toastBody.textContent = message;
-    
+
     // Append header and body to toast
     toast.appendChild(toastHeader);
     toast.appendChild(toastBody);
-    
+
     // Append toast to container
     toastContainer.appendChild(toast);
-    
+
     // Auto remove after 5 seconds
     setTimeout(() => {
       toast.remove();
     }, 5000);
-    
+
     // Add click event to close button
     const closeButton = toast.querySelector('.btn-close');
     closeButton.addEventListener('click', () => {
@@ -826,7 +914,7 @@
     // For order cancellation
     const cancelOrderReason = document.getElementById('cancelOrderReason');
     const otherOrderReasonDiv = document.getElementById('otherOrderReasonDiv');
-    
+
     if (cancelOrderReason) {
       cancelOrderReason.addEventListener('change', function() {
         if (this.value === 'Other') {
@@ -836,11 +924,11 @@
         }
       });
     }
-    
+
     // For order return
     const returnOrderReason = document.getElementById('returnOrderReason');
     const otherReturnOrderReasonDiv = document.getElementById('otherReturnOrderReasonDiv');
-    
+
     if (returnOrderReason) {
       returnOrderReason.addEventListener('change', function() {
         if (this.value === 'Other') {
@@ -850,12 +938,12 @@
         }
       });
     }
-    
+
     // For item cancellations
     <% order.items.forEach(item => { %>
       const cancelItemReason<%= item.product._id || item.product %> = document.getElementById('cancelItemReason<%= item.product._id || item.product %>');
       const otherReasonDiv<%= item.product._id || item.product %> = document.getElementById('otherReasonDiv<%= item.product._id || item.product %>');
-      
+
       if (cancelItemReason<%= item.product._id || item.product %>) {
         cancelItemReason<%= item.product._id || item.product %>.addEventListener('change', function() {
           if (this.value === 'Other') {
@@ -865,11 +953,11 @@
           }
         });
       }
-      
+
       // For item returns
       const returnItemReason<%= item.product._id || item.product %> = document.getElementById('returnItemReason<%= item.product._id || item.product %>');
       const otherReturnReasonDiv<%= item.product._id || item.product %> = document.getElementById('otherReturnReasonDiv<%= item.product._id || item.product %>');
-      
+
       if (returnItemReason<%= item.product._id || item.product %>) {
         returnItemReason<%= item.product._id || item.product %>.addEventListener('change', function() {
           if (this.value === 'Other') {
@@ -886,14 +974,14 @@
   function cancelOrder(orderId) {
     const selectElement = document.getElementById('cancelOrderReason');
     const otherReasonElement = document.getElementById('otherOrderReason');
-    
+
     let reason = selectElement.value;
-    
+
     if (reason === '') {
       showToast('Please select a reason for cancellation', 'warning');
       return;
     }
-    
+
     if (reason === 'Other') {
       const otherReason = otherReasonElement.value.trim();
       if (!otherReason) {
@@ -902,10 +990,10 @@
       }
       reason = otherReason;
     }
-    
+
     // Show processing toast
     showToast('Processing your cancellation request...', 'info');
-    
+
     // Send cancellation request
     fetch(`/orders/${orderId}/cancel`, {
       method: 'POST',
@@ -922,9 +1010,9 @@
         if (modal) {
           modal.hide();
         }
-        
+
         showToast(data.message, 'success');
-        
+
         // Reload the page after a short delay
         setTimeout(() => {
           window.location.reload();
@@ -943,14 +1031,14 @@
   function cancelItem(orderId, productId) {
     const selectElement = document.getElementById(`cancelItemReason${productId}`);
     const otherReasonElement = document.getElementById(`otherReason${productId}`);
-    
+
     let reason = selectElement.value;
-    
+
     if (reason === '') {
       showToast('Please select a reason for cancellation', 'warning');
       return;
     }
-    
+
     if (reason === 'Other') {
       const otherReason = otherReasonElement.value.trim();
       if (!otherReason) {
@@ -959,10 +1047,10 @@
       }
       reason = otherReason;
     }
-    
+
     // Show processing toast
     showToast('Processing your cancellation request...', 'info');
-    
+
     // Send cancellation request
     fetch(`/orders/${orderId}/items/${productId}/cancel`, {
       method: 'POST',
@@ -979,9 +1067,9 @@
         if (modal) {
           modal.hide();
         }
-        
+
         showToast(data.message, 'success');
-        
+
         // Reload the page after a short delay
         setTimeout(() => {
           window.location.reload();
@@ -1000,14 +1088,14 @@
   function returnOrder(orderId) {
     const selectElement = document.getElementById('returnOrderReason');
     const otherReasonElement = document.getElementById('otherReturnOrderReason');
-    
+
     let reason = selectElement.value;
-    
+
     if (reason === '') {
       showToast('Please select a reason for return', 'warning');
       return;
     }
-    
+
     if (reason === 'Other') {
       const otherReason = otherReasonElement.value.trim();
       if (!otherReason) {
@@ -1016,10 +1104,10 @@
       }
       reason = otherReason;
     }
-    
+
     // Show processing toast
     showToast('Processing your return request...', 'info');
-    
+
     // Send return request
     fetch(`/orders/${orderId}/return`, {
       method: 'POST',
@@ -1036,9 +1124,9 @@
         if (modal) {
           modal.hide();
         }
-        
+
         showToast(data.message, 'success');
-        
+
         // Reload the page after a short delay
         setTimeout(() => {
           window.location.reload();
@@ -1057,14 +1145,14 @@
   function returnItem(orderId, productId) {
     const selectElement = document.getElementById(`returnItemReason${productId}`);
     const otherReasonElement = document.getElementById(`otherReturnReason${productId}`);
-    
+
     let reason = selectElement.value;
-    
+
     if (reason === '') {
       showToast('Please select a reason for return', 'warning');
       return;
     }
-    
+
     if (reason === 'Other') {
       const otherReason = otherReasonElement.value.trim();
       if (!otherReason) {
@@ -1073,10 +1161,10 @@
       }
       reason = otherReason;
     }
-    
+
     // Show processing toast
     showToast('Processing your return request...', 'info');
-    
+
     // Send return request
     fetch(`/orders/${orderId}/items/${productId}/return`, {
       method: 'POST',
@@ -1093,9 +1181,9 @@
         if (modal) {
           modal.hide();
         }
-        
+
         showToast(data.message, 'success');
-        
+
         // Reload the page after a short delay
         setTimeout(() => {
           window.location.reload();
@@ -1114,7 +1202,7 @@
   function reorder(orderId) {
     // Show processing toast
     showToast('Adding items to your cart...', 'info');
-    
+
     fetch(`/orders/${orderId}/reorder`, {
       method: 'POST',
       headers: {
@@ -1125,7 +1213,7 @@
     .then(data => {
       if (data.success) {
         showToast(data.message || 'Items have been added to your cart', 'success');
-        
+
         // Redirect after a short delay
         setTimeout(() => {
           window.location.href = data.redirectUrl || '/cart';

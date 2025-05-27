@@ -138,6 +138,6 @@ router.post('/change-password', isAuthenticated, newPasswordController.changePas
 router.get('/user-coupons', isAuthenticated, userCouponController.getUserCoupons);
 
 // Wallet routes
-
 router.get('/wallet',isAuthenticated,walletController.getWallet)
+
 module.exports = router;

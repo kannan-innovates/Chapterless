@@ -13,8 +13,8 @@ const getManageOrders = async (req, res) => {
     // Build query
     const query = { isDeleted: false }
 
-    // Handle Order Status filter
-    const validStatuses = ["Placed", "Processing", "Shipped", "Delivered", "Cancelled", "Returned", "Partially Cancelled", "Partially Returned"]
+    // Handle Order Status filter - simplified statuses
+    const validStatuses = ["Placed", "Processing", "Shipped", "Delivered", "Cancelled", "Returned"]
     let status = req.query.status || ""
     if (status === "Pending") status = "Placed" // Map "Pending" to "Placed" as per schema
     if (status && validStatuses.includes(status)) {
@@ -24,8 +24,8 @@ const getManageOrders = async (req, res) => {
     // Handle Payment Method filter
     const validPaymentMethods = ["COD", "UPI", "Card", "Wallet"]
     let payment = req.query.payment || ""
-    if (payment === "CARD") payment = "Card" 
-    if (payment === "UPI") payment = "UPI" 
+    if (payment === "CARD") payment = "Card"
+    if (payment === "UPI") payment = "UPI"
     if (payment && validPaymentMethods.includes(payment)) {
       query.paymentMethod = payment
     }
@@ -157,10 +157,10 @@ const getOrderDetails = async (req, res) => {
         item.formattedOriginalPrice = `₹${breakdown.originalPrice.toFixed(2)}`;
         item.formattedPriceAfterOffer = `₹${breakdown.priceAfterOffer.toFixed(2)}`;
         item.formattedFinalPrice = `₹${breakdown.finalPrice.toFixed(2)}`;
-        
+
         // Calculate per unit prices
         const finalPricePerUnit = breakdown.finalPrice;
-        
+
         // Calculate total amounts
         item.totalOriginalPrice = breakdown.originalPrice * quantity;
         item.totalPriceAfterOffer = breakdown.priceAfterOffer * quantity;
@@ -190,7 +190,7 @@ const getOrderDetails = async (req, res) => {
 
           item.refundAmount = finalPricePerUnit + taxAmount;
           item.formattedRefund = `₹${item.refundAmount.toFixed(2)}`;
-          
+
           // Store tax details for display
           item.taxAmount = taxAmount;
           item.formattedTaxAmount = `₹${taxAmount.toFixed(2)}`;
@@ -199,13 +199,13 @@ const getOrderDetails = async (req, res) => {
       } else {
         // Fallback for orders without price breakdown
         const discountedPrice = Number(item.discountedPrice || item.price);
-        
+
         item.formattedOriginalPrice = `₹${originalPrice.toFixed(2)}`;
         item.formattedDiscountedPrice = `₹${discountedPrice.toFixed(2)}`;
-        
+
         item.totalOriginalPrice = originalPrice * quantity;
         item.totalDiscountedPrice = discountedPrice * quantity;
-        
+
         item.formattedTotalOriginalPrice = `₹${item.totalOriginalPrice.toFixed(2)}`;
         item.formattedTotalDiscountedPrice = `₹${item.totalDiscountedPrice.toFixed(2)}`;
 
@@ -226,7 +226,7 @@ const getOrderDetails = async (req, res) => {
 
           item.refundAmount = discountedPrice + taxAmount;
           item.formattedRefund = `₹${item.refundAmount.toFixed(2)}`;
-          
+
           // Store tax details for display
           item.taxAmount = taxAmount;
           item.formattedTaxAmount = `₹${taxAmount.toFixed(2)}`;
@@ -252,14 +252,14 @@ const getOrderDetails = async (req, res) => {
         totals.subtotal += item.totalOriginalPrice;
         totals.offerDiscount += item.totalOfferSavings;
         totals.couponDiscount += item.totalCouponSavings;
-        
+
         if (item.status === 'Cancelled' || item.status === 'Returned') {
           totals.totalRefunded += item.refundAmount;
         }
       } else {
         totals.subtotal += item.totalOriginalPrice;
         totals.offerDiscount += (item.totalOriginalPrice - item.totalDiscountedPrice);
-        
+
         if (item.status === 'Cancelled' || item.status === 'Returned') {
           totals.totalRefunded += item.refundAmount;
         }
@@ -276,17 +276,17 @@ const getOrderDetails = async (req, res) => {
     order.formattedTotalRefunded = totals.totalRefunded > 0 ? `₹${totals.totalRefunded.toFixed(2)}` : null;
 
     // Check item statuses
-    const hasActiveItems = order.items.some(item => 
+    const hasActiveItems = order.items.some(item =>
       item.status !== 'Cancelled' && item.status !== 'Returned'
     );
 
-    const hasReturnRequestedItems = order.items.some(item => 
+    const hasReturnRequestedItems = order.items.some(item =>
       item.status === 'Return Requested'
     );
 
     // Generate timeline data
     const timeline = [];
-    
+
     timeline.push({
       status: 'Order Placed',
       timestamp: new Date(order.createdAt).toLocaleDateString('en-US', {
@@ -348,7 +348,7 @@ const getOrderDetails = async (req, res) => {
     if (order.orderStatus.includes('Cancelled') || order.orderStatus.includes('Returned')) {
       timeline.push({
         status: order.orderStatus,
-        timestamp: (order.cancelledAt || order.returnedAt) ? 
+        timestamp: (order.cancelledAt || order.returnedAt) ?
           new Date(order.cancelledAt || order.returnedAt).toLocaleDateString('en-US', {
             year: 'numeric',
             month: 'short',
@@ -383,7 +383,7 @@ const updateOrderStatus = async (req, res) => {
     const { status, itemId } = req.body
 
     // Validate the new status
-    const validStatuses = ["Placed", "Processing", "Shipped", "Delivered", "Cancelled", "Returned", "Partially Cancelled", "Partially Returned"]
+    const validStatuses = ["Placed", "Processing", "Shipped", "Delivered", "Cancelled", "Returned", "Return Requested"]
     if (!validStatuses.includes(status)) {
       return res.status(400).json({ success: false, message: "Invalid status value" })
     }
@@ -420,11 +420,11 @@ const updateOrderStatus = async (req, res) => {
       // Update the item status
       const now = new Date();
       item.status = status;
-      
+
       if (status === 'Cancelled') {
         item.cancelledAt = now;
         item.cancellationReason = 'Cancelled by admin';
-        
+
         // Restore product stock
         await Product.findByIdAndUpdate(
           item.product,
@@ -433,7 +433,7 @@ const updateOrderStatus = async (req, res) => {
       } else if (status === 'Returned') {
         item.returnedAt = now;
         item.returnReason = 'Returned by admin';
-        
+
         // Restore product stock
         await Product.findByIdAndUpdate(
           item.product,
@@ -506,7 +506,7 @@ const updateOrderStatus = async (req, res) => {
             item.status = "Cancelled"
             item.cancelledAt = now
             item.cancellationReason = "Cancelled by admin"
-            
+
             // Restore product stock
             Product.findByIdAndUpdate(
               item.product,
@@ -521,7 +521,7 @@ const updateOrderStatus = async (req, res) => {
             item.status = "Returned"
             item.returnedAt = now
             item.returnReason = "Returned by admin"
-            
+
             // Restore product stock
             Product.findByIdAndUpdate(
               item.product,
@@ -537,7 +537,7 @@ const updateOrderStatus = async (req, res) => {
           item.status = "Cancelled"
           item.cancelledAt = now
           item.cancellationReason = "Cancelled by admin"
-          
+
           // Restore product stock
           Product.findByIdAndUpdate(
             item.product,
@@ -552,7 +552,7 @@ const updateOrderStatus = async (req, res) => {
           item.status = "Returned"
           item.returnedAt = now
           item.returnReason = "Returned by admin"
-          
+
           // Restore product stock
           Product.findByIdAndUpdate(
             item.product,
@@ -637,19 +637,19 @@ const updateItemStatus = async (req, res) => {
 
     // Check if item can be updated
     if (item.status !== "Active") {
-      return res.status(400).json({ 
-        message: `Item cannot be ${status.toLowerCase()} in its current state (${item.status})` 
+      return res.status(400).json({
+        message: `Item cannot be ${status.toLowerCase()} in its current state (${item.status})`
       });
     }
 
     // Update the item status
     const now = new Date();
     item.status = status;
-    
+
     if (status === "Cancelled") {
       item.cancelledAt = now;
       item.cancellationReason = reason || "Cancelled by admin";
-      
+
       // Restore product stock
       await Product.findByIdAndUpdate(
         item.product,
@@ -658,7 +658,7 @@ const updateItemStatus = async (req, res) => {
     } else if (status === "Returned") {
       item.returnedAt = now;
       item.returnReason = reason || "Returned by admin";
-      
+
       // Restore product stock
       await Product.findByIdAndUpdate(
         item.product,
@@ -706,7 +706,7 @@ const updateItemStatus = async (req, res) => {
 
     await order.save();
 
-    res.status(200).json({ 
+    res.status(200).json({
       message: `Item ${status.toLowerCase()} successfully`,
       orderStatus: order.orderStatus,
       paymentStatus: order.paymentStatus
@@ -892,7 +892,7 @@ const downloadInvoice = async (req, res) => {
       } else if (item.status === 'Returned') {
         itemTitle += ' (Returned)';
       }
-      
+
       if (item.offerTitle) {
         doc
           .font("Helvetica-Bold")
@@ -928,7 +928,7 @@ const downloadInvoice = async (req, res) => {
       doc.text(item.quantity.toString() || "1", colQty + 5, y + 10, { width: colQtyWidth - 10, align: "center" })
 
       // Subtotal - only count active items for total
-      const itemTotal = item.status === 'Active' ? 
+      const itemTotal = item.status === 'Active' ?
         (item.discountedPrice ? item.discountedPrice * item.quantity : item.price * item.quantity) : 0;
       doc.text(`₹${itemTotal.toFixed(2)}`, colSubtotal + 5, y + 10, {
         width: colSubtotalWidth - 10,
@@ -1076,12 +1076,12 @@ const approveReturnRequest = async (req, res) => {
       }
 
       const now = new Date();
-      
+
       if (approved) {
         // Approve the return
         item.status = 'Returned';
         item.returnedAt = now;
-        
+
         // Restore product stock
         await Product.findByIdAndUpdate(
           item.product,
@@ -1090,15 +1090,20 @@ const approveReturnRequest = async (req, res) => {
 
         // Process refund to wallet if payment was made
         if (order.paymentStatus === 'Paid') {
+          console.log('Processing refund for approved return item:', itemId);
           const refundSuccess = await processReturnRefund(order.user, order, itemId);
           if (refundSuccess) {
-            const allItemsRefunded = order.items.every(i => 
+            const allItemsRefunded = order.items.every(i =>
               i.status === 'Returned' || i.status === 'Cancelled'
             );
             order.paymentStatus = allItemsRefunded ? 'Refunded' : 'Partially Refunded';
+            console.log('Refund processed successfully, payment status updated to:', order.paymentStatus);
           } else {
             order.paymentStatus = 'Refund Processing';
+            console.log('Refund processing failed, status set to Refund Processing');
           }
+        } else {
+          console.log('Order payment status is not Paid, skipping refund:', order.paymentStatus);
         }
       } else {
         // Reject the return request
@@ -1107,38 +1112,33 @@ const approveReturnRequest = async (req, res) => {
         item.returnReason = null;
       }
 
-      // Update overall order status based on item statuses
+      // Update overall order status - simplified logic
       const hasActiveItems = order.items.some(i => i.status === 'Active');
       const hasReturnRequestedItems = order.items.some(i => i.status === 'Return Requested');
       const hasCancelledItems = order.items.some(i => i.status === 'Cancelled');
       const hasReturnedItems = order.items.some(i => i.status === 'Returned');
 
+      // Determine order status based on item statuses
       if (!hasActiveItems && !hasReturnRequestedItems) {
+        // All items are either cancelled or returned
         if (hasReturnedItems && !hasCancelledItems) {
           order.orderStatus = 'Returned';
         } else if (hasCancelledItems && !hasReturnedItems) {
           order.orderStatus = 'Cancelled';
-        } else if (hasReturnedItems && hasCancelledItems) {
-          order.orderStatus = 'Partially Returned';
-        }
-      } else {
-        if (hasReturnRequestedItems) {
-          order.orderStatus = 'Partially Return Requested';
-        } else if (hasReturnedItems || hasCancelledItems) {
-          if (hasReturnedItems && hasCancelledItems) {
-            order.orderStatus = 'Partially Returned';
-          } else if (hasReturnedItems) {
-            order.orderStatus = 'Partially Returned';
-          } else {
-            order.orderStatus = 'Partially Cancelled';
-          }
         } else {
+          // Mixed cancelled and returned items - keep as delivered with mixed items
           order.orderStatus = 'Delivered';
         }
+      } else if (hasReturnRequestedItems) {
+        // Keep current status if there are pending return requests
+        // Don't change to partial status
+      } else {
+        // Some items are still active
+        order.orderStatus = 'Delivered';
       }
 
       await order.save();
-      return res.status(200).json({ 
+      return res.status(200).json({
         message: approved ? "Return request approved" : "Return request rejected",
         orderStatus: order.orderStatus,
         paymentStatus: order.paymentStatus
@@ -1146,22 +1146,21 @@ const approveReturnRequest = async (req, res) => {
     }
 
     // Handle entire order return request
-    if (order.orderStatus !== 'Return Requested' && order.orderStatus !== 'Partially Return Requested') {
+    if (order.orderStatus !== 'Return Requested') {
       return res.status(400).json({
         message: `Cannot process return for order with status ${order.orderStatus}`
       });
     }
 
     const now = new Date();
-    
+
     if (approved) {
       // Process all return requested items
-      let allItemsProcessed = true;
       for (const item of order.items) {
         if (item.status === 'Return Requested') {
           item.status = 'Returned';
           item.returnedAt = now;
-          
+
           try {
             // Restore product stock
             await Product.findByIdAndUpdate(
@@ -1170,36 +1169,26 @@ const approveReturnRequest = async (req, res) => {
             );
           } catch (error) {
             console.error('Error restoring stock:', error);
-            allItemsProcessed = false;
           }
         }
       }
-      
-      // Update order status
+
+      // Update order status - simplified
       const hasActiveItems = order.items.some(i => i.status === 'Active');
-      const hasCancelledItems = order.items.some(i => i.status === 'Cancelled');
-      const hasReturnedItems = order.items.some(i => i.status === 'Returned');
-      
-      if (!hasActiveItems) {
-        if (hasCancelledItems) {
-          order.orderStatus = 'Partially Returned';
-        } else {
-          order.orderStatus = 'Returned';
-        }
-      } else {
-        order.orderStatus = 'Partially Returned';
-      }
-      
+      order.orderStatus = hasActiveItems ? 'Delivered' : 'Returned';
+
       // Process refund to wallet if payment was made
       if (order.paymentStatus === 'Paid') {
         const refundSuccess = await processReturnRefund(order.user, order);
         if (refundSuccess) {
           order.paymentStatus = hasActiveItems ? 'Partially Refunded' : 'Refunded';
         } else {
-          order.paymentStatus = 'Refund Processing';
+          // For returns, if refund fails, log error but don't set "Refund Processing"
+          console.error(`Failed to process refund for returned items in order ${order._id}`);
+          // Keep the payment status as is and let the admin retry
         }
       }
-      
+
       order.returnedAt = now;
     } else {
       // Reject all return requests
@@ -1210,24 +1199,13 @@ const approveReturnRequest = async (req, res) => {
           item.returnReason = null;
         }
       });
-      
-      // Update order status
-      const hasCancelledItems = order.items.some(i => i.status === 'Cancelled');
-      const hasReturnedItems = order.items.some(i => i.status === 'Returned');
-      
-      if (hasCancelledItems && hasReturnedItems) {
-        order.orderStatus = 'Partially Returned';
-      } else if (hasCancelledItems) {
-        order.orderStatus = 'Partially Cancelled';
-      } else if (hasReturnedItems) {
-        order.orderStatus = 'Partially Returned';
-      } else {
-        order.orderStatus = 'Delivered';
-      }
+
+      // Reset to delivered status
+      order.orderStatus = 'Delivered';
     }
-    
+
     await order.save();
-    
+
     return res.status(200).json({
       message: approved ? "All return requests approved" : "All return requests rejected",
       orderStatus: order.orderStatus,
@@ -1239,11 +1217,11 @@ const approveReturnRequest = async (req, res) => {
   }
 };
 
-module.exports = { 
-  getManageOrders, 
-  getOrderDetails, 
-  updateOrderStatus, 
-  updateItemStatus, 
+module.exports = {
+  getManageOrders,
+  getOrderDetails,
+  updateOrderStatus,
+  updateItemStatus,
   downloadInvoice,
   approveReturnRequest
 };
