@@ -953,7 +953,7 @@ const cancelOrder = async (req, res) => {
     }
 
     // If payment was made, process refund to wallet
-    if (order.paymentStatus === 'Paid') {
+    if (order.paymentStatus === 'Paid' || order.paymentStatus === 'Partially Refunded') {
       const refundSuccess = await processCancelRefund(userId, order);
       if (refundSuccess) {
         order.paymentStatus = 'Refunded';
@@ -1055,7 +1055,8 @@ const cancelOrderItem = async (req, res) => {
       userId: userId
     });
 
-    if (order.paymentStatus === 'Paid') {
+    // Allow refunds for both 'Paid' and 'Partially Refunded' orders
+    if (order.paymentStatus === 'Paid' || order.paymentStatus === 'Partially Refunded') {
       console.log('💰 Processing cancellation refund...');
       const refundSuccess = await processCancelRefund(userId, order, orderItem._id);
       console.log('💰 Refund result:', refundSuccess);
