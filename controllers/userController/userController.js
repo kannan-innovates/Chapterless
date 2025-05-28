@@ -17,13 +17,13 @@ const loadHomePage = async (req, res) => {
     const LIMIT = 4;
 
     // Top selling (assumed based on stock, ideally use soldCount)
-    const topSellingProducts = await Product.find({ isListed: true })
+    const topSellingProducts = await Product.find({ isListed: true, isDeleted: false })
       .populate('category')  // Populate category for offer calculation
       .sort({ stock: -1 }) // Highest stock
       .limit(LIMIT);
 
     // New arrivals (based on dateAdded)
-    const newArrivals = await Product.find({ isListed: true })
+    const newArrivals = await Product.find({ isListed: true, isDeleted: false })
       .populate('category')  // Populate category for offer calculation
       .sort({ createdAt: -1  }) // Newest first
       .limit(LIMIT);
@@ -35,12 +35,12 @@ const loadHomePage = async (req, res) => {
         product.category._id,
         product.regularPrice
       );
-      
+
       const { discountPercentage, discountAmount, finalPrice } = calculateDiscount(
         offer,
         product.regularPrice
       );
-      
+
       product.activeOffer = offer;
       product.discountPercentage = discountPercentage;
       product.discountAmount = discountAmount;
@@ -55,12 +55,12 @@ const loadHomePage = async (req, res) => {
         product.category._id,
         product.regularPrice
       );
-      
+
       const { discountPercentage, discountAmount, finalPrice } = calculateDiscount(
         offer,
         product.regularPrice
       );
-      
+
       product.activeOffer = offer;
       product.discountPercentage = discountPercentage;
       product.discountAmount = discountAmount;

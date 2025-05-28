@@ -40,7 +40,6 @@ document.addEventListener("DOMContentLoaded", function() {
       MAX: 10000
     },
     IMAGE: {
-      MAX_SIZE: 5 * 1024 * 1024, // 5MB
       ALLOWED_TYPES: ['image/jpeg', 'image/png', 'image/jpg', 'image/webp'],
       MIN_DIMENSIONS: { width: 200, height: 200 },
       MAX_DIMENSIONS: { width: 4000, height: 4000 }
@@ -234,12 +233,6 @@ document.addEventListener("DOMContentLoaded", function() {
       // Check file type
       if (!VALIDATION_RULES.IMAGE.ALLOWED_TYPES.includes(file.type)) {
         showError(input, 'Please select a valid image file (JPEG, PNG, WebP)');
-        return false;
-      }
-
-      // Check file size
-      if (file.size > VALIDATION_RULES.IMAGE.MAX_SIZE) {
-        showError(input, 'Image size should be less than 5MB');
         return false;
       }
 

@@ -8,7 +8,7 @@ const shopPage = async (req, res) => {
     const limit = parseInt(req.query.limit) || 12;
     const skip = (page - 1) * limit;
 
-    let query = { isListed: true };
+    let query = { isListed: true, isDeleted: false };
 
     const categoryId = req.query.category;
     if (categoryId) {
@@ -24,7 +24,7 @@ const shopPage = async (req, res) => {
 
     const sortOption = req.query.sort || 'recommended';
     let sortQuery = {};
-    
+
     switch (sortOption) {
       case 'price-asc':
         sortQuery = { finalPrice: 1 };
@@ -58,7 +58,7 @@ const shopPage = async (req, res) => {
         regularPrice: product.regularPrice,
         hasOffer: !!offer
       });
-      
+
       const { discountPercentage, discountAmount, finalPrice } = calculateDiscount(offer, product.regularPrice);
       console.log('Calculated discount:', {
         discountPercentage,
@@ -66,16 +66,16 @@ const shopPage = async (req, res) => {
         finalPrice,
         offerTitle: offer?.title
       });
-      
+
       product.activeOffer = offer;
       product.discountPercentage = discountPercentage;
       product.discountAmount = discountAmount;
       product.finalPrice = finalPrice || product.salePrice; // Fallback to salePrice if no offer
-     
+
     }
 
     // Apply price filter using finalPrice
-    const filteredProducts = products.filter(product => 
+    const filteredProducts = products.filter(product =>
       product.finalPrice >= minPrice && product.finalPrice <= maxPrice
     );
 
@@ -96,7 +96,7 @@ const shopPage = async (req, res) => {
     const categories = await Category.find({ isListed: true });
 
     let queryParams = new URLSearchParams();
-    
+
     for (const [key, value] of Object.entries(req.query)) {
       if (key !== 'page') {
         if (Array.isArray(value)) {
@@ -106,7 +106,7 @@ const shopPage = async (req, res) => {
         }
       }
     }
-    
+
     const baseQueryString = queryParams.toString();
 
     res.render('shop-page', {
@@ -130,20 +130,20 @@ const shopPage = async (req, res) => {
 
 function generatePaginationArray(currentPage, totalPages) {
   let pages = [];
-  
+
   let startPage = Math.max(1, currentPage - 2);
   let endPage = Math.min(totalPages, currentPage + 2);
-  
+
   if (currentPage <= 3) {
     endPage = Math.min(5, totalPages);
   } else if (currentPage >= totalPages - 2) {
     startPage = Math.max(1, totalPages - 4);
   }
-  
+
   for (let i = startPage; i <= endPage; i++) {
     pages.push(i);
   }
-  
+
   return pages;
 }
 

@@ -9,6 +9,7 @@ const searchProducts = async (req, res) => {
 
     const products = await Product.find({
       isListed: true,
+      isDeleted: false,
       $or: [
         { title: { $regex: query, $options: 'i' } },
         { author: { $regex: query, $options: 'i' } },

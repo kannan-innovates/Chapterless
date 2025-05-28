@@ -41,15 +41,15 @@ const addCategory = async (req, res) => {
     const { name, description, isListed } = req.body;
 
     // Check if category already exists (case insensitive)
-    const existingCategory = await Category.findOne({ 
-      name: { $regex: new RegExp(`^${name}$`, 'i') } 
+    const existingCategory = await Category.findOne({
+      name: { $regex: new RegExp(`^${name}$`, 'i') }
     });
 
     if (existingCategory) {
       // Return 200 status with a warning flag instead of 400 error
-      return res.status(200).json({ 
+      return res.status(200).json({
         warning: true,
-        message: "This category already exists in the database." 
+        message: "This category already exists in the database."
       });
     }
 
@@ -58,6 +58,9 @@ const addCategory = async (req, res) => {
     if (req.file) {
       const result = await cloudinary.uploader.upload(req.file.path, {
         folder: "categories",
+        quality: 'auto:best',
+        fetch_format: 'auto',
+        flags: 'preserve_transparency'
       });
       imageUrl = result.secure_url;
       // Delete local file after upload
@@ -92,15 +95,15 @@ const editCategory = async (req, res) => {
     }
 
     // Check for duplicate name (excluding current category)
-    const existingCategory = await Category.findOne({ 
+    const existingCategory = await Category.findOne({
       name: { $regex: new RegExp(`^${name}$`, 'i') },
       _id: { $ne: id }
     });
     if (existingCategory) {
       // Return 200 status with a warning flag instead of 400 error
-      return res.status(200).json({ 
+      return res.status(200).json({
         warning: true,
-        message: "Another category with this name already exists." 
+        message: "Another category with this name already exists."
       });
     }
 
@@ -109,6 +112,9 @@ const editCategory = async (req, res) => {
     if (req.file) {
       const result = await cloudinary.uploader.upload(req.file.path, {
         folder: "categories",
+        quality: 'auto:best',
+        fetch_format: 'auto',
+        flags: 'preserve_transparency'
       });
       imageUrl = result.secure_url;
       // Delete local file

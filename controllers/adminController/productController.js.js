@@ -17,7 +17,7 @@ const getProducts = async (req, res) => {
     // Changed query to include all products for admin panel
     // This should include both listed and unlisted products
     const query = { isDeleted: false }; // Only exclude permanently deleted products
-    
+
     // Add search filters if provided
     if (search) {
       query.$or = [
@@ -25,7 +25,7 @@ const getProducts = async (req, res) => {
         { author: { $regex: search, $options: 'i' } },
       ];
     }
-    
+
     // Add category filter if provided
     if (categoryFilter) {
       query.category = categoryFilter;
@@ -104,6 +104,9 @@ const addProduct = async (req, res) => {
       console.log(`Uploading main image from: ${file.path}`);
       const result = await cloudinary.uploader.upload(file.path, {
         folder: 'products',
+        quality: 'auto:best',
+        fetch_format: 'auto',
+        flags: 'preserve_transparency'
       });
       mainImageUrl = result.secure_url;
       fs.unlinkSync(file.path); // Delete local file
@@ -127,6 +130,9 @@ const addProduct = async (req, res) => {
         }
         const result = await cloudinary.uploader.upload(file.path, {
           folder: 'products/sub',
+          quality: 'auto:best',
+          fetch_format: 'auto',
+          flags: 'preserve_transparency'
         });
         subImages.push(result.secure_url);
         processedPaths.add(file.path); // Mark this path as processed
@@ -134,9 +140,11 @@ const addProduct = async (req, res) => {
       }
     }
 
+
+
     const product = new Product({
-      title,
-      author,
+      title: title.trim(),
+      author: author.trim(),
       description,
       category,
       regularPrice: parseFloat(regularPrice),
@@ -247,7 +255,12 @@ const updateProduct = async (req, res) => {
     if (req.files && req.files.mainImage && req.files.mainImage.length > 0) {
       const file = req.files.mainImage[0];
       console.log('Uploading main image from:', file.path);
-      const result = await cloudinary.uploader.upload(file.path, { folder: 'products' });
+      const result = await cloudinary.uploader.upload(file.path, {
+        folder: 'products',
+        quality: 'auto:best',
+        fetch_format: 'auto',
+        flags: 'preserve_transparency'
+      });
       mainImageUrl = result.secure_url;
       fs.unlinkSync(file.path);
       if (product.mainImage) {
@@ -266,7 +279,12 @@ const updateProduct = async (req, res) => {
           console.warn('Sub image not found:', file.path);
           continue;
         }
-        const result = await cloudinary.uploader.upload(file.path, { folder: 'products/sub' });
+        const result = await cloudinary.uploader.upload(file.path, {
+          folder: 'products/sub',
+          quality: 'auto:best',
+          fetch_format: 'auto',
+          flags: 'preserve_transparency'
+        });
         subImages.push(result.secure_url);
         processedPaths.add(file.path);
         fs.unlinkSync(file.path);
