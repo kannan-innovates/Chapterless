@@ -2,6 +2,7 @@ const express = require('express');
 const adminRoute = express.Router();
 
 const adminController = require('../../controllers/adminController/adminLoginController');
+const dashboardController = require('../../controllers/adminController/dashboard-controller');
 const adminUserController = require('../../controllers/adminController/getUserController');
 const categoryController = require('../../controllers/adminController/categoryController');
 const productController = require('../../controllers/adminController/productController.js');
@@ -32,7 +33,7 @@ adminRoute.use(isAdminAuthenticated);
 adminRoute.use(preventCache);
 
 // Admin Dashboard
-adminRoute.get('/adminDashboard', adminController.getAdminDashboard);
+adminRoute.get('/adminDashboard', dashboardController.getDashboard);
 adminRoute.get('/adminLogout', adminController.logoutAdminDashboard);
 
 // User Management

@@ -21,13 +21,14 @@
             <i class="ri-user-line"></i>
           </div>
           <h2 class="stat-title">Total Users</h2>
-          <p class="stat-value">10,583</p>
-          <div class="text-success small">
-            <i class="ri-arrow-up-line"></i> 12% from last month
+          <p class="stat-value"><%= dashboardStats.totalUsers.value %></p>
+          <div class="<%= dashboardStats.totalUsers.growth.isPositive ? 'text-success' : 'text-danger' %> small">
+            <i class="ri-arrow-<%= dashboardStats.totalUsers.growth.isPositive ? 'up' : 'down' %>-line"></i>
+            <%= dashboardStats.totalUsers.growth.percentage %>% from last month
           </div>
         </div>
       </div>
-      
+
       <!-- Orders Stats -->
       <div class="col-sm-6 col-lg-3">
         <div class="stat-card">
@@ -35,13 +36,14 @@
             <i class="ri-shopping-bag-line"></i>
           </div>
           <h2 class="stat-title">Total Orders</h2>
-          <p class="stat-value">8,538</p>
-          <div class="text-success small">
-            <i class="ri-arrow-up-line"></i> 5.3% from last month
+          <p class="stat-value"><%= dashboardStats.totalOrders.value %></p>
+          <div class="<%= dashboardStats.totalOrders.growth.isPositive ? 'text-success' : 'text-danger' %> small">
+            <i class="ri-arrow-<%= dashboardStats.totalOrders.growth.isPositive ? 'up' : 'down' %>-line"></i>
+            <%= dashboardStats.totalOrders.growth.percentage %>% from last month
           </div>
         </div>
       </div>
-      
+
       <!-- Sales Stats -->
       <div class="col-sm-6 col-lg-3">
         <div class="stat-card">
@@ -49,13 +51,14 @@
             <i class="ri-currency-line"></i>
           </div>
           <h2 class="stat-title">Total Sales</h2>
-          <p class="stat-value">₹65,805</p>
-          <div class="text-success small">
-            <i class="ri-arrow-up-line"></i> 8.2% from last month
+          <p class="stat-value"><%= dashboardStats.totalSales.value %></p>
+          <div class="<%= dashboardStats.totalSales.growth.isPositive ? 'text-success' : 'text-danger' %> small">
+            <i class="ri-arrow-<%= dashboardStats.totalSales.growth.isPositive ? 'up' : 'down' %>-line"></i>
+            <%= dashboardStats.totalSales.growth.percentage %>% from last month
           </div>
         </div>
       </div>
-      
+
       <!-- Pending Stats -->
       <div class="col-sm-6 col-lg-3">
         <div class="stat-card">
@@ -63,9 +66,10 @@
             <i class="ri-time-line"></i>
           </div>
           <h2 class="stat-title">Pending Orders</h2>
-          <p class="stat-value">3,552</p>
-          <div class="text-danger small">
-            <i class="ri-arrow-up-line"></i> 2.8% from last month
+          <p class="stat-value"><%= dashboardStats.pendingOrders.value %></p>
+          <div class="<%= dashboardStats.pendingOrders.growth.isPositive ? 'text-danger' : 'text-success' %> small">
+            <i class="ri-arrow-<%= dashboardStats.pendingOrders.growth.isPositive ? 'up' : 'down' %>-line"></i>
+            <%= dashboardStats.pendingOrders.growth.percentage %>% from last month
           </div>
         </div>
       </div>
@@ -77,10 +81,11 @@
         <div class="chart-card">
           <div class="chart-header">
             <h2 class="chart-title">Sales Analytics</h2>
-            <select class="chart-filter">
-              <option value="month">Last 30 Days</option>
-              <option value="week">Last 7 Days</option>
-              <option value="year">This Year</option>
+            <select class="chart-filter" id="chartFilter" onchange="updateChart()">
+              <option value="daily" <%= currentFilter === 'daily' ? 'selected' : '' %>>Last 7 Days</option>
+              <option value="weekly" <%= currentFilter === 'weekly' ? 'selected' : '' %>>Last 8 Weeks</option>
+              <option value="monthly" <%= currentFilter === 'monthly' ? 'selected' : '' %>>Last 12 Months</option>
+              <option value="yearly" <%= currentFilter === 'yearly' ? 'selected' : '' %>>Last 5 Years</option>
             </select>
           </div>
           <div class="chart-body">
@@ -90,137 +95,161 @@
       </div>
     </div>
 
-    <!-- Recent Orders & Top Products -->
+    <!-- Analytics Trio: Categories, Products & Authors -->
     <div class="row g-4">
-      <!-- Recent Orders -->
-      <div class="col-lg-7">
+      <!-- Best Selling Categories -->
+      <div class="col-lg-4">
         <div class="chart-card h-100">
           <div class="chart-header">
-            <h2 class="chart-title">Recent Orders</h2>
-            <a href="#" class="text-decoration-none">View All</a>
+            <h2 class="chart-title">Best Selling Categories (Top 10)</h2>
           </div>
           <div class="table-responsive">
             <table class="table table-hover align-middle">
               <thead>
                 <tr>
-                  <th>Order ID</th>
-                  <th>Customer</th>
-                  <th>Date</th>
-                  <th>Amount</th>
-                  <th>Status</th>
+                  <th>Category</th>
+                  <th>Products</th>
+                  <th>Sold</th>
+                  <th>Revenue</th>
                 </tr>
               </thead>
               <tbody>
-                <tr>
-                  <td>#CH8574</td>
-                  <td>Aditya Sharma</td>
-                  <td>Apr 23, 2025</td>
-                  <td>₹1,250</td>
-                  <td><span class="badge bg-success">Delivered</span></td>
-                </tr>
-                <tr>
-                  <td>#CH8573</td>
-                  <td>Priya Patel</td>
-                  <td>Apr 23, 2025</td>
-                  <td>₹3,100</td>
-                  <td><span class="badge bg-warning text-dark">Shipped</span></td>
-                </tr>
-                <tr>
-                  <td>#CH8572</td>
-                  <td>Rahul Mehta</td>
-                  <td>Apr 22, 2025</td>
-                  <td>₹799</td>
-                  <td><span class="badge bg-info">Processing</span></td>
-                </tr>
-                <tr>
-                  <td>#CH8571</td>
-                  <td>Ananya Singh</td>
-                  <td>Apr 22, 2025</td>
-                  <td>₹1,599</td>
-                  <td><span class="badge bg-danger">Cancelled</span></td>
-                </tr>
-                <tr>
-                  <td>#CH8570</td>
-                  <td>Vikram Joshi</td>
-                  <td>Apr 21, 2025</td>
-                  <td>₹2,350</td>
-                  <td><span class="badge bg-success">Delivered</span></td>
-                </tr>
+                <% if (bestSellingCategories && bestSellingCategories.length > 0) { %>
+                  <% bestSellingCategories.forEach((category, index) => { %>
+                    <tr>
+                      <td>
+                        <div class="d-flex align-items-center">
+                          <div class="me-2 d-flex align-items-center justify-content-center"
+                               style="width:40px; height:40px; background:#f8f9fa; border-radius:50%;">
+                            <i class="ri-folder-line" style="font-size:18px; color:#6c757d;"></i>
+                          </div>
+                          <div>
+                            <div class="fw-semibold"><%= category.categoryName %></div>
+                            <div class="small text-muted"><%= category.productCount %> products</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td><%= category.productCount %></td>
+                      <td><%= category.totalQuantitySold %></td>
+                      <td>₹<%= Math.round(category.totalRevenue).toLocaleString('en-IN') %></td>
+                    </tr>
+                  <% }); %>
+                <% } else { %>
+                  <tr>
+                    <td colspan="4" class="text-center text-muted py-4">
+                      <i class="ri-folder-open-line" style="font-size: 48px; opacity: 0.5;"></i>
+                      <div class="mt-2">No category sales data available</div>
+                      <div class="small">Categories will appear here once orders are placed</div>
+                    </td>
+                  </tr>
+                <% } %>
               </tbody>
             </table>
           </div>
         </div>
       </div>
 
-      <!-- Top Products -->
-      <div class="col-lg-5">
+      <!-- Best Selling Products -->
+      <div class="col-lg-4">
         <div class="chart-card h-100">
           <div class="chart-header">
-            <h2 class="chart-title">Top Selling Books</h2>
-            <a href="#" class="text-decoration-none">View All</a>
+            <h2 class="chart-title">Best Selling Products (Top 10)</h2>
           </div>
           <div class="table-responsive">
             <table class="table table-hover align-middle">
               <thead>
                 <tr>
-                  <th>Book</th>
+                  <th>Product</th>
                   <th>Sold</th>
                   <th>Revenue</th>
                 </tr>
               </thead>
               <tbody>
+                <% if (bestSellingProducts && bestSellingProducts.length > 0) { %>
+                  <% bestSellingProducts.forEach((product, index) => { %>
+                    <tr>
+                      <td>
+                        <div class="d-flex align-items-center">
+                          <% if (product.productImage && product.productImage.trim() !== '') { %>
+                            <img src="<%= product.productImage %>" alt="<%= product.productTitle %>"
+                                 class="me-2" style="width:40px; height:50px; object-fit:cover; border-radius:4px;">
+                          <% } else { %>
+                            <div class="me-2 d-flex align-items-center justify-content-center"
+                                 style="width:40px; height:50px; background:#f8f9fa; border-radius:4px;">
+                              <i class="ri-book-line" style="font-size:20px; color:#6c757d;"></i>
+                            </div>
+                          <% } %>
+                          <div>
+                            <div class="fw-semibold"><%= product.productTitle %></div>
+                            <div class="small text-muted"><%= product.author || 'Unknown Author' %></div>
+                          </div>
+                        </div>
+                      </td>
+                      <td><%= product.totalQuantitySold %></td>
+                      <td>₹<%= Math.round(product.totalRevenue).toLocaleString('en-IN') %></td>
+                    </tr>
+                  <% }); %>
+                <% } else { %>
+                  <tr>
+                    <td colspan="3" class="text-center text-muted py-4">
+                      <i class="ri-inbox-line" style="font-size: 48px; opacity: 0.5;"></i>
+                      <div class="mt-2">No sales data available</div>
+                      <div class="small">Products will appear here once orders are placed</div>
+                    </td>
+                  </tr>
+                <% } %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Best Selling Authors -->
+      <div class="col-lg-4">
+        <div class="chart-card h-100">
+          <div class="chart-header">
+            <h2 class="chart-title">Best Selling Authors (Top 10)</h2>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-hover align-middle">
+              <thead>
                 <tr>
-                  <td>
-                    <div class="d-flex align-items-center">
-                      <img src="/api/placeholder/40/50" alt="The Silent Echo" class="me-2" style="width:40px; height:50px; object-fit:cover;">
-                      <div>
-                        <div class="fw-semibold">The Silent Echo</div>
-                        <div class="small text-muted">Eleanor Blackwood</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td>284</td>
-                  <td>₹7,100</td>
+                  <th>Author</th>
+                  <th>Books</th>
+                  <th>Sold</th>
+                  <th>Revenue</th>
                 </tr>
-                <tr>
-                  <td>
-                    <div class="d-flex align-items-center">
-                      <img src="/api/placeholder/40/50" alt="Whispers in the Void" class="me-2" style="width:40px; height:50px; object-fit:cover;">
-                      <div>
-                        <div class="fw-semibold">Whispers in the Void</div>
-                        <div class="small text-muted">Jonathan Mercer</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td>253</td>
-                  <td>₹5,565</td>
-                </tr>
-                <tr>
-                  <td>
-                    <div class="d-flex align-items-center">
-                      <img src="/api/placeholder/40/50" alt="The Art of Stillness" class="me-2" style="width:40px; height:50px; object-fit:cover;">
-                      <div>
-                        <div class="fw-semibold">The Art of Stillness</div>
-                        <div class="small text-muted">Sophia Chen</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td>198</td>
-                  <td>₹3,960</td>
-                </tr>
-                <tr>
-                  <td>
-                    <div class="d-flex align-items-center">
-                      <img src="/api/placeholder/40/50" alt="Fragments of Light" class="me-2" style="width:40px; height:50px; object-fit:cover;">
-                      <div>
-                        <div class="fw-semibold">Fragments of Light</div>
-                        <div class="small text-muted">Marcus Aurelius</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td>165</td>
-                  <td>₹4,453</td>
-                </tr>
+              </thead>
+              <tbody>
+                <% if (bestSellingAuthors && bestSellingAuthors.length > 0) { %>
+                  <% bestSellingAuthors.forEach((author, index) => { %>
+                    <tr>
+                      <td>
+                        <div class="d-flex align-items-center">
+                          <div class="me-2 d-flex align-items-center justify-content-center"
+                               style="width:40px; height:40px; background:#f8f9fa; border-radius:50%;">
+                            <i class="ri-user-line" style="font-size:18px; color:#6c757d;"></i>
+                          </div>
+                          <div>
+                            <div class="fw-semibold"><%= author.authorName %></div>
+                            <div class="small text-muted"><%= author.bookCount %> books</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td><%= author.bookCount %></td>
+                      <td><%= author.totalQuantitySold %></td>
+                      <td>₹<%= Math.round(author.totalRevenue).toLocaleString('en-IN') %></td>
+                    </tr>
+                  <% }); %>
+                <% } else { %>
+                  <tr>
+                    <td colspan="4" class="text-center text-muted py-4">
+                      <i class="ri-user-line" style="font-size: 48px; opacity: 0.5;"></i>
+                      <div class="mt-2">No author sales data available</div>
+                      <div class="small">Authors will appear here once orders are placed</div>
+                    </td>
+                  </tr>
+                <% } %>
               </tbody>
             </table>
           </div>
@@ -237,15 +266,17 @@
       document.querySelector('.sidebar').classList.toggle('active');
     });
 
-    // Sales Chart
+    // Sales Chart with dynamic data
+    const chartData = <%- JSON.stringify(chartData) %>;
+
     const ctx = document.getElementById('salesChart').getContext('2d');
-    const salesChart = new Chart(ctx, {
+    let salesChart = new Chart(ctx, {
       type: 'line',
       data: {
-        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+        labels: chartData.labels,
         datasets: [{
-          label: 'Sales',
-          data: [12500, 19250, 15800, 28700, 23900, 25600, 36700, 32450, 30200, 43500, 39800, 65805],
+          label: 'Net Sales',
+          data: chartData.salesData,
           backgroundColor: 'rgba(67, 97, 238, 0.1)',
           borderColor: '#4361EE',
           borderWidth: 2,
@@ -254,12 +285,37 @@
           pointBorderColor: '#fff',
           pointBorderWidth: 2,
           pointRadius: 4,
-          pointHoverRadius: 6
+          pointHoverRadius: 6,
+          fill: true
+        }, {
+          label: 'Gross Sales',
+          data: chartData.grossSalesData,
+          backgroundColor: 'rgba(34, 197, 94, 0.1)',
+          borderColor: '#22C55E',
+          borderWidth: 2,
+          tension: 0.3,
+          pointBackgroundColor: '#22C55E',
+          pointBorderColor: '#fff',
+          pointBorderWidth: 2,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          fill: false
         }]
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        animation: {
+          duration: 1000,
+          easing: 'easeInOutQuart'
+        },
+        transitions: {
+          active: {
+            animation: {
+              duration: 400
+            }
+          }
+        },
         scales: {
           y: {
             beginAtZero: true,
@@ -268,9 +324,16 @@
             },
             ticks: {
               callback: function(value) {
-                return '₹' + value.toLocaleString();
+                return '₹' + value.toLocaleString('en-IN');
               }
-            }
+            },
+            suggestedMax: (function() {
+              const maxValue = chartData.maxValue;
+              if (maxValue < 1000) return 2000;
+              if (maxValue < 5000) return Math.ceil(maxValue / 1000) * 1000 + 1000;
+              if (maxValue < 10000) return Math.ceil(maxValue / 2000) * 2000;
+              return Math.ceil(maxValue / 5000) * 5000;
+            })()
           },
           x: {
             grid: {
@@ -280,24 +343,78 @@
         },
         plugins: {
           legend: {
-            display: false
+            display: true,
+            position: 'top',
+            labels: {
+              usePointStyle: true,
+              padding: 20
+            }
           },
           tooltip: {
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            titleColor: '#fff',
+            bodyColor: '#fff',
+            borderColor: '#4361EE',
+            borderWidth: 1,
+            cornerRadius: 8,
+            displayColors: true,
             callbacks: {
+              title: function(context) {
+                return context[0].label;
+              },
               label: function(context) {
                 let label = context.dataset.label || '';
                 if (label) {
                   label += ': ';
                 }
-                if (context.parsed.y !== null) {
-                  label += '₹' + context.parsed.y.toLocaleString();
+                const value = context.parsed.y;
+                if (value !== null && value !== undefined) {
+                  label += '₹' + Math.round(value).toLocaleString('en-IN');
+                } else {
+                  label += '₹0';
                 }
                 return label;
+              },
+              footer: function(tooltipItems) {
+                let total = 0;
+                tooltipItems.forEach(function(tooltipItem) {
+                  total += tooltipItem.parsed.y || 0;
+                });
+                if (total > 0) {
+                  return 'Total: ₹' + Math.round(total).toLocaleString('en-IN');
+                }
+                return '';
               }
             }
           }
         }
       }
+    });
+
+    // Function to update chart when filter changes
+    function updateChart() {
+      const selectedFilter = document.getElementById('chartFilter').value;
+
+      // Add loading state
+      const chartContainer = document.querySelector('.chart-body');
+      chartContainer.style.opacity = '0.6';
+      chartContainer.style.pointerEvents = 'none';
+
+      // Add smooth transition
+      setTimeout(() => {
+        window.location.href = `/admin/adminDashboard?chartFilter=${selectedFilter}`;
+      }, 200);
+    }
+
+    // Add loading animation on page load
+    document.addEventListener('DOMContentLoaded', function() {
+      const chartContainer = document.querySelector('.chart-body');
+      chartContainer.style.opacity = '0';
+      chartContainer.style.transition = 'opacity 0.5s ease-in-out';
+
+      setTimeout(() => {
+        chartContainer.style.opacity = '1';
+      }, 100);
     });
 
     // Highlight active link

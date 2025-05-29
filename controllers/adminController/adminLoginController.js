@@ -6,7 +6,7 @@ const getAdminLogin = async (req, res) => {
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
-    
+
     res.render("adminLogin");
   } catch (error) {
     console.error("Error loading admin login page:", error);
@@ -66,20 +66,7 @@ const postAdminLogin = async (req, res) => {
   }
 };
 
-const getAdminDashboard = async (req, res) => {
-  try {
-    // Admin data is already available in res.locals.admin from middleware
-    return res.render('adminDashboard', {
-      admin: res.locals.admin
-    });
-  } catch (error) {
-    console.error("Admin dashboard error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to load Dashboard",
-    });
-  }
-};
+// Dashboard functionality moved to dashboard-controller.js
 
 const logoutAdminDashboard = async (req, res) => {
   try {
@@ -88,9 +75,9 @@ const logoutAdminDashboard = async (req, res) => {
         console.error('Error destroying session:', error);
         return res.status(500).send('Logout Failed');
       }
-     
 
-      res.clearCookie('connect.sid'); 
+
+      res.clearCookie('connect.sid');
       res.redirect('/admin/adminLogin');
     });
   } catch (error) {
@@ -99,9 +86,8 @@ const logoutAdminDashboard = async (req, res) => {
   }
 };
 
-module.exports = { 
-  getAdminLogin, 
-  postAdminLogin, 
-  getAdminDashboard, 
-  logoutAdminDashboard 
+module.exports = {
+  getAdminLogin,
+  postAdminLogin,
+  logoutAdminDashboard
 };
