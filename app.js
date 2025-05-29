@@ -56,6 +56,7 @@ app.set("views", [
   path.join(__dirname, "views")
 ]);
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/validators', express.static(path.join(__dirname, 'validators')));
 
 app.use(express.static(path.join(__dirname, "public")));
 app.use(methodOverride('_method'));
