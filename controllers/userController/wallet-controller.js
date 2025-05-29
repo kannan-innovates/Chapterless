@@ -66,9 +66,9 @@ const calculateItemRefundAmount = (item, order) => {
 
     // Case 1: Use priceBreakdown if available
     if (item.priceBreakdown) {
-      // Calculate base amount using the final price (after all discounts)
-      const finalPricePerUnit = Number(item.priceBreakdown.finalPrice || 0);
-      const baseAmount = finalPricePerUnit * quantity;
+      // The finalPrice in priceBreakdown is already the total for all quantities
+      // So we don't need to multiply by quantity again
+      const baseAmount = Number(item.priceBreakdown.finalPrice || 0);
 
       // Calculate tax proportion
       let taxAmount = 0;
@@ -81,7 +81,7 @@ const calculateItemRefundAmount = (item, order) => {
       const totalRefund = baseAmount + taxAmount;
 
       console.log('Calculated refund from priceBreakdown:', {
-        finalPricePerUnit,
+        finalPriceTotal: baseAmount,
         quantity,
         baseAmount,
         taxAmount,
