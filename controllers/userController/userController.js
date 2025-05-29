@@ -68,7 +68,13 @@ const loadHomePage = async (req, res) => {
       product.regularPrice = product.regularPrice || product.salePrice;
     }
 
-    return res.render("home", { categories, topSellingProducts, newArrivals });
+    return res.render("home", {
+      categories,
+      topSellingProducts,
+      newArrivals,
+      user: req.session.user_id ? { id: req.session.user_id } : null,
+      isAuthenticated: !!req.session.user_id
+    });
   } catch (error) {
     console.log(`Error in rendering Home Page: ${error}`);
     res.status(500).send("Server Error");

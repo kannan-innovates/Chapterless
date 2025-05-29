@@ -292,28 +292,7 @@
         const searchFields = document.querySelectorAll(".search-field");
         const desktopResults = document.getElementById("desktopSearchResults");
         const mobileResults = document.getElementById("mobileSearchResults");
-        const wishlistCountElement = document.querySelector('.wishlist-count');
-        const cartCountElement = document.querySelector('.cart-count');
         let debounceTimeout;
-
-        // Fetch counts on page load
-        async function fetchCounts() {
-          try {
-            const response = await fetch('/counts');
-            if (!response.ok) throw new Error('Failed to fetch counts');
-            const { cartCount, wishlistCount } = await response.json();
-            cartCountElement.textContent = cartCount;
-            cartCountElement.dataset.count = cartCount;
-            wishlistCountElement.textContent = wishlistCount;
-            wishlistCountElement.dataset.count = wishlistCount;
-          } catch (error) {
-            console.error('Error fetching counts:', error);
-          }
-        }
-
-        if (wishlistCountElement && cartCountElement) {
-          fetchCounts();
-        }
 
         function debounce(func, wait) {
           return function (...args) {

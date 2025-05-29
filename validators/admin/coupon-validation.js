@@ -21,7 +21,7 @@ document.addEventListener("DOMContentLoaded", function() {
             }
         },
         MIN_ORDER: {
-            MIN: 1,  // Minimum order amount must be at least ₹1
+            MIN: 0,  // Minimum order amount can be ₹0 (no minimum)
             MAX: 1000000
         },
         USAGE_LIMIT: {
@@ -38,7 +38,7 @@ document.addEventListener("DOMContentLoaded", function() {
     function showError(input, message, showAlert = false) {
         const formControl = input.closest('.mb-3');
         input.classList.add('is-invalid');
-        
+
         // Create or update error message div
         let errorDiv = formControl.querySelector('.invalid-feedback');
         if (!errorDiv) {
@@ -76,7 +76,7 @@ document.addEventListener("DOMContentLoaded", function() {
     // Validate coupon code
     function validateCode(input) {
         const value = input.value.trim().toUpperCase();
-        
+
         if (!value) {
             showError(input, 'Coupon code is required');
             return false;
@@ -104,7 +104,7 @@ document.addEventListener("DOMContentLoaded", function() {
     // Validate description
     function validateDescription(input) {
         const value = input.value.trim();
-        
+
         if (value.length > VALIDATION_RULES.DESCRIPTION.MAX_LENGTH) {
             showError(input, `Description cannot exceed ${VALIDATION_RULES.DESCRIPTION.MAX_LENGTH} characters`);
             return false;
@@ -118,14 +118,14 @@ document.addEventListener("DOMContentLoaded", function() {
     function validateDiscount(valueInput, typeSelect, maxDiscountInput) {
         const value = parseFloat(valueInput.value);
         const type = typeSelect.value;
-        
+
         if (isNaN(value) || value <= 0) {
             showError(valueInput, 'Please enter a valid discount value');
             return false;
         }
 
         if (type === 'percentage') {
-            if (value < VALIDATION_RULES.DISCOUNT.PERCENTAGE.MIN || 
+            if (value < VALIDATION_RULES.DISCOUNT.PERCENTAGE.MIN ||
                 value > VALIDATION_RULES.DISCOUNT.PERCENTAGE.MAX) {
                 showError(valueInput, `Percentage must be between ${VALIDATION_RULES.DISCOUNT.PERCENTAGE.MIN}% and ${VALIDATION_RULES.DISCOUNT.PERCENTAGE.MAX}%`);
                 return false;
@@ -151,7 +151,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 clearError(maxDiscountInput);
             }
         } else {
-            if (value < VALIDATION_RULES.DISCOUNT.FIXED.MIN || 
+            if (value < VALIDATION_RULES.DISCOUNT.FIXED.MIN ||
                 value > VALIDATION_RULES.DISCOUNT.FIXED.MAX) {
                 showError(valueInput, `Fixed amount must be between ₹${VALIDATION_RULES.DISCOUNT.FIXED.MIN} and ₹${VALIDATION_RULES.DISCOUNT.FIXED.MAX}`);
                 return false;
@@ -167,9 +167,9 @@ document.addEventListener("DOMContentLoaded", function() {
         const minOrderValue = parseFloat(input.value);
         const discountValue = parseFloat(discountValueInput.value);
         const discountType = discountTypeSelect.value;
-        
+
         if (isNaN(minOrderValue) || minOrderValue < VALIDATION_RULES.MIN_ORDER.MIN) {
-            showError(input, 'Minimum order amount must be at least ₹1');
+            showError(input, 'Minimum order amount must be ₹0 or greater');
             return false;
         }
 
@@ -302,7 +302,7 @@ document.addEventListener("DOMContentLoaded", function() {
         addCouponBtn.addEventListener('click', function(e) {
             const form = document.getElementById('addCouponForm');
             const isValid = validateCouponForm(form, false);
-            
+
             if (!isValid) {
                 e.preventDefault();
                 // Show a general validation error message
@@ -326,7 +326,7 @@ document.addEventListener("DOMContentLoaded", function() {
         updateCouponBtn.addEventListener('click', function(e) {
             const form = document.getElementById('editCouponForm');
             const isValid = validateCouponForm(form, true);
-            
+
             if (!isValid) {
                 e.preventDefault();
                 // Show a general validation error message
@@ -415,7 +415,7 @@ document.addEventListener("DOMContentLoaded", function() {
                     // Update symbol and max discount field visibility
                     const symbol = document.querySelector(isEdit ? '.edit-discount-symbol' : '.discount-symbol');
                     const percentageOptions = document.querySelector(isEdit ? '.edit-percentage-options' : '.percentage-options');
-                    
+
                     if (this.value === 'percentage') {
                         symbol.textContent = '%';
                         percentageOptions.style.display = 'flex';
@@ -567,4 +567,4 @@ document.addEventListener("DOMContentLoaded", function() {
             }
         });
     }
-}); 
+});

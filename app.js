@@ -44,6 +44,10 @@ app.use(passport.session());
 
 app.use(userMiddleware);
 
+// Add cart and wishlist counts to all pages
+const cartWishlistMiddleware = require('./middlewares/cartWishlistMiddleware');
+app.use(cartWishlistMiddleware);
+
 app.use((req, res, next) => {
   res.set("Cache-Control", "no-store");
   next();
