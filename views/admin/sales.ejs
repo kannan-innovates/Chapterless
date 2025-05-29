@@ -1,0 +1,630 @@
+<%- include('../partials/admin/sidebar') %>
+
+<!-- Main Content -->
+<div class="main-content">
+  <div class="page-header d-flex justify-content-between align-items-center">
+    <div>
+      <h1 class="page-title">Sales Report</h1>
+      <p class="text-muted mb-0">Track and analyze your sales performance with detailed reports.</p>
+    </div>
+    <button class="toggle-sidebar d-lg-none">
+      <i class="ri-menu-line"></i>
+    </button>
+  </div>
+
+  <!-- Filter Section -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="chart-card">
+        <div class="chart-header">
+          <h2 class="chart-title">Report Filters</h2>
+          <div class="export-buttons">
+            <button class="btn btn-success btn-sm me-2" id="downloadExcel">
+              <i class="ri-file-excel-line me-1"></i>Excel
+            </button>
+            <button class="btn btn-danger btn-sm" id="downloadPdf">
+              <i class="ri-file-pdf-line me-1"></i>PDF
+            </button>
+          </div>
+        </div>
+        <div class="row g-3">
+          <div class="col-md-3">
+            <label class="form-label">Report Type</label>
+            <select class="form-select" id="reportType">
+              <option value="daily">Daily</option>
+              <option value="weekly" <%= reportType === 'weekly' ? 'selected' : '' %>>Weekly</option>
+              <option value="monthly" <%= reportType === 'monthly' ? 'selected' : '' %>>Monthly</option>
+              <option value="yearly" <%= reportType === 'yearly' ? 'selected' : '' %>>Yearly</option>
+              <option value="custom" <%= reportType === 'custom' ? 'selected' : '' %>>Custom Date Range</option>
+            </select>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">From Date</label>
+            <input type="date" class="form-control" id="fromDate" value="<%= fromDate %>">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">To Date</label>
+            <input type="date" class="form-control" id="toDate" value="<%= toDate %>">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Quick Filter</label>
+            <select class="form-select" id="quickFilter">
+              <option value="">Select Period</option>
+              <option value="today" <%= quickFilter === 'today' ? 'selected' : '' %>>Today</option>
+              <option value="yesterday" <%= quickFilter === 'yesterday' ? 'selected' : '' %>>Yesterday</option>
+              <option value="last7days" <%= quickFilter === 'last7days' ? 'selected' : '' %>>Last 7 Days</option>
+              <option value="last30days" <%= quickFilter === 'last30days' ? 'selected' : '' %>>Last 30 Days</option>
+              <option value="thismonth" <%= quickFilter === 'thismonth' ? 'selected' : '' %>>This Month</option>
+              <option value="lastmonth" <%= quickFilter === 'lastmonth' ? 'selected' : '' %>>Last Month</option>
+              <option value="thisyear" <%= quickFilter === 'thisyear' ? 'selected' : '' %>>This Year</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Summary Stats -->
+  <div class="row g-4 mb-4">
+    <div class="col-sm-6 col-lg-3">
+      <div class="stat-card">
+        <div class="icon sales">
+          <i class="ri-money-dollar-circle-line"></i>
+        </div>
+        <h2 class="stat-title">Total Sales</h2>
+        <p class="stat-value" id="totalSales"><%= summaryStats.totalSales %></p>
+        <div class="text-muted small">
+          <i class="ri-calendar-line"></i> Current month
+        </div>
+      </div>
+    </div>
+
+    <div class="col-sm-6 col-lg-3">
+      <div class="stat-card">
+        <div class="icon orders">
+          <i class="ri-shopping-bag-line"></i>
+        </div>
+        <h2 class="stat-title">Total Orders</h2>
+        <p class="stat-value" id="totalOrders"><%= summaryStats.totalOrders %></p>
+        <div class="text-muted small">
+          <i class="ri-calendar-line"></i> Current month
+        </div>
+      </div>
+    </div>
+
+    <div class="col-sm-6 col-lg-3">
+      <div class="stat-card">
+        <div class="icon pending">
+          <i class="ri-coupon-2-line"></i>
+        </div>
+        <h2 class="stat-title">Total Discounts</h2>
+        <p class="stat-value" id="totalDiscounts"><%= summaryStats.totalDiscounts %></p>
+        <div class="text-muted small">
+          <i class="ri-calendar-line"></i> Current month
+        </div>
+      </div>
+    </div>
+
+    <div class="col-sm-6 col-lg-3">
+      <div class="stat-card">
+        <div class="icon users">
+          <i class="ri-bar-chart-line"></i>
+        </div>
+        <h2 class="stat-title">Average Order Value</h2>
+        <p class="stat-value" id="avgOrderValue"><%= summaryStats.avgOrderValue %></p>
+        <div class="text-muted small">
+          <i class="ri-calendar-line"></i> Current month
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sales Chart -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="chart-card">
+        <div class="chart-header">
+          <h2 class="chart-title">Sales Trend Analysis</h2>
+        </div>
+        <div class="chart-body">
+          <canvas id="salesTrendChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Detailed Sales Report Table -->
+  <div class="row">
+    <div class="col-12">
+      <div class="chart-card">
+        <div class="chart-header">
+          <h2 class="chart-title">Detailed Sales Report</h2>
+          <div class="d-flex align-items-center gap-2">
+            <span class="small text-muted">Show:</span>
+            <select class="form-select form-select-sm" id="entriesPerPage" style="width: auto;" onchange="changeLimit(this.value)">
+              <option value="10" <%= limit === 10 ? 'selected' : '' %>>10</option>
+              <option value="25" <%= limit === 25 ? 'selected' : '' %>>25</option>
+              <option value="50" <%= limit === 50 ? 'selected' : '' %>>50</option>
+              <option value="100" <%= limit === 100 ? 'selected' : '' %>>100</option>
+            </select>
+            <span class="small text-muted">entries</span>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table table-hover align-middle" id="salesTable">
+            <thead class="table-light">
+              <tr>
+                <th>Date</th>
+                <th>Order ID</th>
+                <th>Customer</th>
+                <th>Items</th>
+                <th>Gross Amount</th>
+                <th>Discount</th>
+                <th>Coupon Code</th>
+                <th>Net Amount</th>
+                <th>Payment Method</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="salesTableBody">
+              <% if (salesTableData.orders.length > 0) { %>
+                <% salesTableData.orders.forEach(order => { %>
+                  <tr>
+                    <td><%= order.date %></td>
+                    <td><%= order.orderNumber %></td>
+                    <td><%= order.customerName %></td>
+                    <td><%= order.totalItems %></td>
+                    <td><%= order.grossAmount %></td>
+                    <td><%= order.discount %></td>
+                    <td><%= order.couponCode %></td>
+                    <td><%= order.netAmount %></td>
+                    <td><%= order.paymentMethod %></td>
+                    <td><%- order.status %></td>
+                  </tr>
+                <% }); %>
+              <% } else { %>
+                <tr>
+                  <td colspan="10" class="text-center text-muted py-4">
+                    <i class="ri-inbox-line fs-1 d-block mb-2"></i>
+                    No sales data found for the selected period
+                  </td>
+                </tr>
+              <% } %>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination -->
+        <div class="d-flex justify-content-between align-items-center mt-3">
+          <div class="text-muted small">
+            Showing <span id="showingStart"><%= salesTableData.pagination.showingStart %></span> to <span id="showingEnd"><%= salesTableData.pagination.showingEnd %></span> of <span id="totalEntries"><%= salesTableData.pagination.totalOrders %></span> entries
+          </div>
+          <nav>
+            <ul class="pagination pagination-sm mb-0">
+              <li class="page-item <%= !salesTableData.pagination.hasPrev ? 'disabled' : '' %>">
+                <a class="page-link" href="?page=<%= salesTableData.pagination.prevPage %>&limit=<%= limit %>" tabindex="-1">Previous</a>
+              </li>
+
+              <%
+                const startPage = Math.max(1, salesTableData.pagination.currentPage - 2);
+                const endPage = Math.min(salesTableData.pagination.totalPages, salesTableData.pagination.currentPage + 2);
+              %>
+
+              <% for (let i = startPage; i <= endPage; i++) { %>
+                <li class="page-item <%= i === salesTableData.pagination.currentPage ? 'active' : '' %>">
+                  <a class="page-link" href="?page=<%= i %>&limit=<%= limit %>"><%= i %></a>
+                </li>
+              <% } %>
+
+              <li class="page-item <%= !salesTableData.pagination.hasNext ? 'disabled' : '' %>">
+                <a class="page-link" href="?page=<%= salesTableData.pagination.nextPage %>&limit=<%= limit %>">Next</a>
+              </li>
+            </ul>
+          </nav>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<script>
+// Toggle sidebar on mobile
+document.querySelector('.toggle-sidebar')?.addEventListener('click', function() {
+  document.querySelector('.sidebar')?.classList.toggle('active');
+});
+
+// Sales Trend Chart with real data
+const ctx = document.getElementById('salesTrendChart').getContext('2d');
+
+// Get real data from server
+const salesTrendData = <%- JSON.stringify(salesTrendData) %>;
+
+const salesTrendChart = new Chart(ctx, {
+  type: 'line',
+  data: {
+    labels: salesTrendData.labels,
+    datasets: [
+      {
+        label: 'Gross Sales',
+        data: salesTrendData.grossSales,
+        backgroundColor: 'rgba(67, 97, 238, 0.1)',
+        borderColor: '#4361EE',
+        borderWidth: 3,
+        tension: 0.4,
+        pointBackgroundColor: '#4361EE',
+        pointBorderColor: '#fff',
+        pointBorderWidth: 2,
+        pointRadius: 5,
+        pointHoverRadius: 7
+      },
+      {
+        label: 'Net Sales',
+        data: salesTrendData.netSales,
+        backgroundColor: 'rgba(40, 167, 69, 0.1)',
+        borderColor: '#28a745',
+        borderWidth: 3,
+        tension: 0.4,
+        pointBackgroundColor: '#28a745',
+        pointBorderColor: '#fff',
+        pointBorderWidth: 2,
+        pointRadius: 5,
+        pointHoverRadius: 7
+      },
+      {
+        label: 'Discounts',
+        data: salesTrendData.discounts,
+        backgroundColor: 'rgba(255, 193, 7, 0.1)',
+        borderColor: '#FFC107',
+        borderWidth: 2,
+        tension: 0.4,
+        pointBackgroundColor: '#FFC107',
+        pointBorderColor: '#fff',
+        pointBorderWidth: 2,
+        pointRadius: 4,
+        pointHoverRadius: 6
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: {
+      intersect: false,
+      mode: 'index'
+    },
+    hover: {
+      mode: 'index',
+      intersect: false
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        grid: {
+          color: 'rgba(0, 0, 0, 0.05)'
+        },
+        ticks: {
+          callback: function(value) {
+            return '₹' + value.toLocaleString('en-IN');
+          },
+          maxTicksLimit: 6,
+          // Force minimum scale for better visualization
+          min: 0,
+          suggestedMax: function(context) {
+            const datasets = context.chart.data.datasets;
+            const allValues = datasets.flatMap(d => d.data).filter(v => v > 0);
+            const maxValue = Math.max(...allValues, 0);
+
+            // Set minimum suggested max for better visualization
+            if (maxValue < 1000) return 2000;
+            if (maxValue < 5000) return Math.ceil(maxValue / 1000) * 1000 + 1000;
+            if (maxValue < 10000) return Math.ceil(maxValue / 2000) * 2000;
+            return Math.ceil(maxValue / 5000) * 5000;
+          }
+        },
+        // Better scaling for small values
+        grace: '10%'
+      },
+      x: {
+        grid: {
+          display: false
+        }
+      }
+    },
+    plugins: {
+      legend: {
+        display: true,
+        position: 'top'
+      },
+      tooltip: {
+        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+        titleColor: '#fff',
+        bodyColor: '#fff',
+        borderColor: '#4361EE',
+        borderWidth: 1,
+        cornerRadius: 8,
+        displayColors: true,
+        callbacks: {
+          title: function(context) {
+            return context[0].label + ' Sales Data';
+          },
+          label: function(context) {
+            let label = context.dataset.label || '';
+            let value = context.parsed.y;
+
+            if (label) {
+              label += ': ';
+            }
+
+            if (value !== null) {
+              label += '₹' + value.toLocaleString('en-IN');
+            }
+
+            return label;
+          },
+          afterBody: function(context) {
+            // Calculate percentage for each dataset
+            let total = 0;
+            context.forEach(function(tooltipItem) {
+              total += tooltipItem.parsed.y || 0;
+            });
+
+            // Only show breakdown if total is greater than 0
+            if (total === 0) {
+              return ['', 'No sales data for this period'];
+            }
+
+            let percentages = [];
+            context.forEach(function(tooltipItem) {
+              let value = tooltipItem.parsed.y || 0;
+              let percentage = total > 0 ? ((value / total) * 100).toFixed(1) : '0.0';
+              percentages.push(tooltipItem.dataset.label + ': ' + percentage + '%');
+            });
+
+            return ['', 'Breakdown:', ...percentages];
+          }
+        }
+      }
+    }
+  }
+});
+
+// Date range functionality
+document.getElementById('reportType').addEventListener('change', function() {
+  const customRange = document.getElementById('reportType').value === 'custom';
+  document.getElementById('fromDate').disabled = !customRange;
+  document.getElementById('toDate').disabled = !customRange;
+
+  // If not custom, clear the quick filter and apply the report type
+  if (!customRange) {
+    document.getElementById('quickFilter').value = '';
+    applyDateFilter();
+  }
+});
+
+// Quick filter functionality
+document.getElementById('quickFilter').addEventListener('change', function() {
+  const value = this.value;
+  const today = new Date();
+  let fromDate, toDate;
+
+  switch(value) {
+    case 'today':
+      fromDate = toDate = today.toISOString().split('T')[0];
+      break;
+    case 'yesterday':
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+      fromDate = toDate = yesterday.toISOString().split('T')[0];
+      break;
+    case 'last7days':
+      toDate = today.toISOString().split('T')[0];
+      fromDate = new Date(today.setDate(today.getDate() - 7)).toISOString().split('T')[0];
+      break;
+    case 'last30days':
+      toDate = new Date().toISOString().split('T')[0];
+      fromDate = new Date(new Date().setDate(new Date().getDate() - 30)).toISOString().split('T')[0];
+      break;
+    case 'thismonth':
+      const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+      fromDate = firstDay.toISOString().split('T')[0];
+      toDate = today.toISOString().split('T')[0];
+      break;
+    case 'lastmonth':
+      const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+      const lastDayOfLastMonth = new Date(today.getFullYear(), today.getMonth(), 0);
+      fromDate = lastMonth.toISOString().split('T')[0];
+      toDate = lastDayOfLastMonth.toISOString().split('T')[0];
+      break;
+    case 'thisyear':
+      fromDate = new Date(today.getFullYear(), 0, 1).toISOString().split('T')[0];
+      toDate = today.toISOString().split('T')[0];
+      break;
+  }
+
+  if (fromDate && toDate) {
+    document.getElementById('fromDate').value = fromDate;
+    document.getElementById('toDate').value = toDate;
+
+    // Apply the filter
+    applyDateFilter();
+  }
+});
+
+// Function to apply date filters
+function applyDateFilter() {
+  const fromDate = document.getElementById('fromDate').value;
+  const toDate = document.getElementById('toDate').value;
+  const quickFilter = document.getElementById('quickFilter').value;
+  const reportType = document.getElementById('reportType').value;
+
+  // Build query parameters
+  const params = new URLSearchParams();
+
+  if (fromDate && toDate && reportType === 'custom') {
+    params.append('fromDate', fromDate);
+    params.append('toDate', toDate);
+    params.append('reportType', reportType);
+  } else if (quickFilter) {
+    params.append('quickFilter', quickFilter);
+  }
+
+  // Reload page with new parameters
+  window.location.href = window.location.pathname + '?' + params.toString();
+}
+
+// Note: Filters apply automatically when changed, no manual "Generate Report" needed
+
+// PDF Download functionality
+document.getElementById('downloadPdf').addEventListener('click', function() {
+  // Build current filter parameters
+  const params = new URLSearchParams();
+  const fromDate = document.getElementById('fromDate').value;
+  const toDate = document.getElementById('toDate').value;
+  const quickFilter = document.getElementById('quickFilter').value;
+  const reportType = document.getElementById('reportType').value;
+
+  if (fromDate && toDate && reportType === 'custom') {
+    params.append('fromDate', fromDate);
+    params.append('toDate', toDate);
+    params.append('reportType', reportType);
+  } else if (quickFilter) {
+    params.append('quickFilter', quickFilter);
+  }
+
+  // Open PDF export in new window
+  const exportUrl = '/admin/sales/export/pdf?' + params.toString();
+  window.open(exportUrl, '_blank');
+});
+
+// Excel Download functionality
+document.getElementById('downloadExcel').addEventListener('click', function() {
+  // Build current filter parameters
+  const params = new URLSearchParams();
+  const fromDate = document.getElementById('fromDate').value;
+  const toDate = document.getElementById('toDate').value;
+  const quickFilter = document.getElementById('quickFilter').value;
+  const reportType = document.getElementById('reportType').value;
+
+  if (fromDate && toDate && reportType === 'custom') {
+    params.append('fromDate', fromDate);
+    params.append('toDate', toDate);
+    params.append('reportType', reportType);
+  } else if (quickFilter) {
+    params.append('quickFilter', quickFilter);
+  }
+
+  // Trigger Excel download
+  const exportUrl = '/admin/sales/export/excel?' + params.toString();
+  window.location.href = exportUrl;
+});
+
+// Add spinning animation for loader
+const style = document.createElement('style');
+style.textContent = `
+  .spin {
+    animation: spin 1s linear infinite;
+  }
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+`;
+document.head.appendChild(style);
+
+// Initialize date inputs with current month
+const today = new Date();
+const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+document.getElementById('fromDate').value = firstDay.toISOString().split('T')[0];
+document.getElementById('toDate').value = today.toISOString().split('T')[0];
+
+// Function to change entries per page
+function changeLimit(newLimit) {
+  window.location.href = `?page=1&limit=${newLimit}`;
+}
+</script>
+
+<style>
+/* Additional styles for sales page */
+.chart-body {
+  height: 400px;
+  position: relative;
+}
+
+#salesTrendChart {
+  height: 100% !important;
+  max-width: 100%;
+}
+
+.form-select-sm {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.875rem;
+}
+
+.badge {
+  font-size: 0.75rem;
+  padding: 0.35em 0.65em;
+}
+
+.table th {
+  font-weight: 600;
+  border-bottom: 2px solid #dee2e6;
+  color: var(--primary);
+}
+
+.table td {
+  vertical-align: middle;
+  border-bottom: 1px solid #f8f9fa;
+}
+
+.table tbody tr:hover {
+  background-color: rgba(67, 97, 238, 0.05);
+}
+
+.pagination .page-link {
+  color: var(--primary);
+  border-color: #dee2e6;
+}
+
+.pagination .page-item.active .page-link {
+  background-color: var(--info);
+  border-color: var(--info);
+}
+
+.pagination .page-link:hover {
+  background-color: rgba(67, 97, 238, 0.1);
+  border-color: var(--info);
+  color: var(--info);
+}
+
+.btn-outline-primary:hover,
+.btn-outline-success:hover {
+  transform: translateY(-1px);
+}
+
+/* Responsive table improvements */
+@media (max-width: 768px) {
+  .table-responsive {
+    font-size: 0.875rem;
+  }
+
+  .chart-body {
+    height: 300px;
+  }
+
+  .stat-card {
+    margin-bottom: 1rem;
+  }
+}
+
+/* Loading state styles */
+.btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+</style>
