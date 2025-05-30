@@ -2,6 +2,7 @@ const Wishlist = require("../../models/wishlistSchema")
 const Product = require("../../models/productSchema")
 const Cart = require("../../models/cartSchema")
 const { getActiveOfferForProduct, calculateDiscount } = require("../../utils/offer-helper")
+const { HttpStatus } = require("../../helpers/status-code")
 
 const getWishlist = async (req, res) => {
   try {
@@ -113,7 +114,7 @@ const getWishlist = async (req, res) => {
     })
   } catch (error) {
     console.log("Error in rendering wishlist:", error)
-    res.status(500).send("Server Error")
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).send("Server Error")
   }
 }
 
@@ -121,7 +122,7 @@ const getWishlist = async (req, res) => {
 const toggleWishlist = async (req, res) => {
   try {
     if (!req.session.user_id) {
-      return res.status(401).json({ success: false, message: 'Please log in to manage wishlist' });
+      return res.status(HttpStatus.UNAUTHORIZED).json({ success: false, message: 'Please log in to manage wishlist' });
     }
 
     const userId = req.session.user_id;
@@ -129,7 +130,7 @@ const toggleWishlist = async (req, res) => {
     const product = await Product.findById(productId);
 
     if (!product || !product.isListed || product.isDeleted) {
-      return res.status(404).json({ success: false, message: 'Product not found or unavailable' });
+      return res.status(HttpStatus.NOT_FOUND).json({ success: false, message: 'Product not found or unavailable' });
     }
 
     let wishlist = await Wishlist.findOne({ user: userId });
@@ -156,21 +157,21 @@ const toggleWishlist = async (req, res) => {
     }
   } catch (error) {
     console.log('Error toggling wishlist:', error);
-    res.status(500).json({ success: false, message: 'Server error' });
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ success: false, message: 'Server error' });
   }
 };
 
 const addAllToCart = async (req, res) => {
   try {
     if (!req.session.user_id) {
-      return res.status(401).json({ success: false, message: 'Please log in' });
+      return res.status(HttpStatus.UNAUTHORIZED).json({ success: false, message: 'Please log in' });
     }
 
     const userId = req.session.user_id;
     const wishlist = await Wishlist.findOne({ user: userId }).populate('items.product');
 
     if (!wishlist || wishlist.items.length === 0) {
-      return res.status(404).json({ success: false, message: 'Wishlist is empty' });
+      return res.status(HttpStatus.NOT_FOUND).json({ success: false, message: 'Wishlist is empty' });
     }
 
     let cart = await Cart.findOne({ user: userId });
@@ -222,14 +223,14 @@ const addAllToCart = async (req, res) => {
     });
   } catch (error) {
     console.log('Error adding all to cart:', error);
-    res.status(500).json({ success: false, message: 'Server error' });
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ success: false, message: 'Server error' });
   }
 };
 
 const clearWishlist = async (req, res) => {
   try {
     if (!req.session.user_id) {
-      return res.status(401).json({ success: false, message: 'Please log in' });
+      return res.status(HttpStatus.UNAUTHORIZED).json({ success: false, message: 'Please log in' });
     }
 
     const userId = req.session.user_id;
@@ -238,7 +239,7 @@ const clearWishlist = async (req, res) => {
     res.json({ success: true, message: 'Wishlist cleared', wishlistCount: 0 });
   } catch (error) {
     console.log('Error clearing wishlist:', error);
-    res.status(500).json({ success: false, message: 'Server error' });
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ success: false, message: 'Server error' });
   }
 };
 

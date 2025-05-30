@@ -14,6 +14,8 @@ const {
   calculateFinalItemPrice
 } = require("../../utils/offer-helper");
 
+const { HttpStatus } = require("../../helpers/status-code");
+
 // Initialize Razorpay
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
@@ -409,7 +411,7 @@ const applyCoupon = async (req, res) => {
     const tax = (subtotal - discount) * 0.08;
     const total = subtotal - discount + tax;
 
-    res.status(200).json({
+    res.status(HttpStatus.OK).json({
       success: true,
       message: "Coupon applied successfully",
       discount,
@@ -424,7 +426,7 @@ const applyCoupon = async (req, res) => {
     });
   } catch (error) {
     console.error("Error applying coupon:", error);
-    res.status(500).json({ success: false, message: "Internal server error" });
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ success: false, message: "Internal server error" });
   }
 };
 
@@ -434,13 +436,13 @@ const removeCoupon = async (req, res) => {
     // Remove coupon from session
     delete req.session.appliedCoupon;
 
-    res.status(200).json({
+    res.status(HttpStatus.OK).json({
       success: true,
       message: "Coupon removed successfully",
     });
   } catch (error) {
     console.error("Error removing coupon:", error);
-    res.status(500).json({ success: false, message: "Internal server error" });
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ success: false, message: "Internal server error" });
   }
 };
 
@@ -449,14 +451,14 @@ const addAddress = async (req, res) => {
   try {
     const userId = req.session.user_id;
     if (!userId) {
-      return res.status(401).json({ success: false, message: "Please log in to add an address" });
+      return res.status(HttpStatus.UNAUTHORIZED).json({ success: false, message: "Please log in to add an address" });
     }
 
     const { fullName, phone, pincode, district, state, street, landmark, isDefault } = req.body;
 
     // Validate inputs
     if (!fullName || !phone || !pincode || !district || !state || !street) {
-      return res.status(400).json({ success: false, message: "All required fields must be filled" });
+      return res.status(HttpStatus.BAD_REQUEST).json({ success: false, message: "All required fields must be filled" });
     }
 
     // Create new address
@@ -479,14 +481,14 @@ const addAddress = async (req, res) => {
 
     await newAddress.save();
 
-    res.status(201).json({
+    res.status(HttpStatus.CREATED).json({
       success: true,
       message: "Address added successfully",
       address: newAddress,
     });
   } catch (error) {
     console.error("Error adding address:", error);
-    res.status(500).json({ success: false, message: "Internal server error" });
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ success: false, message: "Internal server error" });
   }
 };
 
@@ -495,33 +497,33 @@ const createRazorpayOrder = async (req, res) => {
   try {
     const userId = req.session.user_id;
     if (!userId) {
-      return res.status(401).json({ success: false, message: "Please log in to place an order" });
+      return res.status(HttpStatus.UNAUTHORIZED).json({ success: false, message: "Please log in to place an order" });
     }
 
     const { addressId } = req.body;
 
     // Validate inputs
     if (!addressId) {
-      return res.status(400).json({ success: false, message: "Address is required" });
+      return res.status(HttpStatus.BAD_REQUEST).json({ success: false, message: "Address is required" });
     }
 
     // Fetch address
     const address = await Address.findById(addressId);
     if (!address || address.userId.toString() !== userId.toString()) {
-      return res.status(400).json({ success: false, message: "Invalid or unauthorized address" });
+      return res.status(HttpStatus.BAD_REQUEST).json({ success: false, message: "Invalid or unauthorized address" });
     }
 
     // Fetch cart
     const cart = await Cart.findOne({ user: userId }).populate("items.product");
     if (!cart || !cart.items.length) {
-      return res.status(400).json({ success: false, message: "Cart is empty" });
+      return res.status(HttpStatus.BAD_REQUEST).json({ success: false, message: "Cart is empty" });
     }
 
     // Filter valid cart items
     const cartItems = cart.items.filter((item) => item.product && item.product.isListed && !item.product.isDeleted);
 
     if (!cartItems.length) {
-      return res.status(400).json({ success: false, message: "No valid items in cart" });
+      return res.status(HttpStatus.BAD_REQUEST).json({ success: false, message: "No valid items in cart" });
     }
 
     // Generate order number once and use it consistently
@@ -1138,7 +1140,7 @@ const placeOrder = async (req, res) => {
     // Step 5: Clear cart
     await Cart.findOneAndUpdate({ user: userId }, { items: [] });
 
-    res.status(201).json({
+    res.status(HttpStatus.CREATED).json({
       success: true,
       message: paymentMethod === "Wallet" ? "Order placed and paid successfully from wallet" : "Order placed successfully",
       orderId: order._id,
@@ -1154,7 +1156,7 @@ const placeOrder = async (req, res) => {
       }
     }
 
-    res.status(error.message.includes("Insufficient stock") ? 400 : 500).json({
+    res.status(error.message.includes("Insufficient stock") ? HttpStatus.BAD_REQUEST : HttpStatus.INTERNAL_SERVER_ERROR).json({
       success: false,
       message: error.message || "Failed to place order",
     });

@@ -2,6 +2,8 @@ const Coupon = require('../../models/couponSchema');
 const Category = require('../../models/categorySchema');
 const Product = require('../../models/productSchema');
 
+const { HttpStatus } = require('../../helpers/status-code');
+
 const getCoupons = async (req, res) => {
   try {
     // Pagination parameters
@@ -84,7 +86,7 @@ const getCoupons = async (req, res) => {
     });
   } catch (error) {
     console.error('Error in loading coupons page:', error);
-    res.status(500).render('error', { message: 'Internal server error' });
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).render('error', { message: 'Internal server error' });
   }
 };
 
@@ -97,17 +99,17 @@ const getCouponDetails = async (req, res) => {
       .lean();
 
     if (!coupon) {
-      return res.status(404).json({ message: 'Coupon not found' });
+      return res.status(HttpStatus.NOT_FOUND).json({ message: 'Coupon not found' });
     }
 
     // Convert ObjectIds to strings for applicableCategories and applicableProducts
     coupon.applicableCategories = coupon.applicableCategories.map(cat => cat._id.toString());
     coupon.applicableProducts = coupon.applicableProducts.map(prod => prod._id.toString());
 
-    res.status(200).json(coupon);
+    res.status(HttpStatus.OK).json(coupon);
   } catch (error) {
     console.error('Error fetching coupon details:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Internal server error' });
   }
 };
 
@@ -131,28 +133,28 @@ const createCoupon = async (req, res) => {
 
     // Validate required fields
     if (!code || !discountType || !discountValue || !startDate || !expiryDate) {
-      return res.status(400).json({ message: 'All required fields must be provided' });
+      return res.status(HttpStatus.BAD_REQUEST).json({ message: 'All required fields must be provided' });
     }
 
     // Check if coupon code already exists
     const existingCoupon = await Coupon.findOne({ code: code.toUpperCase() });
     if (existingCoupon) {
-      return res.status(400).json({ message: 'Coupon code already exists' });
+      return res.status(HttpStatus.BAD_REQUEST).json({ message: 'Coupon code already exists' });
     }
 
     // Validate dates
     const start = new Date(startDate);
     const expiry = new Date(expiryDate);
     if (start >= expiry) {
-      return res.status(400).json({ message: 'Expiry date must be after start date' });
+      return res.status(HttpStatus.BAD_REQUEST).json({ message: 'Expiry date must be after start date' });
     }
 
     // Validate discount value
     if (discountType === 'percentage' && (discountValue < 0 || discountValue > 100)) {
-      return res.status(400).json({ message: 'Percentage discount must be between 0 and 100' });
+      return res.status(HttpStatus.BAD_REQUEST).json({ message: 'Percentage discount must be between 0 and 100' });
     }
     if (discountType === 'fixed' && discountValue <= 0) {
-      return res.status(400).json({ message: 'Fixed discount must be greater than 0' });
+      return res.status(HttpStatus.BAD_REQUEST).json({ message: 'Fixed discount must be greater than 0' });
     }
 
     // Create new coupon
@@ -174,10 +176,10 @@ const createCoupon = async (req, res) => {
     });
 
     await coupon.save();
-    res.status(201).json({ success: true, message: 'Coupon created successfully' });
+    res.status(HttpStatus.CREATED).json({ success: true, message: 'Coupon created successfully' });
   } catch (error) {
     console.error('Error creating coupon:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Internal server error' });
   }
 };
 
@@ -202,34 +204,34 @@ const updateCoupon = async (req, res) => {
 
     // Validate required fields
     if (!code || !discountType || !discountValue || !startDate || !expiryDate) {
-      return res.status(400).json({ message: 'All required fields must be provided' });
+      return res.status(HttpStatus.BAD_REQUEST).json({ message: 'All required fields must be provided' });
     }
 
     // Fetch the existing coupon
     const coupon = await Coupon.findById(couponId);
     if (!coupon) {
-      return res.status(404).json({ message: 'Coupon not found' });
+      return res.status(HttpStatus.NOT_FOUND).json({ message: 'Coupon not found' });
     }
 
     // Check if coupon code already exists (excluding current coupon)
     const existingCoupon = await Coupon.findOne({ code: code.toUpperCase(), _id: { $ne: couponId } });
     if (existingCoupon) {
-      return res.status(400).json({ message: 'Coupon code already exists' });
+      return res.status(HttpStatus.BAD_REQUEST).json({ message: 'Coupon code already exists' });
     }
 
     // Validate dates
     const start = new Date(startDate);
     const expiry = new Date(expiryDate);
     if (start >= expiry) {
-      return res.status(400).json({ message: 'Expiry date must be after start date' });
+      return res.status(HttpStatus.BAD_REQUEST).json({ message: 'Expiry date must be after start date' });
     }
 
     // Validate discount value
     if (discountType === 'percentage' && (discountValue < 0 || discountValue > 100)) {
-      return res.status(400).json({ message: 'Percentage discount must be between 0 and 100' });
+      return res.status(HttpStatus.BAD_REQUEST).json({ message: 'Percentage discount must be between 0 and 100' });
     }
     if (discountType === 'fixed' && discountValue <= 0) {
-      return res.status(400).json({ message: 'Fixed discount must be greater than 0' });
+      return res.status(HttpStatus.BAD_REQUEST).json({ message: 'Fixed discount must be greater than 0' });
     }
 
     // Update coupon
@@ -248,10 +250,10 @@ const updateCoupon = async (req, res) => {
     coupon.applicableProducts = applicableProducts || [];
 
     await coupon.save();
-    res.status(200).json({ success: true, message: 'Coupon updated successfully' });
+    res.status(HttpStatus.OK).json({ success: true, message: 'Coupon updated successfully' });
   } catch (error) {
     console.error('Error updating coupon:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Internal server error' });
   }
 };
 
@@ -261,16 +263,16 @@ const toggleCouponStatus = async (req, res) => {
     const coupon = await Coupon.findById(couponId);
 
     if (!coupon) {
-      return res.status(404).json({ message: 'Coupon not found' });
+      return res.status(HttpStatus.NOT_FOUND).json({ message: 'Coupon not found' });
     }
 
     coupon.isActive = !coupon.isActive;
     await coupon.save();
 
-    res.status(200).json({ success: true, message: `Coupon ${coupon.isActive ? 'activated' : 'deactivated'} successfully` });
+    res.status(HttpStatus.OK).json({ success: true, message: `Coupon ${coupon.isActive ? 'activated' : 'deactivated'} successfully` });
   } catch (error) {
     console.error('Error toggling coupon status:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Internal server error' });
   }
 };
 

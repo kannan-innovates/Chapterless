@@ -5,7 +5,7 @@ const getCategories = async (req, res) => {
     const categories = await Category.find({ isListed: true }).sort({
       createdAt: -1,
     });
-    return categories; // Return categories for use in home controller
+    return categories;
   } catch (error) {
     console.error("Error fetching categories:", error);
     throw error;

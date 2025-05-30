@@ -1,9 +1,11 @@
+const {HttpStatus} = require("../../helpers/status-code")
+
 const logout = async (req, res) => {
   try {
     req.session.destroy((err) => {
       if (err) {
         console.error("Error destroying session:", err);
-        return res.status(500).send("Logout failed");
+        return res.status(HttpStatus.INTERNAL_SERVER_ERROR).send("Logout failed");
       }
       
       // Set cache-control headers to prevent back button access
@@ -15,7 +17,7 @@ const logout = async (req, res) => {
     });
   } catch (error) {
     console.error("Logout error:", error);
-    res.status(500).send("Internal Server Error");
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).send("Internal Server Error");
   }
 };
 

@@ -1,6 +1,7 @@
 const categoryController = require("../../controllers/userController/categoryController");
 const Product = require('../../models/productSchema');
 const { getActiveOfferForProduct, calculateDiscount } = require("../../utils/offer-helper");
+const { HttpStatus } = require("../../helpers/status-code");
 
 const pageNotFound = async (req, res) => {
   try {
@@ -77,7 +78,7 @@ const loadHomePage = async (req, res) => {
     });
   } catch (error) {
     console.log(`Error in rendering Home Page: ${error}`);
-    res.status(500).send("Server Error");
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).send("Server Error");
   }
 };
 

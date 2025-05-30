@@ -1,4 +1,5 @@
 const User = require("../../models/userSchema");
+const { HttpStatus } = require("../../helpers/status-code");
 
 const getUsers = async (req, res) => {
   try {
@@ -45,7 +46,7 @@ const getUsers = async (req, res) => {
     });
   } catch (error) {
     console.log("Error in getting User", error);
-    res.status(500).send("Server error");
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).send("Server error");
   }
 };
 
@@ -59,20 +60,20 @@ const blockUser = async (req, res) => {
       { new: true }
     );
     if (!user) {
-      return res.status(404).json({
+      return res.status(HttpStatus.NOT_FOUND).json({
         success: false,
         message: "User not found",
       });
     }
 
-    return res.status(200).json({
+    return res.status(HttpStatus.OK).json({
       success: true,
       message: "User blocked successfully ",
       user: { id: user._id, isBlocked: user.isBlocked },
     });
   } catch (error) {
     console.log(`Error in deleting user,${error}`);
-    return res.status(400).json({
+    return res.status(HttpStatus.BAD_REQUEST).json({
       success: false,
       message: "server error",
     });
@@ -89,19 +90,19 @@ const unblockUser = async (req, res) => {
     );
 
     if (!user) {
-      return res.status(404).json({
+      return res.status(HttpStatus.NOT_FOUND).json({
         success: false,
         message: "User not found",
       });
     }
 
-    return res.status(200).json({
+    return res.status(HttpStatus.OK).json({
       success: true,
       message: "User unblocked successfully",
     });
   } catch (error) {
     console.log(`Error in unblocking user,${error}`);
-    res.status(400).json({
+    res.status(HttpStatus.BAD_REQUEST).json({
       success: false,
       message: "Server Error",
     });

@@ -4,6 +4,8 @@ const Cart = require("../../models/cartSchema");
 const Wishlist = require("../../models/wishlistSchema");
 const { getActiveOfferForProduct, calculateDiscount } = require("../../utils/offer-helper");
 
+const {HttpStatus} = require('../../helpers/status-code')
+
 const productDetails = async (req, res) => {
   try {
     const userId = req.session.user_id;
@@ -11,7 +13,7 @@ const productDetails = async (req, res) => {
 
     const product = await Product.findById(productId).populate("category");
     if (!product || !product.isListed || product.isDeleted) {
-      return res.status(404).render("pageNotFound");
+      return res.status(HttpStatus.NOT_FOUND).render("pageNotFound");
     }
 
     // Get active offer and calculate discount
@@ -107,7 +109,7 @@ const productDetails = async (req, res) => {
     });
   } catch (error) {
     console.error("Error fetching product details:", error);
-    res.status(500).render("pageNotFound");
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).render("pageNotFound");
   }
 };
 

@@ -1,5 +1,5 @@
 const Product = require('../../models/productSchema');
-
+const { HttpStatus } = require("../../helpers/status-code");
 const searchProducts = async (req, res) => {
   try {
     const query = req.query.q || '';
@@ -21,7 +21,7 @@ const searchProducts = async (req, res) => {
     res.json(products);
   } catch (error) {
     console.error(`Error in searchProducts: ${error}`);
-    res.status(500).json({ error: 'Server Error' });
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ error: 'Server Error' });
   }
 };
 

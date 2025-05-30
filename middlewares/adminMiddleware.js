@@ -1,4 +1,5 @@
 const User = require('../models/userSchema');
+const { HttpStatus } = require('../helpers/status-code');
 
 /**
  * Admin middleware for session validation and cache prevention
@@ -20,7 +21,7 @@ const adminMiddleware = {
       return res.redirect('/admin/adminLogin');
     } catch (err) {
       console.error('Admin auth error:', err);
-      return res.status(500).redirect('/admin/adminLogin');
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).redirect('/admin/adminLogin');
     }
   },
 

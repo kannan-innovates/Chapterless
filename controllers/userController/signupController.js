@@ -2,15 +2,15 @@ const User = require("../../models/userSchema");
 const OTP = require("../../models/otpSchema"); // Import the new OTP model
 const hashPasswordHelper = require("../../helpers/hash");
 const sendOtpEmail = require("../../helpers/sendMail");
-const { text } = require("express");
 const { validateBasicOtp, validateOtpSession } = require("../../validators/user/basic-otp-validator");
+const { HttpStatus } = require("../../helpers/status-code");
 
 const getOtp = async (req, res) => {
   try {
     res.render("verify-otp");
   } catch (error) {
     console.log("error during render", error);
-    res.status(500).json({ message: "Server error" });
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: "Server error" });
   }
 };
 
@@ -40,7 +40,7 @@ const postSignup = async (req, res) => {
     });
 
     if (existingUser) {
-      return res.status(409).json({
+      return res.status(HttpStatus.CONFLICT).json({
         success: false,
         message: "User with this email or phone number already exists!",
       });
@@ -56,14 +56,12 @@ const postSignup = async (req, res) => {
     try {
       await sendOtpEmail(trimmedEmail, trimmedName, otp, subjectContent,"signup");
     } catch (err) {
-      // ❌ Failed to send OTP email
-      return res.status(500).json({
+      
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
         success: false,
         message: "Failed to send OTP email. Please try again later.",
       });
     }
-
-    // ✅ Email sent successfully → continue
 
     const hashedPassword = await hashPasswordHelper.hashPassword(password);
 
@@ -86,14 +84,14 @@ const postSignup = async (req, res) => {
       password: hashedPassword,
     };
 
-    return res.status(200).json({
+    return res.status(HttpStatus.OK).json({
       success: true,
       message: "OTP sent successfully. Redirecting to OTP page.",
     });
 
   } catch (error) {
     console.error("Error in postSignup:", error);
-    return res.status(500).json({
+    return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
       success: false,
       message: "Internal Server Error",
     });
@@ -107,7 +105,7 @@ const verifyOtp = async (req, res) => {
     // Basic OTP validation using utility
     const otpValidation = validateBasicOtp(otp);
     if (!otpValidation.isValid) {
-      return res.status(400).json({
+      return res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: otpValidation.message,
       });
@@ -116,7 +114,7 @@ const verifyOtp = async (req, res) => {
     // Session validation using utility
     const sessionValidation = validateOtpSession(req, 'signup');
     if (!sessionValidation.isValid) {
-      return res.status(400).json({
+      return res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: sessionValidation.message,
         sessionExpired: sessionValidation.sessionExpired,
@@ -128,23 +126,26 @@ const verifyOtp = async (req, res) => {
     const otpDoc = await OTP.findOne({ email: tempUser.email, purpose: "signup" });
 
     if (!otpDoc) {
-      return res.status(400).json({
+      return res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: "OTP has expired or doesn't exist. Please request a new one.",
       });
     }
 
     if (otp !== otpDoc.otp) {
-      return res.status(400).json({ success: false, message: "Invalid OTP" });
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        success: false,
+        message: "Invalid OTP"
+      });
     }
 
-    // Create user after OTP is verified
+
     const newUser = new User({
       fullName: tempUser.fullName,
       email: tempUser.email,
       phone: tempUser.phone,
       password: tempUser.password,
-      isVerified: true, // already verified
+      isVerified: true, 
     });
     await newUser.save();
 
@@ -152,13 +153,13 @@ const verifyOtp = async (req, res) => {
     await OTP.deleteOne({ _id: otpDoc._id });
     delete req.session.tempUser;
 
-    return res.status(200).json({
+    return res.status(HttpStatus.CREATED).json({
       success: true,
       message: "Account created successfully",
     });
   } catch (error) {
     console.log("Error in verifyOtp:", error);
-    return res.status(500).json({
+    return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
       success: false,
       message: "Internal Server Error",
     });
@@ -170,7 +171,7 @@ const resendOtp = async (req, res) => {
     const email = req.session.tempUser?.email;
 
     if (!email) {
-      return res.status(400).json({
+      return res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: "Session expired. Please sign up again.",
       });
@@ -195,13 +196,13 @@ const resendOtp = async (req, res) => {
 
     await sendOtpEmail(email, fullName, otp, subjectContent, "resend");
 
-    return res.status(200).json({
+    return res.status(HttpStatus.OK).json({
       success: true,
       message: "New OTP sent to your email",
     });
   } catch (error) {
     console.error("Error resending OTP:", error);
-    return res.status(500).json({
+    return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
       success: false,
       message: "Internal Server Error",
     });

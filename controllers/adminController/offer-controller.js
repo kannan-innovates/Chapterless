@@ -1,6 +1,7 @@
 const Offer = require("../../models/offerSchema");
 const Category = require("../../models/categorySchema");
 const Product = require("../../models/productSchema");
+const { HttpStatus } = require('../../helpers/status-code');
 
 // Helper to format date for display
 const formatDateForDisplay = (date) => {
@@ -255,7 +256,7 @@ const getOffers = async (req, res) => {
   } catch (error) {
     console.error("Error fetching offers:", error);
     res
-      .status(500)
+      .status(HttpStatus.INTERNAL_SERVER_ERROR)
       .render("error", {
         message: "Internal server error while fetching offers",
       });
@@ -268,7 +269,7 @@ const getOfferDetails = async (req, res) => {
 
     if (!offerId.match(/^[0-9a-fA-F]{24}$/)) {
       return res
-        .status(400)
+        .status(HttpStatus.BAD_REQUEST)
         .json({ success: false, message: "Invalid offer ID" });
     }
 
@@ -279,7 +280,7 @@ const getOfferDetails = async (req, res) => {
 
     if (!offer) {
       return res
-        .status(404)
+        .status(HttpStatus.NOT_FOUND)
         .json({ success: false, message: "Offer not found" });
     }
 
@@ -300,11 +301,11 @@ const getOfferDetails = async (req, res) => {
       }));
     }
 
-    res.status(200).json(offer);
+    res.status(HttpStatus.OK).json(offer);
   } catch (error) {
     console.error("Error fetching offer details:", error);
     res
-      .status(500)
+      .status(HttpStatus.INTERNAL_SERVER_ERROR)
       .json({
         success: false,
         message: "Internal server error",
@@ -364,7 +365,7 @@ const createOffer = async (req, res) => {
     // Validate data
     const validationErrors = validateOfferData(validationData);
     if (validationErrors.length > 0) {
-      return res.status(400).json({
+      return res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: validationErrors.join(". "),
       });
@@ -376,7 +377,7 @@ const createOffer = async (req, res) => {
     });
 
     if (existingOffer) {
-      return res.status(400).json({
+      return res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: "An offer with this title already exists",
       });
@@ -391,7 +392,7 @@ const createOffer = async (req, res) => {
       }).select("_id");
 
       if (existingProducts.length !== productIds.length) {
-        return res.status(400).json({
+        return res.status(HttpStatus.BAD_REQUEST).json({
           success: false,
           message: "One or more selected products are invalid or not available",
         });
@@ -406,7 +407,7 @@ const createOffer = async (req, res) => {
       }).select("_id");
 
       if (existingCategories.length !== categoryIds.length) {
-        return res.status(400).json({
+        return res.status(HttpStatus.BAD_REQUEST).json({
           success: false,
           message:
             "One or more selected categories are invalid or not available",
@@ -432,7 +433,7 @@ const createOffer = async (req, res) => {
     await newOffer.save();
 
     res
-      .status(201)
+      .status(HttpStatus.CREATED)
       .json({ success: true, message: "Offer created successfully" });
   } catch (error) {
     console.error("Error creating offer:", error);
@@ -441,12 +442,12 @@ const createOffer = async (req, res) => {
       const messages = Object.values(error.errors)
         .map((val) => val.message)
         .join(". ");
-      return res.status(400).json({ success: false, message: messages });
+      return res.status(HttpStatus.BAD_REQUEST).json({ success: false, message: messages });
     }
 
     if (error.code === 11000) {
       return res
-        .status(400)
+        .status(HttpStatus.BAD_REQUEST)
         .json({
           success: false,
           message: "An offer with this title already exists",
@@ -454,7 +455,7 @@ const createOffer = async (req, res) => {
     }
 
     res
-      .status(500)
+      .status(HttpStatus.INTERNAL_SERVER_ERROR)
       .json({
         success: false,
         message: "An internal server error occurred while creating the offer",
@@ -468,7 +469,7 @@ const updateOffer = async (req, res) => {
 
     if (!offerId.match(/^[0-9a-fA-F]{24}$/)) {
       return res
-        .status(400)
+        .status(HttpStatus.BAD_REQUEST)
         .json({ success: false, message: "Invalid offer ID" });
     }
 
@@ -489,7 +490,7 @@ const updateOffer = async (req, res) => {
     const offerToUpdate = await Offer.findById(offerId);
     if (!offerToUpdate) {
       return res
-        .status(404)
+        .status(HttpStatus.NOT_FOUND)
         .json({ success: false, message: "Offer not found" });
     }
 
@@ -529,7 +530,7 @@ const updateOffer = async (req, res) => {
     // Validate data
     const validationErrors = validateOfferData(validationData);
     if (validationErrors.length > 0) {
-      return res.status(400).json({
+      return res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: validationErrors.join(". "),
       });
@@ -542,7 +543,7 @@ const updateOffer = async (req, res) => {
     });
 
     if (existingOffer) {
-      return res.status(400).json({
+      return res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: "An offer with this title already exists",
       });
@@ -557,7 +558,7 @@ const updateOffer = async (req, res) => {
       }).select("_id");
 
       if (existingProducts.length !== productIds.length) {
-        return res.status(400).json({
+        return res.status(HttpStatus.BAD_REQUEST).json({
           success: false,
           message: "One or more selected products are invalid or not available",
         });
@@ -572,7 +573,7 @@ const updateOffer = async (req, res) => {
       }).select("_id");
 
       if (existingCategories.length !== categoryIds.length) {
-        return res.status(400).json({
+        return res.status(HttpStatus.BAD_REQUEST).json({
           success: false,
           message:
             "One or more selected categories are invalid or not available",
@@ -594,7 +595,7 @@ const updateOffer = async (req, res) => {
 
     await offerToUpdate.save();
     res
-      .status(200)
+      .status(HttpStatus.OK)
       .json({ success: true, message: "Offer updated successfully" });
   } catch (error) {
     console.error("Error updating offer:", error);
@@ -603,12 +604,12 @@ const updateOffer = async (req, res) => {
       const messages = Object.values(error.errors)
         .map((val) => val.message)
         .join(". ");
-      return res.status(400).json({ success: false, message: messages });
+      return res.status(HttpStatus.BAD_REQUEST).json({ success: false, message: messages });
     }
 
     if (error.code === 11000) {
       return res
-        .status(400)
+        .status(HttpStatus.BAD_REQUEST)
         .json({
           success: false,
           message: "An offer with this title already exists",
@@ -616,7 +617,7 @@ const updateOffer = async (req, res) => {
     }
 
     res
-      .status(500)
+      .status(HttpStatus.INTERNAL_SERVER_ERROR)
       .json({
         success: false,
         message: "An internal server error occurred while updating the offer",
@@ -630,7 +631,7 @@ const toggleOfferStatus = async (req, res) => {
 
     if (!offerId.match(/^[0-9a-fA-F]{24}$/)) {
       return res
-        .status(400)
+        .status(HttpStatus.BAD_REQUEST)
         .json({ success: false, message: "Invalid offer ID" });
     }
 
@@ -638,7 +639,7 @@ const toggleOfferStatus = async (req, res) => {
 
     if (!offer) {
       return res
-        .status(404)
+        .status(HttpStatus.NOT_FOUND)
         .json({ success: false, message: "Offer not found" });
     }
 
@@ -657,7 +658,7 @@ const toggleOfferStatus = async (req, res) => {
       currentStatusText = "Active";
     }
 
-    res.status(200).json({
+    res.status(HttpStatus.OK).json({
       success: true,
       message: `Offer status changed. It is now ${currentStatusText.toLowerCase()}`,
       isActive: offer.isActive,
@@ -666,7 +667,7 @@ const toggleOfferStatus = async (req, res) => {
   } catch (error) {
     console.error("Error toggling offer status:", error);
     res
-      .status(500)
+      .status(HttpStatus.INTERNAL_SERVER_ERROR)
       .json({
         success: false,
         message: "An internal server error occurred while toggling status",

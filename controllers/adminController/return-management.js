@@ -1,6 +1,7 @@
 const Order = require("../../models/orderSchema");
 const Product = require("../../models/productSchema");
 const { processReturnRefund } = require("../userController/wallet-controller");
+const { HttpStatus } = require('../../helpers/status-code');
 
 /**
  * Get all orders with return requests for admin management
@@ -112,7 +113,7 @@ const getReturnRequestDetails = async (req, res) => {
       .lean();
 
     if (!order || order.isDeleted) {
-      return res.status(404).render('admin/page-404', {
+      return res.status(HttpStatus.NOT_FOUND).render('admin/page-404', {
         title: 'Return Request Not Found'
       });
     }
@@ -266,7 +267,7 @@ const bulkProcessReturns = async (req, res) => {
     const { orderIds, action } = req.body; // action: 'approve' or 'reject'
 
     if (!orderIds || !Array.isArray(orderIds) || orderIds.length === 0) {
-      return res.status(400).json({
+      return res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: 'No orders selected'
       });
@@ -337,7 +338,7 @@ const bulkProcessReturns = async (req, res) => {
 
   } catch (error) {
     console.error("Error in bulk process returns:", error);
-    res.status(500).json({
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
       success: false,
       message: "Internal server error"
     });

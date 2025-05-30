@@ -1,6 +1,7 @@
 const Wallet = require("../../models/walletSchema");
 const Order = require("../../models/orderSchema");
 const { calculateDiscount } = require("../../utils/offer-helper");
+const { HttpStatus } = require("../../helpers/status-code");
 
 const getWallet = async (req, res) => {
   try {
@@ -35,7 +36,7 @@ const getWallet = async (req, res) => {
     });
   } catch (error) {
     console.error('Error in getWallet:', error);
-    res.status(500).render('error', { message: 'Internal server error' });
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).render('error', { message: 'Internal server error' });
   }
 };
 

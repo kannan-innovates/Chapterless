@@ -5,13 +5,17 @@ const upload = require("../../config/multer");
 const cloudinary = require("../../config/cloudinary");
 const path = require("path");
 const fs = require("fs");
-const { validateBasicOtp, validateOtpSession } = require("../../validators/user/basic-otp-validator");
+const {
+  validateBasicOtp,
+  validateOtpSession,
+} = require("../../validators/user/basic-otp-validator");
 
+const { HttpStatus } = require("../../helpers/status-code");
 // Get Profile
 const getProfile = async (req, res) => {
   try {
     if (!req.session.user_id) {
-      return res.status(401).json({
+      return res.status(HttpStatus.UNAUTHORIZED).json({
         success: false,
         message: "Please Login",
       });
@@ -19,14 +23,16 @@ const getProfile = async (req, res) => {
     const user = await User.findOne({ _id: req.session.user_id }).lean();
     if (!user) {
       return res
-        .status(404)
+        .status(HttpStatus.NOT_FOUND)
         .json({ success: false, message: "User Not Found" });
     }
     console.log("User profileImage:", user.profileImage); // Debug log
     res.render("profile", { user });
   } catch (error) {
     console.error("Error in rendering profile page:", error);
-    res.status(500).json({ success: false, message: "Something went wrong" });
+    res
+      .status(HttpStatus.INTERNAL_SERVER_ERROR)
+      .json({ success: false, message: "Something went wrong" });
   }
 };
 
@@ -34,7 +40,7 @@ const getProfile = async (req, res) => {
 const updateProfile = async (req, res) => {
   try {
     if (!req.session.user_id) {
-      return res.status(401).json({
+      return res.status(HttpStatus.UNAUTHORIZED).json({
         success: false,
         message: "Please login to update profile",
       });
@@ -44,7 +50,7 @@ const updateProfile = async (req, res) => {
 
     // Validate inputs
     if (!fullName || fullName.trim().length < 3) {
-      return res.status(400).json({
+      return res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: "Full name must be at least 3 characters",
       });
@@ -52,14 +58,14 @@ const updateProfile = async (req, res) => {
 
     const nameWords = fullName.trim().split(/\s+/);
     if (nameWords.length < 2) {
-      return res.status(400).json({
+      return res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: "Please provide both first and last name",
       });
     }
 
     if (!/^[A-Za-z\s'-]+$/.test(fullName.trim())) {
-      return res.status(400).json({
+      return res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: "Full name contains invalid characters",
       });
@@ -71,7 +77,7 @@ const updateProfile = async (req, res) => {
         cleanPhone.length !== 10 &&
         (cleanPhone.length < 11 || cleanPhone.length > 15)
       ) {
-        return res.status(400).json({
+        return res.status(HttpStatus.BAD_REQUEST).json({
           success: false,
           message:
             "Phone number must be 10 digits or include a valid country code",
@@ -82,7 +88,7 @@ const updateProfile = async (req, res) => {
         /^0{10}$/.test(cleanPhone) ||
         /^1{10}$/.test(cleanPhone)
       ) {
-        return res.status(400).json({
+        return res.status(HttpStatus.BAD_REQUEST).json({
           success: false,
           message: "Invalid phone number format",
         });
@@ -94,7 +100,7 @@ const updateProfile = async (req, res) => {
         _id: { $ne: req.session.user_id },
       });
       if (existingPhone) {
-        return res.status(400).json({
+        return res.status(HttpStatus.BAD_REQUEST).json({
           success: false,
           message: "Phone number already in use",
         });
@@ -112,13 +118,13 @@ const updateProfile = async (req, res) => {
     ).lean();
 
     if (!updatedUser) {
-      return res.status(404).json({
+      return res.status(HttpStatus.NOT_FOUND).json({
         success: false,
         message: "User not found",
       });
     }
 
-    res.status(200).json({
+    res.status(HttpStatus.OK).json({
       success: true,
       message: "Profile updated successfully",
       user: {
@@ -130,12 +136,12 @@ const updateProfile = async (req, res) => {
   } catch (error) {
     console.error("Error updating profile:", error);
     if (error.code === 11000) {
-      return res.status(400).json({
+      return res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: "Phone number already in use",
       });
     }
-    res.status(500).json({
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
       success: false,
       message: "Failed to update profile",
     });
@@ -146,7 +152,7 @@ const updateProfile = async (req, res) => {
 const uploadProfileImage = async (req, res) => {
   try {
     if (!req.session.user_id) {
-      return res.status(401).json({
+      return res.status(HttpStatus.UNAUTHORIZED).json({
         success: false,
         message: "Please login to upload image",
       });
@@ -155,14 +161,14 @@ const uploadProfileImage = async (req, res) => {
     // Use multer middleware to handle file upload
     upload.single("profileImage")(req, res, async (err) => {
       if (err) {
-        return res.status(400).json({
+        return res.status(HttpStatus.BAD_REQUEST).json({
           success: false,
           message: err.message || "Failed to upload image",
         });
       }
 
       if (!req.file) {
-        return res.status(400).json({
+        return res.status(HttpStatus.BAD_REQUEST).json({
           success: false,
           message: "No image file provided",
         });
@@ -190,7 +196,7 @@ const uploadProfileImage = async (req, res) => {
         if (fs.existsSync(tempFilePath)) {
           fs.unlinkSync(tempFilePath);
         }
-        return res.status(500).json({
+        return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
           success: false,
           message: "Failed to upload image to Cloudinary",
         });
@@ -221,7 +227,6 @@ const uploadProfileImage = async (req, res) => {
               "Error deleting previous Cloudinary image:",
               deleteError
             );
-
           }
         }
       }
@@ -235,14 +240,14 @@ const uploadProfileImage = async (req, res) => {
       ).lean();
 
       if (!updatedUser) {
-        return res.status(404).json({
+        return res.status(HttpStatus.NOT_FOUND).json({
           success: false,
           message: "User not found",
         });
       }
 
       console.log(`Profile image updated to: ${imageUrl}`);
-      res.status(200).json({
+      res.status(HttpStatus.OK).json({
         success: true,
         message: "Profile image uploaded successfully",
         profileImage: imageUrl,
@@ -257,7 +262,7 @@ const uploadProfileImage = async (req, res) => {
     if (tempFilePath && fs.existsSync(tempFilePath)) {
       fs.unlinkSync(tempFilePath);
     }
-    res.status(500).json({
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
       success: false,
       message: "Failed to upload profile image",
     });
@@ -268,7 +273,7 @@ const uploadProfileImage = async (req, res) => {
 const requestEmailUpdate = async (req, res) => {
   try {
     if (!req.session.user_id) {
-      return res.status(401).json({
+      return res.status(HttpStatus.UNAUTHORIZED).json({
         success: false,
         message: "Please login to update email",
       });
@@ -279,7 +284,7 @@ const requestEmailUpdate = async (req, res) => {
       !email ||
       !/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email)
     ) {
-      return res.status(400).json({
+      return res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: "Please provide a valid email address",
       });
@@ -296,7 +301,7 @@ const requestEmailUpdate = async (req, res) => {
     ];
     const domain = email.split("@")[1];
     if (disposableDomains.includes(domain)) {
-      return res.status(400).json({
+      return res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: "Please use a non-disposable email address",
       });
@@ -304,14 +309,14 @@ const requestEmailUpdate = async (req, res) => {
 
     const user = await User.findById(req.session.user_id);
     if (!user) {
-      return res.status(404).json({
+      return res.status(HttpStatus.NOT_FOUND).json({
         success: false,
         message: "User not found",
       });
     }
 
     if (email.toLowerCase() === user.email.toLowerCase()) {
-      return res.status(400).json({
+      return res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: "New email must be different from current email",
       });
@@ -320,7 +325,7 @@ const requestEmailUpdate = async (req, res) => {
     // Check if email already exists
     const existingUser = await User.findOne({ email: email.toLowerCase() });
     if (existingUser) {
-      return res.status(400).json({
+      return res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: "Email address already in use",
       });
@@ -355,7 +360,7 @@ const requestEmailUpdate = async (req, res) => {
         email: email.toLowerCase(),
         purpose: "email-update",
       });
-      return res.status(500).json({
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
         success: false,
         message:
           "Email failed to send. Please check your email service configuration or try again later.",
@@ -365,7 +370,7 @@ const requestEmailUpdate = async (req, res) => {
     // Store new email in session for verification
     req.session.newEmail = email.toLowerCase();
 
-    res.status(200).json({
+    res.status(HttpStatus.OK).json({
       success: true,
       message: "OTP sent to new email address",
     });
@@ -376,7 +381,7 @@ const requestEmailUpdate = async (req, res) => {
       email: req.body.email?.toLowerCase(),
       purpose: "email-update",
     });
-    res.status(500).json({
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
       success: false,
       message: "Failed to process email update request. Please try again.",
     });
@@ -391,16 +396,16 @@ const verifyEmailOtp = async (req, res) => {
     // Basic OTP validation using utility
     const otpValidation = validateBasicOtp(otp);
     if (!otpValidation.isValid) {
-      return res.status(400).json({
+      return res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: otpValidation.message,
       });
     }
 
     // Session validation using utility
-    const sessionValidation = validateOtpSession(req, 'email-update');
+    const sessionValidation = validateOtpSession(req, "email-update");
     if (!sessionValidation.isValid) {
-      return res.status(401).json({
+      return res.status(HttpStatus.UNAUTHORIZED).json({
         success: false,
         message: sessionValidation.message,
         sessionExpired: sessionValidation.sessionExpired,
@@ -414,7 +419,7 @@ const verifyEmailOtp = async (req, res) => {
     });
 
     if (!otpRecord) {
-      return res.status(400).json({
+      return res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: "Invalid or expired OTP",
       });
@@ -428,7 +433,7 @@ const verifyEmailOtp = async (req, res) => {
     );
 
     if (!updatedUser) {
-      return res.status(404).json({
+      return res.status(HttpStatus.NOT_FOUND).json({
         success: false,
         message: "User not found",
       });
@@ -441,7 +446,7 @@ const verifyEmailOtp = async (req, res) => {
     });
     delete req.session.newEmail;
 
-    res.status(200).json({
+    res.status(HttpStatus.OK).json({
       success: true,
       message: "Email updated successfully",
       email: updatedUser.email,
@@ -449,12 +454,12 @@ const verifyEmailOtp = async (req, res) => {
   } catch (error) {
     console.error("Error verifying email OTP:", error);
     if (error.code === 11000) {
-      return res.status(400).json({
+      return res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: "Email address already in use",
       });
     }
-    res.status(500).json({
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
       success: false,
       message: "Failed to verify OTP",
     });
@@ -465,7 +470,7 @@ const verifyEmailOtp = async (req, res) => {
 const resendEmailOtp = async (req, res) => {
   try {
     if (!req.session.user_id || !req.session.newEmail) {
-      return res.status(401).json({
+      return res.status(HttpStatus.UNAUTHORIZED).json({
         success: false,
         message: "Unauthorized or invalid session",
       });
@@ -473,7 +478,7 @@ const resendEmailOtp = async (req, res) => {
 
     const user = await User.findById(req.session.user_id);
     if (!user) {
-      return res.status(404).json({
+      return res.status(HttpStatus.NOT_FOUND).json({
         success: false,
         message: "User not found",
       });
@@ -507,14 +512,14 @@ const resendEmailOtp = async (req, res) => {
         email: req.session.newEmail,
         purpose: "email-update",
       });
-      return res.status(500).json({
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
         success: false,
         message:
           "Email failed to send. Please check your email service configuration or try again later.",
       });
     }
 
-    res.status(200).json({
+    res.status(HttpStatus.OK).json({
       success: true,
       message: "New OTP sent to email address",
     });
@@ -525,7 +530,7 @@ const resendEmailOtp = async (req, res) => {
       email: req.session.newEmail,
       purpose: "email-update",
     });
-    res.status(500).json({
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
       success: false,
       message: "Failed to resend OTP. Please try again.",
     });

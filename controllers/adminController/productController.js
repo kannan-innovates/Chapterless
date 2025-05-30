@@ -2,6 +2,7 @@ const Product = require('../../models/productSchema');
 const Category = require('../../models/categorySchema');
 const cloudinary = require('../../config/cloudinary');
 const fs = require('fs');
+const { HttpStatus } = require('../../helpers/status-code');
 
 // Get Products Page
 // Updated getProducts function to show all products in admin panel
@@ -62,7 +63,7 @@ const getProducts = async (req, res) => {
     });
   } catch (error) {
     console.error('Error fetching products:', error);
-    res.status(500).json({ message: 'Internal Server Error' });
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Internal Server Error' });
   }
 };
 
@@ -88,7 +89,7 @@ const addProduct = async (req, res) => {
     // Validate category exists
     const categoryExists = await Category.findById(category);
     if (!categoryExists) {
-      return res.status(400).json({ error: 'Invalid category' });
+      return res.status(HttpStatus.BAD_REQUEST).json({ error: 'Invalid category' });
     }
 
     // Log file information for debugging
@@ -111,7 +112,7 @@ const addProduct = async (req, res) => {
       mainImageUrl = result.secure_url;
       fs.unlinkSync(file.path); // Delete local file
     } else {
-      return res.status(400).json({ error: 'Main image is required' });
+      return res.status(HttpStatus.BAD_REQUEST).json({ error: 'Main image is required' });
     }
 
     // Upload sub images (up to 3)
@@ -162,15 +163,15 @@ const addProduct = async (req, res) => {
     });
 
     await product.save();
-    res.status(201).json({ message: 'Product added successfully' });
+    res.status(HttpStatus.CREATED).json({ message: 'Product added successfully' });
   } catch (error) {
     console.error('Error adding product:', error);
     if (error.message.includes('ENOENT')) {
-      res.status(500).json({ error: 'File upload failed: File not found on server' });
+      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ error: 'File upload failed: File not found on server' });
     } else if (error.name === 'TimeoutError') {
-      res.status(500).json({ error: 'Upload timed out. Please try again with a smaller file or check your network.' });
+      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ error: 'Upload timed out. Please try again with a smaller file or check your network.' });
     } else {
-      res.status(500).json({ error: 'Server Error' });
+      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ error: 'Server Error' });
     }
   }
 };
@@ -181,7 +182,7 @@ const toggleProductStatus = async (req, res) => {
     const { id } = req.params;
     const product = await Product.findById(id);
     if (!product) {
-      return res.status(404).json({ error: 'Product not found' });
+      return res.status(HttpStatus.NOT_FOUND).json({ error: 'Product not found' });
     }
 
     product.isListed = !product.isListed;
@@ -191,7 +192,7 @@ const toggleProductStatus = async (req, res) => {
     });
   } catch (error) {
     console.error('Error toggling product status:', error);
-    res.status(500).json({ error: 'Server Error' });
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ error: 'Server Error' });
   }
 };
 
@@ -203,13 +204,13 @@ const getEditProduct = async (req, res) => {
     const categories = await Category.find({ isListed: true });
 
     if (!product || product.isDeleted) {
-      return res.status(404).json({ error: 'Product not found' });
+      return res.status(HttpStatus.NOT_FOUND).json({ error: 'Product not found' });
     }
 
     res.render('editProduct', { product, categories });
   } catch (error) {
     console.error('Error fetching product for edit:', error);
-    res.status(500).json({ error: 'Server Error' });
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ error: 'Server Error' });
   }
 };
 
@@ -241,14 +242,14 @@ const updateProduct = async (req, res) => {
     console.log('Product found:', product);
     if (!product || product.isDeleted) {
       console.log('Product not found or deleted');
-      return res.status(404).json({ error: 'Product not found' });
+      return res.status(HttpStatus.NOT_FOUND).json({ error: 'Product not found' });
     }
 
     const categoryExists = await Category.findById(category);
     console.log('Category exists:', categoryExists);
     if (!categoryExists) {
       console.log('Invalid category');
-      return res.status(400).json({ error: 'Invalid category' });
+      return res.status(HttpStatus.BAD_REQUEST).json({ error: 'Invalid category' });
     }
 
     let mainImageUrl = product.mainImage;
@@ -309,13 +310,13 @@ const updateProduct = async (req, res) => {
 
     await product.save();
     console.log('Product updated:', product._id);
-    res.status(200).json({ message: 'Product updated successfully' });
+    res.status(HttpStatus.OK).json({ message: 'Product updated successfully' });
   } catch (error) {
     console.error('Error updating product:', error);
     if (error.message.includes('ENOENT')) {
-      res.status(500).json({ error: 'File upload failed: File not found on server' });
+      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ error: 'File upload failed: File not found on server' });
     } else {
-      res.status(500).json({ error: 'Server Error' });
+      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ error: 'Server Error' });
     }
   }
 };
@@ -328,16 +329,16 @@ const softDeleteProduct = async (req, res) => {
     console.log('Product found:', product);
     if (!product) {
       console.log('Product not found');
-      return res.status(404).json({ error: 'Product not found' });
+      return res.status(HttpStatus.NOT_FOUND).json({ error: 'Product not found' });
     }
 
     product.isDeleted = true;
     await product.save();
     console.log('Product soft deleted:', product._id);
-    res.status(200).json({ message: 'Product soft deleted successfully' });
+    res.status(HttpStatus.OK).json({ message: 'Product soft deleted successfully' });
   } catch (error) {
     console.error('Error soft deleting product:', error);
-    res.status(500).json({ error: 'Server Error' });
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ error: 'Server Error' });
   }
 };
 

@@ -1,12 +1,13 @@
 const User = require("../../models/userSchema");
 const bcrypt = require("bcrypt");
 const { hashPassword } = require("../../helpers/hash");
+const {HttpStatus} = require('../../helpers/status-code')
 
 // Change Password
 const changePassword = async (req, res) => {
   try {
     if (!req.session.user_id) {
-      return res.status(401).json({
+      return res.status(HttpStatus.UNAUTHORIZED).json({
         success: false,
         message: "Please login to change password",
       });
@@ -15,7 +16,7 @@ const changePassword = async (req, res) => {
     const { currentPassword, newPassword, confirmPassword } = req.body;
 
     if (!currentPassword || !newPassword || !confirmPassword) {
-      return res.status(400).json({
+      return res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: "All fields are required",
         field: !currentPassword
@@ -30,7 +31,7 @@ const changePassword = async (req, res) => {
     const passwordRegex =
       /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9!@#$%^&*(),.?":{}|<>]).{8,}$/;
     if (!passwordRegex.test(newPassword)) {
-      return res.status(400).json({
+      return res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message:
           "New password must be at least 8 characters with uppercase, lowercase, and number/special character",
@@ -39,7 +40,7 @@ const changePassword = async (req, res) => {
     }
 
     if (newPassword !== confirmPassword) {
-      return res.status(400).json({
+      return res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: "New password and confirm password do not match",
         field: "confirmPassword",
@@ -48,14 +49,14 @@ const changePassword = async (req, res) => {
 
     const user = await User.findById(req.session.user_id);
     if (!user) {
-      return res.status(404).json({
+      return res.status(HttpStatus.NOT_FOUND).json({
         success: false,
         message: "User not found",
       });
     }
 
     if (!user.password) {
-      return res.status(400).json({
+      return res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: "Password cannot be changed for accounts created via Google",
         field: "currentPassword",
@@ -65,7 +66,7 @@ const changePassword = async (req, res) => {
     // Verify current password
     const isMatch = await bcrypt.compare(currentPassword, user.password);
     if (!isMatch) {
-      return res.status(400).json({
+      return res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: "Current password is incorrect",
         field: "currentPassword",
@@ -74,7 +75,7 @@ const changePassword = async (req, res) => {
 
     const isSamePassword = await bcrypt.compare(newPassword, user.password);
     if (isSamePassword) {
-      return res.status(400).json({
+      return res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: "New password must be different from the current password",
         field: "newPassword",
@@ -87,7 +88,7 @@ const changePassword = async (req, res) => {
     await user.save();
   } catch (error) {
     console.error("Error changing password:", error);
-    res.status(500).json({
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
       success: false,
       message: "Failed to change password. Please try again.",
     });

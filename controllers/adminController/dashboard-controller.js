@@ -2,6 +2,7 @@ const User = require('../../models/userSchema');
 const Order = require('../../models/orderSchema');
 const Product = require('../../models/productSchema');
 const Category = require('../../models/categorySchema');
+const { HttpStatus } = require('../../helpers/status-code');
 
 const getDashboard = async (req, res) => {
   try {
@@ -34,7 +35,7 @@ const getDashboard = async (req, res) => {
     });
   } catch (error) {
     console.error('Dashboard error:', error);
-    res.status(500).json({
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
       success: false,
       message: 'Failed to load Dashboard',
     });

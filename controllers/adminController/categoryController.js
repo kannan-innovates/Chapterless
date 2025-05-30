@@ -1,6 +1,7 @@
 const Category = require("../../models/categorySchema");
 const cloudinary = require("../../config/cloudinary");
 const fs = require("fs");
+const { HttpStatus } = require("../../helpers/status-code");
 
 const getCategory = async (req, res) => {
   try {
@@ -30,7 +31,7 @@ const getCategory = async (req, res) => {
     });
   } catch (error) {
     console.error("Error in rendering Categories Page:", error);
-    res.status(500).send("Server Error");
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).send("Server Error");
   }
 };
 
@@ -47,7 +48,7 @@ const addCategory = async (req, res) => {
 
     if (existingCategory) {
       // Return 200 status with a warning flag instead of 400 error
-      return res.status(200).json({
+      return res.status(HttpStatus.OK).json({
         warning: true,
         message: "This category already exists in the database."
       });
@@ -75,10 +76,10 @@ const addCategory = async (req, res) => {
     });
 
     await category.save();
-    res.status(201).json({ message: "Category added successfully" });
+    res.status(HttpStatus.CREATED).json({ message: "Category added successfully" });
   } catch (error) {
     console.error("Error adding category:", error);
-    res.status(500).json({ error: "Server Error" });
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ error: "Server Error" });
   }
 };
 
@@ -91,7 +92,7 @@ const editCategory = async (req, res) => {
     // Check if category exists
     const category = await Category.findById(id);
     if (!category) {
-      return res.status(404).json({ error: "Category not found" });
+      return res.status(HttpStatus.NOT_FOUND).json({ error: "Category not found" });
     }
 
     // Check for duplicate name (excluding current category)
@@ -100,8 +101,8 @@ const editCategory = async (req, res) => {
       _id: { $ne: id }
     });
     if (existingCategory) {
-      // Return 200 status with a warning flag instead of 400 error
-      return res.status(200).json({
+
+      return res.status(HttpStatus.OK).json({
         warning: true,
         message: "Another category with this name already exists."
       });
@@ -130,7 +131,7 @@ const editCategory = async (req, res) => {
     res.json({ message: "Category updated successfully" });
   } catch (error) {
     console.error("Error editing category:", error);
-    res.status(500).json({ error: "Server Error" });
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ error: "Server Error" });
   }
 };
 
@@ -140,7 +141,7 @@ const toggleCategoryStatus = async (req, res) => {
     const { id } = req.params;
     const category = await Category.findById(id);
     if (!category) {
-      return res.status(404).json({ error: "Category not found" });
+      return res.status(HttpStatus.NOT_FOUND).json({ error: "Category not found" });
     }
 
     category.isListed = !category.isListed;
@@ -152,7 +153,7 @@ const toggleCategoryStatus = async (req, res) => {
     });
   } catch (error) {
     console.error("Error toggling category status:", error);
-    res.status(500).json({ error: "Server Error" });
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ error: "Server Error" });
   }
 };
 

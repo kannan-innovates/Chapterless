@@ -2,6 +2,7 @@ const Order = require("../../models/orderSchema")
 const User = require("../../models/userSchema")
 const Product = require("../../models/productSchema")
 const { processReturnRefund } = require("../userController/wallet-controller")
+const { HttpStatus } = require("../../helpers/status-code")
 
 const getManageOrders = async (req, res) => {
   try {
@@ -385,20 +386,20 @@ const updateOrderStatus = async (req, res) => {
     // Validate the new status
     const validStatuses = ["Placed", "Processing", "Shipped", "Delivered", "Cancelled", "Returned", "Return Requested"]
     if (!validStatuses.includes(status)) {
-      return res.status(400).json({ success: false, message: "Invalid status value" })
+      return res.status(HttpStatus.BAD_REQUEST).json({ success: false, message: "Invalid status value" })
     }
 
     // Fetch the order
     const order = await Order.findById(orderId)
     if (!order || order.isDeleted) {
-      return res.status(404).json({ success: false, message: "Order not found" })
+      return res.status(HttpStatus.NOT_FOUND).json({ success: false, message: "Order not found" })
     }
 
     // If itemId is provided, update just that item
     if (itemId) {
       const item = order.items.id(itemId);
       if (!item) {
-        return res.status(404).json({ success: false, message: "Item not found in order" });
+        return res.status(HttpStatus.NOT_FOUND).json({ success: false, message: "Item not found in order" });
       }
 
       // Define allowed item status transitions
@@ -411,7 +412,7 @@ const updateOrderStatus = async (req, res) => {
       // Check if the transition is allowed for this item
       const allowedItemStatuses = itemStatusTransitions[item.status] || [];
       if (!allowedItemStatuses.includes(status)) {
-        return res.status(400).json({
+        return res.status(HttpStatus.BAD_REQUEST).json({
           success: false,
           message: `Cannot update item status from ${item.status} to ${status}`
         });
@@ -469,7 +470,7 @@ const updateOrderStatus = async (req, res) => {
       }
 
       await order.save();
-      return res.status(200).json({ success: true, message: "Item status updated successfully" });
+      return res.status(HttpStatus.OK).json({ success: true, message: "Item status updated successfully" });
     }
 
     // Define allowed status transitions for the entire order
@@ -604,10 +605,10 @@ const updateOrderStatus = async (req, res) => {
 
     await order.save()
 
-    res.status(200).json({ success: true, message: "Order status updated successfully" })
+    res.status(HttpStatus.OK).json({ success: true, message: "Order status updated successfully" })
   } catch (error) {
     console.error("Error updating order status:", error)
-    res.status(500).json({ success: false, message: "Failed to update order status" })
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ success: false, message: "Failed to update order status" })
   }
 }
 
@@ -620,24 +621,24 @@ const updateItemStatus = async (req, res) => {
     // Validate the new status
     const validStatuses = ["Cancelled", "Returned"];
     if (!validStatuses.includes(status)) {
-      return res.status(400).json({ message: "Invalid status value" });
+      return res.status(HttpStatus.BAD_REQUEST).json({ message: "Invalid status value" });
     }
 
     // Fetch the order
     const order = await Order.findById(orderId);
     if (!order || order.isDeleted) {
-      return res.status(404).json({ message: "Order not found" });
+      return res.status(HttpStatus.NOT_FOUND).json({ message: "Order not found" });
     }
 
     // Find the item
     const item = order.items.id(itemId);
     if (!item) {
-      return res.status(404).json({ message: "Item not found in order" });
+      return res.status(HttpStatus.NOT_FOUND).json({ message: "Item not found in order" });
     }
 
     // Check if item can be updated
     if (item.status !== "Active") {
-      return res.status(400).json({
+      return res.status(HttpStatus.BAD_REQUEST).json({
         message: `Item cannot be ${status.toLowerCase()} in its current state (${item.status})`
       });
     }
@@ -706,14 +707,14 @@ const updateItemStatus = async (req, res) => {
 
     await order.save();
 
-    res.status(200).json({
+    res.status(HttpStatus.OK).json({
       message: `Item ${status.toLowerCase()} successfully`,
       orderStatus: order.orderStatus,
       paymentStatus: order.paymentStatus
     });
   } catch (error) {
     console.error(`Error updating item status:`, error);
-    res.status(500).json({ message: "Internal server error" });
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: "Internal server error" });
   }
 };
 
@@ -728,13 +729,13 @@ const downloadInvoice = async (req, res) => {
     }).lean()
 
     if (!order) {
-      return res.status(404).send("Order not found")
+      return res.status(HttpStatus.NOT_FOUND).send("Order not found")
     }
 
     // Fetch user data
     const user = await User.findById(order.user, "fullName email").lean()
     if (!user) {
-      return res.status(401).send("User not found")
+      return res.status(HttpStatus.UNAUTHORIZED).send("User not found")
     }
 
     // Format order data
@@ -1147,7 +1148,7 @@ const approveReturnRequest = async (req, res) => {
 
     // Handle entire order return request
     if (order.orderStatus !== 'Return Requested') {
-      return res.status(400).json({
+      return res.status(HttpStatus.BAD_REQUEST).json({
         message: `Cannot process return for order with status ${order.orderStatus}`
       });
     }
@@ -1206,14 +1207,14 @@ const approveReturnRequest = async (req, res) => {
 
     await order.save();
 
-    return res.status(200).json({
+    return res.status(HttpStatus.OK).json({
       message: approved ? "All return requests approved" : "All return requests rejected",
       orderStatus: order.orderStatus,
       paymentStatus: order.paymentStatus
     });
   } catch (error) {
     console.error("Error processing return request:", error);
-    res.status(500).json({ message: "Internal server error" });
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: "Internal server error" });
   }
 };
 

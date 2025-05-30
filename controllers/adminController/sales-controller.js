@@ -1,5 +1,6 @@
 const Order = require('../../models/orderSchema');
 const XLSX = require('xlsx');
+const { HttpStatus } = require('../../helpers/status-code');
 
 const getSales = async (req, res) => {
   try {
@@ -50,7 +51,7 @@ const getSales = async (req, res) => {
     });
   } catch (error) {
     console.log('Error in getSales:', error);
-    res.status(500).render('error', { message: 'Internal server error' });
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).render('error', { message: 'Internal server error' });
   }
 };
 
@@ -394,7 +395,7 @@ const exportToExcel = async (req, res) => {
     res.send(buffer);
   } catch (error) {
     console.error('Error exporting to Excel:', error);
-    res.status(500).json({ error: 'Failed to export to Excel' });
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ error: 'Failed to export to Excel' });
   }
 };
 
@@ -430,7 +431,7 @@ const exportToPDF = async (req, res) => {
     res.send(htmlContent);
   } catch (error) {
     console.error('Error exporting to PDF:', error);
-    res.status(500).json({ error: 'Failed to export to PDF' });
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ error: 'Failed to export to PDF' });
   }
 };
 
