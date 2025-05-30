@@ -5,6 +5,7 @@ const upload = require("../../config/multer");
 const cloudinary = require("../../config/cloudinary");
 const path = require("path");
 const fs = require("fs");
+const { validateBasicOtp, validateOtpSession } = require("../../validators/user/basic-otp-validator");
 
 // Get Profile
 const getProfile = async (req, res) => {
@@ -220,7 +221,7 @@ const uploadProfileImage = async (req, res) => {
               "Error deleting previous Cloudinary image:",
               deleteError
             );
-            
+
           }
         }
       }
@@ -385,18 +386,24 @@ const requestEmailUpdate = async (req, res) => {
 // Verify Email OTP
 const verifyEmailOtp = async (req, res) => {
   try {
-    if (!req.session.user_id || !req.session.newEmail) {
-      return res.status(401).json({
+    const { otp } = req.body;
+
+    // Basic OTP validation using utility
+    const otpValidation = validateBasicOtp(otp);
+    if (!otpValidation.isValid) {
+      return res.status(400).json({
         success: false,
-        message: "Unauthorized or invalid session",
+        message: otpValidation.message,
       });
     }
 
-    const { otp } = req.body;
-    if (!otp || !/^\d{6}$/.test(otp)) {
-      return res.status(400).json({
+    // Session validation using utility
+    const sessionValidation = validateOtpSession(req, 'email-update');
+    if (!sessionValidation.isValid) {
+      return res.status(401).json({
         success: false,
-        message: "Please provide a valid 6-digit OTP",
+        message: sessionValidation.message,
+        sessionExpired: sessionValidation.sessionExpired,
       });
     }
 

@@ -3,6 +3,7 @@ const OTP = require("../../models/otpSchema"); // Import the new OTP model
 const hashPasswordHelper = require("../../helpers/hash");
 const sendOtpEmail = require("../../helpers/sendMail");
 const { session } = require("passport");
+const { validateBasicOtp, validateOtpSession } = require("../../validators/user/basic-otp-validator");
 
 const getForgotPassword = async (req, res) => {
   try {
@@ -33,11 +34,11 @@ const postForgotPassword = async (req, res) => {
       Math.floor(100000 + Math.random() * 900000).toString();
 
     const otp = otpGenerator();
- 
+
 
     // Delete any existing OTP docs for this email and purpose
     await OTP.deleteMany({ email, purpose: 'password-reset' });
-    
+
     // Create new OTP document with 30 second expiry for password reset
     const otpDoc = new OTP({
       email,
@@ -46,7 +47,7 @@ const postForgotPassword = async (req, res) => {
       createdAt: new Date() // Will expire in 5 minutes by default
     });
     console.log(otp)
-    
+
     await otpDoc.save();
 
     let subjectContent = "OTP for Resetting your Password";
@@ -86,17 +87,17 @@ const resendOtp = async (req, res) => {
 
     const otp = otpGenerator();
     console.log("New OTP generated:", otp);
-    
+
     // Delete any existing OTP docs for this email
     await OTP.deleteMany({ email, purpose: 'password-reset' });
-    
+
     // Create new OTP document
     const otpDoc = new OTP({
       email,
       otp,
       purpose: 'password-reset'
     });
-    
+
     await otpDoc.save();
 
     let subjectContent = "New OTP for Resetting your Password";
@@ -118,7 +119,7 @@ const resendOtp = async (req, res) => {
 
 const getOtpForgotPassword = async (req, res) => {
   try {
-    res.render("otpForgotPassword"); 
+    res.render("otpForgotPassword");
   } catch (error) {
     console.log("Error in getting OTP verification page", error);
     res.status(400).json({
@@ -131,7 +132,27 @@ const getOtpForgotPassword = async (req, res) => {
 const verifyOtp = async (req, res) => {
   try {
     const { otp } = req.body;
-    console.log(otp);
+
+    // Basic OTP validation using utility
+    const otpValidation = validateBasicOtp(otp);
+    if (!otpValidation.isValid) {
+      return res.status(400).json({
+        success: false,
+        message: otpValidation.message,
+      });
+    }
+
+    // Session validation using utility
+    const sessionValidation = validateOtpSession(req, 'password-reset');
+    if (!sessionValidation.isValid) {
+      return res.status(400).json({
+        success: false,
+        message: sessionValidation.message,
+        sessionExpired: sessionValidation.sessionExpired,
+      });
+    }
+
+    console.log("Verifying OTP:", otp);
     const email = req.session.user_email;
 
     const user = await User.findOne({ email });
@@ -145,7 +166,7 @@ const verifyOtp = async (req, res) => {
 
     // Find OTP document
     const otpDoc = await OTP.findOne({ email, purpose: 'password-reset' });
-    
+
     if (!otpDoc) {
       return res.status(400).json({
         success: false,
@@ -225,12 +246,12 @@ const patchResetPassword = async (req, res) => {
   }
 };
 
-module.exports = { 
-  getForgotPassword, 
-  postForgotPassword, 
-  getOtpForgotPassword, 
+module.exports = {
+  getForgotPassword,
+  postForgotPassword,
+  getOtpForgotPassword,
   verifyOtp,
-  getResetPassword, 
+  getResetPassword,
   patchResetPassword,
-  resendOtp  
+  resendOtp
 };

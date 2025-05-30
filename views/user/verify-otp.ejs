@@ -108,7 +108,7 @@
       const timerElement = document.getElementById("timer");
       const timerExpiredElement = document.getElementById("timerExpired");
       const submitBtn = otpForm.querySelector('button[type="submit"]');
-      
+
       let timeLeft = 30; // 30 seconds timer
       let timerId;
 
@@ -118,21 +118,21 @@
         timerElement.style.display = 'inline';
         timerExpiredElement.style.display = 'none';
         submitBtn.disabled = false;
-        
+
         // Clear any existing timer
         if (timerId) {
           clearInterval(timerId);
         }
-        
+
         // Set initial time
         timeLeft = 30;
         updateTimerDisplay();
-        
+
         // Start countdown
         timerId = setInterval(() => {
           timeLeft -= 1;
           updateTimerDisplay();
-          
+
           if (timeLeft <= 0) {
             clearInterval(timerId);
             handleExpiredOTP();
@@ -145,7 +145,7 @@
         const minutes = Math.floor(timeLeft / 60);
         const seconds = timeLeft % 60;
         timerElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-        
+
         // Change color when time is running out
         if (timeLeft <= 10) {
           timerElement.style.color = '#dc3545'; // Red color
@@ -162,12 +162,38 @@
         showStatus('OTP has expired. Please request a new one.', 'error');
       }
 
-      // Auto-advance to next input field
+      // Auto-advance to next input field and prevent letters
       inputs.forEach((input, index) => {
-        input.addEventListener("input", () => {
-          const value = input.value;
+        input.addEventListener("input", (e) => {
+          let value = input.value;
+
+          // Remove any non-digit characters
+          value = value.replace(/\D/g, '');
+
+          // Update input value with only digits
+          input.value = value;
+
+          // Auto-advance to next input if digit entered
           if (value.length === 1 && index < inputs.length - 1) {
             inputs[index + 1].focus();
+          }
+        });
+
+        // Prevent non-digit characters from being typed
+        input.addEventListener("keypress", (e) => {
+          // Allow backspace, delete, tab, escape, enter
+          if ([8, 9, 27, 13, 46].indexOf(e.keyCode) !== -1 ||
+              // Allow Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+X
+              (e.keyCode === 65 && e.ctrlKey === true) ||
+              (e.keyCode === 67 && e.ctrlKey === true) ||
+              (e.keyCode === 86 && e.ctrlKey === true) ||
+              (e.keyCode === 88 && e.ctrlKey === true)) {
+            return;
+          }
+
+          // Ensure that it is a number and stop the keypress
+          if ((e.shiftKey || (e.keyCode < 48 || e.keyCode > 57)) && (e.keyCode < 96 || e.keyCode > 105)) {
+            e.preventDefault();
           }
         });
 
@@ -176,40 +202,64 @@
             inputs[index - 1].focus();
           }
         });
+
+        // Prevent paste of non-digit content
+        input.addEventListener("paste", (e) => {
+          e.preventDefault();
+          const paste = (e.clipboardData || window.clipboardData).getData('text');
+          const digitsOnly = paste.replace(/\D/g, '');
+
+          if (digitsOnly) {
+            // Fill current and subsequent inputs with pasted digits
+            for (let i = 0; i < digitsOnly.length && (index + i) < inputs.length; i++) {
+              inputs[index + i].value = digitsOnly[i];
+            }
+
+            // Focus on the next empty input or the last filled input
+            const nextIndex = Math.min(index + digitsOnly.length, inputs.length - 1);
+            inputs[nextIndex].focus();
+          }
+        });
       });
 
       // Handle form submission
       otpForm.addEventListener("submit", async (e) => {
         e.preventDefault();
-        
+
         // Check if timer expired
         if (timeLeft <= 0) {
           showStatus('OTP has expired. Please request a new one.', 'error');
           return;
         }
-        
+
         // Collect OTP digits
         const otpDigits = Array.from(inputs).map(input => input.value);
         const otpCode = otpDigits.join('');
-        
+
         // Check if all digits are filled
         if (otpDigits.some(digit => digit === '')) {
           showStatus('Please enter all 6 digits of the OTP code', 'error');
           return;
         }
-        
+
+        // Check if all digits are numbers
+        if (otpDigits.some(digit => !/^\d$/.test(digit))) {
+          showStatus('OTP must contain only numbers', 'error');
+          return;
+        }
+
         // Prepare data for submission
         const formData = {
           otp: otpCode,
           email: document.getElementById('userEmail').textContent.trim()
         };
-        
+
         try {
           // Show loading state
           const originalBtnText = submitBtn.textContent;
           submitBtn.disabled = true;
           submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Verifying...';
-          
+
           // Send OTP to backend
           const response = await fetch('/verify-otp', {
             method: 'POST',
@@ -218,17 +268,17 @@
             },
             body: JSON.stringify(formData)
           });
-          
+
           const data = await response.json();
-          
+
           // Reset button state
           submitBtn.disabled = false;
           submitBtn.textContent = originalBtnText;
-          
+
           if (data.success) {
             // Stop the timer
             clearInterval(timerId);
-            
+
             showStatus('OTP verified successfully! Redirecting...', 'success');
             // Redirect after successful verification (optional)
             setTimeout(() => {
@@ -244,16 +294,16 @@
           submitBtn.textContent = originalBtnText;
         }
       });
-      
+
       // Handle resend code
       resendBtn.addEventListener('click', async (e) => {
         e.preventDefault();
         const email = document.getElementById('userEmail').textContent.trim();
-        
+
         try {
           resendBtn.textContent = 'Sending...';
           resendBtn.style.pointerEvents = 'none';
-          
+
           const response = await fetch('/resend-signup-otp', {
             method: 'POST',
             headers: {
@@ -261,13 +311,13 @@
             },
             body: JSON.stringify({ email })
           });
-          
+
           const data = await response.json();
-          
+
           if (data.success) {
-            
+
             startTimer();
-            
+
             showStatus('New OTP code sent successfully!', 'success');
             // Clear previous inputs
             inputs.forEach(input => {
@@ -285,20 +335,20 @@
           resendBtn.style.pointerEvents = 'auto';
         }
       });
-      
+
       // Helper function to show status messages
       function showStatus(message, type) {
         statusMessage.textContent = message;
         statusMessage.className = 'status-message';
         statusMessage.classList.add(type === 'success' ? 'status-success' : 'status-error');
         statusMessage.style.display = 'block';
-        
+
         // Hide message after 5 seconds
         setTimeout(() => {
           statusMessage.style.display = 'none';
         }, 5000);
       }
-      
+
       // Initialize timer on page load
       document.addEventListener('DOMContentLoaded', () => {
         startTimer();

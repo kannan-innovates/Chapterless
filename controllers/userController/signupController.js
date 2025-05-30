@@ -3,6 +3,7 @@ const OTP = require("../../models/otpSchema"); // Import the new OTP model
 const hashPasswordHelper = require("../../helpers/hash");
 const sendOtpEmail = require("../../helpers/sendMail");
 const { text } = require("express");
+const { validateBasicOtp, validateOtpSession } = require("../../validators/user/basic-otp-validator");
 
 const getOtp = async (req, res) => {
   try {
@@ -102,11 +103,27 @@ const postSignup = async (req, res) => {
 const verifyOtp = async (req, res) => {
   try {
     const { otp } = req.body;
-    const tempUser = req.session.tempUser;
 
-    if (!tempUser || !tempUser.email) {
-      return res.status(400).json({ success: false, message: "Session expired. Please sign up again." });
+    // Basic OTP validation using utility
+    const otpValidation = validateBasicOtp(otp);
+    if (!otpValidation.isValid) {
+      return res.status(400).json({
+        success: false,
+        message: otpValidation.message,
+      });
     }
+
+    // Session validation using utility
+    const sessionValidation = validateOtpSession(req, 'signup');
+    if (!sessionValidation.isValid) {
+      return res.status(400).json({
+        success: false,
+        message: sessionValidation.message,
+        sessionExpired: sessionValidation.sessionExpired,
+      });
+    }
+
+    const tempUser = req.session.tempUser;
 
     const otpDoc = await OTP.findOne({ email: tempUser.email, purpose: "signup" });
 
