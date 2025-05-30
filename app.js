@@ -8,15 +8,25 @@ const userRouter = require("./routes/userRoutes/userRouter");
 const adminRoute = require("./routes/adminRoutes/adminRoutes")
 const passport = require("./config/passport");
 const methodOverride = require('method-override');
+const morgan = require('morgan');
 
-
-const userMiddleware = require("./middlewares/userMiddleware")
+const userMiddleware = require("./middlewares/userMiddleware");
+const cartWishlistMiddleware = require('./middlewares/cartWishlistMiddleware');
+const { globalErrorHandler, notFoundHandler } = require("./middlewares/errorHandler");
 
 
 connectDB();
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+morgan.token('timestamp', () => {
+  return new Date().toISOString();
+});
+
+const morganFormat = ':timestamp :method :url :status :res[content-length] - :response-time ms';
+
+app.use(morgan(morganFormat));
 
 
 app.use(
@@ -32,7 +42,6 @@ app.use(
   })
 );
 app.use((req, res, next) => {
-  // Make the user available to all templates
   res.locals.isAuthenticated = !!req.session.user_id;
   res.locals.user = req.session.user_id ? { id: req.session.user_id } : null;
   next();
@@ -41,11 +50,7 @@ app.use((req, res, next) => {
 
 app.use(passport.initialize());
 app.use(passport.session());
-
 app.use(userMiddleware);
-
-// Add cart and wishlist counts to all pages
-const cartWishlistMiddleware = require('./middlewares/cartWishlistMiddleware');
 app.use(cartWishlistMiddleware);
 
 app.use((req, res, next) => {
@@ -66,13 +71,12 @@ app.use(express.static(path.join(__dirname, "public")));
 app.use(methodOverride('_method'));
 
 app.use("/", userRouter);
-app.use("/admin",adminRoute)
+app.use("/admin", adminRoute);
+
+app.use(notFoundHandler);
+app.use(globalErrorHandler);
 
 const PORT = process.env.PORT || 3001;
-
-// app.use((req,res) =>{
-//   res.redirect('/pageNotFound')
-// })
 
 app.listen(PORT, () => {
   console.log(`🚀 Server running at http://localhost:${PORT}`);
