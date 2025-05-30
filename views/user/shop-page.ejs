@@ -92,8 +92,13 @@
             </div>
           </div>
 
-          <!-- Apply Filters Button -->
-          <button class="btn btn-dark w-100" onclick="applyFilters()">Apply Filters</button>
+          <!-- Filter Buttons -->
+          <div class="d-flex gap-2">
+            <button class="btn btn-dark flex-fill" onclick="applyFilters()">Apply Filters</button>
+            <button class="btn btn-outline-secondary flex-fill" onclick="resetFilters()">
+              <i class="ri-refresh-line me-1"></i>Reset
+            </button>
+          </div>
         </div>
       </div>
 
@@ -446,6 +451,23 @@
     border-radius: 2px;
     z-index: 1;
   }
+
+  /* Reset button styling */
+  .btn-outline-secondary {
+    border-color: #6c757d;
+    color: #6c757d;
+    transition: all 0.3s ease;
+  }
+
+  .btn-outline-secondary:hover {
+    background-color: #6c757d;
+    border-color: #6c757d;
+    color: #fff;
+  }
+
+  .btn-outline-secondary:focus {
+    box-shadow: 0 0 0 0.2rem rgba(108, 117, 125, 0.25);
+  }
 </style>
 
 <script>
@@ -509,6 +531,34 @@
     url.searchParams.set('sort', sortValue);
 
     window.location.href = url.toString();
+  }
+
+  // Reset all filters function
+  function resetFilters() {
+    // Reset all category checkboxes
+    const allCategoriesCheckbox = document.getElementById('allCategories');
+    const categoryCheckboxes = document.querySelectorAll('.category-checkbox');
+
+    if (allCategoriesCheckbox) {
+      allCategoriesCheckbox.checked = true;
+    }
+
+    categoryCheckboxes.forEach(cb => {
+      cb.checked = false;
+    });
+
+    // Reset price range
+    document.getElementById('minPriceInput').value = 0;
+    document.getElementById('maxPriceInput').value = 5000;
+    document.getElementById('priceRange').value = 5000;
+    document.getElementById('minPrice').textContent = '₹0';
+    document.getElementById('maxPrice').textContent = '₹5000';
+
+    // Reset sort to recommended
+    document.getElementById('sortSelect').value = 'recommended';
+
+    // Redirect to shop page without any filters
+    window.location.href = '/shopPage';
   }
 
   // All Categories checkbox logic
