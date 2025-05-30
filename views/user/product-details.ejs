@@ -31,7 +31,7 @@
               <% } %>
             </div>
           </div>
-          
+
           <!-- Main Image -->
           <div class="col-10">
             <div class="mb-3 zoom-container" id="zoomContainer">
@@ -43,13 +43,13 @@
           </div>
         </div>
       </div>
-      
+
       <!-- Product Info -->
       <div class="col-lg-7">
         <div class="book-details">
           <h1 class="fs-2 fw-bold mb-1"><%= product.title %></h1>
           <p class="fs-5 mb-3">by <a href="#" class="text-decoration-none"><%= product.author %></a></p>
-          
+
           <div class="book-meta">
             <div class="book-meta-item">
               <i class="ri-book-open-line book-meta-icon"></i>
@@ -68,7 +68,7 @@
               <span>ISBN: <%= product.isbn || 'N/A' %></span>
             </div>
           </div>
-          
+
           <div class="price-section mb-4">
             <% if (product.activeOffer && product.discountPercentage > 0) { %>
               <div class="d-flex align-items-baseline gap-2">
@@ -89,7 +89,7 @@
               <h2 class="fs-3 fw-bold mb-0 text-danger">₹<%= product.regularPrice.toFixed(2) %></h2>
             <% } %>
           </div>
-          
+
           <div class="mb-3">
             <% if (product.stock > 10) { %>
               <span class="stock-status in-stock">
@@ -105,11 +105,11 @@
               </span>
             <% } %>
           </div>
-          
+
           <p class="text-muted mb-4">
             <%= product.description %>
           </p>
-          
+
           <div class="d-flex flex-column gap-4">
             <div>
               <label class="form-label fw-medium mb-2">Quantity</label>
@@ -123,9 +123,9 @@
                 </button>
               </div>
             </div>
-            
+
             <div class="action-buttons">
-              <button class="btn btn-primary btn-add-to-cart py-3" 
+              <button class="btn btn-primary btn-add-to-cart py-3"
                       data-product-id="<%= product._id %>"
                       <%= product.stock === 0 ? 'disabled' : '' %>
                       <%= locals.isInCart ? 'data-in-cart="true"' : '' %>>
@@ -140,7 +140,7 @@
             </div>
           </div>
         </div>
-        
+
         <!-- Social Sharing -->
         <div>
           <p class="fw-medium mb-2">Share this book:</p>
@@ -154,7 +154,7 @@
         </div>
       </div>
     </div>
-    
+
     <!-- Product Tabs -->
     <div class="product-tabs">
       <ul class="nav nav-tabs" id="productTabs" role="tablist">
@@ -227,7 +227,7 @@
         </div>
       </div>
     </div>
-    
+
     <!-- Related Products Section -->
     <div class="related-products">
       <h3 class="fs-3 fw-bold mb-4">You May Also Like</h3>
@@ -240,7 +240,7 @@
                   <% if (relatedProduct.activeOffer && relatedProduct.discountPercentage > 0) { %>
                     <span class="offer-badge"><%= relatedProduct.discountPercentage %>% OFF</span>
                   <% } %>
-                  <% 
+                  <%
                     const now = new Date();
                     const createdAt = new Date(relatedProduct.createdAt);
                     const diffDays = (now - createdAt) / (1000 * 60 * 60 * 24);
@@ -311,19 +311,19 @@
     border-radius: 2px;
     z-index: 1;
   }
-  
+
   .related-product .offer-badge {
     font-size: 0.75rem;
     padding: 0.15rem 0.5rem;
   }
-  
+
   .original-price {
     text-decoration: line-through;
     color: #6b7280;
     font-size: 0.875rem;
     margin-right: 0.5rem;
   }
-  
+
   .discount-badge {
     background-color: #e53935;
     color: white;
@@ -406,14 +406,28 @@
               timer: 1500
             });
           } else {
-            Swal.fire({
-              toast: true,
-              position: 'top-end',
-              icon: 'error',
-              title: result.message,
-              showConfirmButton: false,
-              timer: 1500
-            });
+            // Check if it's an authentication error
+            if (result.message === 'Please log in to add to cart') {
+              Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: 'error',
+                title: result.message,
+                showConfirmButton: false,
+                timer: 2000
+              }).then(() => {
+                window.location.href = '/login';
+              });
+            } else {
+              Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: 'error',
+                title: result.message,
+                showConfirmButton: false,
+                timer: 1500
+              });
+            }
           }
         } catch (error) {
           Swal.fire({
@@ -457,14 +471,28 @@
               timer: 1500
             });
           } else {
-            Swal.fire({
-              toast: true,
-              position: 'top-end',
-              icon: 'error',
-              title: result.message,
-              showConfirmButton: false,
-              timer: 1500
-            });
+            // Check if it's an authentication error
+            if (result.message === 'Please log in to manage wishlist') {
+              Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: 'error',
+                title: result.message,
+                showConfirmButton: false,
+                timer: 2000
+              }).then(() => {
+                window.location.href = '/login';
+              });
+            } else {
+              Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: 'error',
+                title: result.message,
+                showConfirmButton: false,
+                timer: 1500
+              });
+            }
           }
         } catch (error) {
           Swal.fire({
@@ -511,14 +539,28 @@
               timer: 1500
             });
           } else {
-            Swal.fire({
-              toast: true,
-              position: 'top-end',
-              icon: 'error',
-              title: result.message,
-              showConfirmButton: false,
-              timer: 1500
-            });
+            // Check if it's an authentication error
+            if (result.message === 'Please log in to add to cart') {
+              Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: 'error',
+                title: result.message,
+                showConfirmButton: false,
+                timer: 2000
+              }).then(() => {
+                window.location.href = '/login';
+              });
+            } else {
+              Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: 'error',
+                title: result.message,
+                showConfirmButton: false,
+                timer: 1500
+              });
+            }
           }
         } catch (error) {
           Swal.fire({
@@ -562,14 +604,28 @@
               timer: 1500
             });
           } else {
-            Swal.fire({
-              toast: true,
-              position: 'top-end',
-              icon: 'error',
-              title: result.message,
-              showConfirmButton: false,
-              timer: 1500
-            });
+            // Check if it's an authentication error
+            if (result.message === 'Please log in to manage wishlist') {
+              Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: 'error',
+                title: result.message,
+                showConfirmButton: false,
+                timer: 2000
+              }).then(() => {
+                window.location.href = '/login';
+              });
+            } else {
+              Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: 'error',
+                title: result.message,
+                showConfirmButton: false,
+                timer: 1500
+              });
+            }
           }
         } catch (error) {
           Swal.fire({
@@ -589,9 +645,9 @@
     document.querySelectorAll('.thumbnail').forEach(thumb => {
       thumb.classList.remove('active');
     });
-    
+
     element.classList.add('active');
-    
+
     document.getElementById('mainImage').src = imageUrl;
   };
 </script>

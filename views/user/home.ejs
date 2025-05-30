@@ -85,9 +85,14 @@
                       <span class="fw-bold">₹<%= product.regularPrice.toFixed(2) %></span>
                     <% } %>
                   </div>
-                  <button class="add-to-cart border-0">
-                    <i class="ri-add-line"></i>
-                  </button>
+                  <div class="d-flex gap-2 align-items-center">
+                    <button class="btn-wishlist-home" data-product-id="<%= product._id %>">
+                      <i class="ri-heart-line"></i>
+                    </button>
+                    <button class="add-to-cart border-0" data-product-id="<%= product._id %>">
+                      <i class="ri-add-line"></i>
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -144,9 +149,14 @@
                       <span class="fw-bold">₹<%= product.regularPrice.toFixed(2) %></span>
                     <% } %>
                   </div>
-                  <button class="add-to-cart border-0">
-                    <i class="ri-add-line"></i>
-                  </button>
+                  <div class="d-flex gap-2 align-items-center">
+                    <button class="btn-wishlist-home" data-product-id="<%= product._id %>">
+                      <i class="ri-heart-line"></i>
+                    </button>
+                    <button class="add-to-cart border-0" data-product-id="<%= product._id %>">
+                      <i class="ri-add-line"></i>
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -251,4 +261,183 @@
 </section>
 
 <%- include("../partials/user/footer") %>
+
+<style>
+  .btn-wishlist-home {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 50%;
+    background-color: #fff;
+    color: #000;
+    border: 2px solid #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    cursor: pointer;
+  }
+
+  .btn-wishlist-home:hover {
+    background-color: #000;
+    color: #fff;
+  }
+
+  .btn-wishlist-home.wishlisted {
+    background-color: #dc3545;
+    border-color: #dc3545;
+    color: #fff;
+  }
+
+  .btn-wishlist-home.wishlisted:hover {
+    background-color: #c82333;
+    border-color: #c82333;
+  }
+</style>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Cart and Wishlist functionality
+    const cartCountElement = document.querySelector('.cart-count');
+    const wishlistCountElement = document.querySelector('.wishlist-count');
+
+    // Add to cart functionality
+    document.querySelectorAll('.add-to-cart').forEach(button => {
+      button.addEventListener('click', async function() {
+        const productId = this.dataset.productId;
+
+        try {
+          const response = await fetch('/cart/add', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ productId, quantity: 1 })
+          });
+          const result = await response.json();
+
+          if (result.success) {
+            if (cartCountElement) {
+              cartCountElement.textContent = result.cartCount;
+              cartCountElement.dataset.count = result.cartCount;
+            }
+
+            Swal.fire({
+              toast: true,
+              position: 'top-end',
+              icon: 'success',
+              title: result.message,
+              showConfirmButton: false,
+              timer: 1500
+            });
+          } else {
+            // Check if it's an authentication error
+            if (result.message === 'Please log in to add to cart') {
+              Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: 'error',
+                title: result.message,
+                showConfirmButton: false,
+                timer: 2000
+              }).then(() => {
+                window.location.href = '/login';
+              });
+            } else {
+              Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: 'error',
+                title: result.message,
+                showConfirmButton: false,
+                timer: 1500
+              });
+            }
+          }
+        } catch (error) {
+          Swal.fire({
+            toast: true,
+            position: 'top-end',
+            icon: 'error',
+            title: 'Error adding to cart',
+            showConfirmButton: false,
+            timer: 1500
+          });
+        }
+      });
+    });
+
+    // Wishlist functionality
+    document.querySelectorAll('.btn-wishlist-home').forEach(button => {
+      button.addEventListener('click', async function() {
+        const productId = this.dataset.productId;
+
+        try {
+          const response = await fetch('/wishlist/toggle', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ productId })
+          });
+          const result = await response.json();
+
+          if (result.success) {
+            // Update button appearance
+            const icon = this.querySelector('i');
+            if (result.isWishlisted) {
+              icon.className = 'ri-heart-fill';
+              this.classList.add('wishlisted');
+            } else {
+              icon.className = 'ri-heart-line';
+              this.classList.remove('wishlisted');
+            }
+
+            // Update wishlist count
+            if (wishlistCountElement) {
+              wishlistCountElement.textContent = result.wishlistCount;
+              wishlistCountElement.dataset.count = result.wishlistCount;
+            }
+
+            Swal.fire({
+              toast: true,
+              position: 'top-end',
+              icon: 'success',
+              title: result.message,
+              showConfirmButton: false,
+              timer: 1500
+            });
+          } else {
+            // Check if it's an authentication error
+            if (result.message === 'Please log in to manage wishlist') {
+              Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: 'error',
+                title: result.message,
+                showConfirmButton: false,
+                timer: 2000
+              }).then(() => {
+                window.location.href = '/login';
+              });
+            } else {
+              Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: 'error',
+                title: result.message,
+                showConfirmButton: false,
+                timer: 1500
+              });
+            }
+          }
+        } catch (error) {
+          Swal.fire({
+            toast: true,
+            position: 'top-end',
+            icon: 'error',
+            title: 'Error managing wishlist',
+            showConfirmButton: false,
+            timer: 1500
+          });
+        }
+      });
+    });
+  });
+</script>
 

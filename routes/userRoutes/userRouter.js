@@ -76,14 +76,14 @@ router.get('/products/:id', productDetailsController.productDetails);
 
 // Cart routes
 router.get('/cart', isAuthenticated, cartController.getCart);
-router.post('/cart/add', isAuthenticated, cartController.addToCart);
+router.post('/cart/add', cartController.addToCart);
 router.post('/cart/update', isAuthenticated, cartController.updateCartItem);
 router.post('/cart/remove', isAuthenticated, cartController.removeCartItem);
 router.post('/cart/clear', isAuthenticated, cartController.clearCart);
 
 // Wishlist routes
 router.get('/wishlist', isAuthenticated, wishlistController.getWishlist);
-router.post('/wishlist/toggle', isAuthenticated, wishlistController.toggleWishlist);
+router.post('/wishlist/toggle', wishlistController.toggleWishlist);
 router.post('/wishlist/add-all-to-cart', isAuthenticated, wishlistController.addAllToCart);
 router.post('/wishlist/clear', isAuthenticated, wishlistController.clearWishlist);
 
