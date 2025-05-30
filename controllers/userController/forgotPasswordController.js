@@ -53,15 +53,15 @@ const postForgotPassword = async (req, res) => {
 
     await otpDoc.save();
 
-    let subjectContent = "OTP for Resetting your Password";
-    await sendOtpEmail(email, otp, subjectContent, "forgot-password");
+    let subjectContent = "Reset Your Chapterless Password";
+    await sendOtpEmail(email, user.fullName, otp, subjectContent, "forgot-password");
 
     req.session.user_email = email;
 
     return res.status(HttpStatus.OK).json({
       message: "OTP sent successfully",
       success: true,
-      expiresIn: 30, 
+      expiresIn: 60,
     });
   } catch (error) {
     console.log("Error in sending otp for Forgot Password");
@@ -103,13 +103,13 @@ const resendOtp = async (req, res) => {
 
     await otpDoc.save();
 
-    let subjectContent = "New OTP for Resetting your Password";
-    await sendOtpEmail(email, otp, subjectContent);
+    let subjectContent = "New Password Reset Code - Chapterless";
+    await sendOtpEmail(email, user.fullName, otp, subjectContent, "forgot-password");
 
     return res.status(HttpStatus.OK).json({
       message: "New OTP sent successfully",
       success: true,
-      expiresIn: 30, 
+      expiresIn: 60,
     });
   } catch (error) {
     console.log("Error in resending OTP");

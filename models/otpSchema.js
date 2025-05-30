@@ -23,7 +23,7 @@ const otpSchema = new mongoose.Schema({
   }
 });
 
-// Create index on createdAt for TTL
-otpSchema.index({ createdAt: 1 }, { expireAfterSeconds: 300 });
+// Create index on createdAt for TTL (60 seconds = 1 minute)
+otpSchema.index({ createdAt: 1 }, { expireAfterSeconds: 60 });
 
 module.exports = mongoose.model('OTP', otpSchema);
