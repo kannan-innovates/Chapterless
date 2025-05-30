@@ -3,14 +3,15 @@ const Address = require("../../models/addressSchema");
 const Order = require("../../models/orderSchema");
 const Product = require("../../models/productSchema");
 const Coupon = require("../../models/couponSchema");
+const Wallet = require("../../models/walletSchema");
 const Razorpay = require("razorpay");
 const crypto = require("crypto");
-const { 
-  getActiveOfferForProduct, 
+const {
+  getActiveOfferForProduct,
   calculateDiscount,
   calculateProportionalCouponDiscount,
   getItemPriceDetails,
-  calculateFinalItemPrice 
+  calculateFinalItemPrice
 } = require("../../utils/offer-helper");
 
 // Initialize Razorpay
@@ -34,7 +35,7 @@ const getCheckout = async (req, res) => {
 
     const userId = req.session.user_id;
     const cart = await Cart.findOne({ user: userId }).populate("items.product");
-    
+
     // Check if cart exists and has items
     if (!cart || !cart.items || cart.items.length === 0) {
       req.session.errorMessage = "Your cart is empty. Please add items before checkout.";
@@ -44,10 +45,10 @@ const getCheckout = async (req, res) => {
     const addresses = await Address.find({ userId }).sort({ isDefault: -1, updatedAt: -1 });
 
     // Filter valid items first
-    const cartItems = cart.items.filter((item) => 
-      item.product && 
-      item.product.isListed && 
-      !item.product.isDeleted && 
+    const cartItems = cart.items.filter((item) =>
+      item.product &&
+      item.product.isListed &&
+      !item.product.isDeleted &&
       item.product.stock >= item.quantity
     );
 
@@ -78,7 +79,7 @@ const getCheckout = async (req, res) => {
     for (const item of cartItems) {
       // Get active offer for this product
       const offer = await getActiveOfferForProduct(
-        item.product._id, 
+        item.product._id,
         item.product.category,
         item.priceAtAddition
       );
@@ -111,7 +112,7 @@ const getCheckout = async (req, res) => {
     // Check for applied coupon in session
     if (req.session.appliedCoupon) {
       const coupon = await Coupon.findById(req.session.appliedCoupon);
-      
+
       if (coupon && coupon.isActive && new Date() <= coupon.expiryDate) {
         // Verify minimum order amount
         if (subtotal >= coupon.minOrderAmount) {
@@ -124,22 +125,22 @@ const getCheckout = async (req, res) => {
           // Store item-level details
           cartItems.forEach(item => {
             const itemCouponInfo = couponResult.itemDiscounts[item.product._id.toString()];
-            
+
             // Add coupon discount info directly to cart item for display
             item.couponDiscount = itemCouponInfo ? itemCouponInfo.amount : 0;
             item.couponProportion = itemCouponInfo ? itemCouponInfo.proportion : 0;
-            
+
             // Calculate final price (after both offer and coupon)
             const itemTotal = item.discountedPrice * item.quantity;
             const itemCouponDiscount = itemCouponInfo ? itemCouponInfo.amount : 0;
             item.finalPrice = itemTotal - itemCouponDiscount;
-            
+
             // Calculate total discount (offer + coupon)
             item.totalDiscount = item.offerDiscount + itemCouponDiscount;
-            
+
             // Calculate total discount percentage based on original price
             const originalTotal = item.originalPrice * item.quantity;
-            item.discountPercentage = originalTotal > 0 
+            item.discountPercentage = originalTotal > 0
               ? ((item.totalDiscount / originalTotal) * 100).toFixed(1)
               : "0.0";
 
@@ -206,6 +207,14 @@ const getCheckout = async (req, res) => {
     // Get available coupons for the user
     const availableCoupons = await getAvailableCouponsForUser(userId, subtotal);
 
+    // Check COD eligibility (orders above ₹1000 are not eligible for COD)
+    const isCodEligible = totalAmount <= 1000;
+
+    // Get user's wallet balance
+    const wallet = await Wallet.findOne({ userId });
+    const walletBalance = wallet ? wallet.balance : 0;
+    const isWalletEligible = walletBalance >= totalAmount;
+
     res.render("checkout", {
       cartItems,
       subtotal,
@@ -225,6 +234,9 @@ const getCheckout = async (req, res) => {
       paymentMethod: req.query.paymentMethod || "",
       shippingCost: 0,
       razorpayKeyId: process.env.RAZORPAY_KEY_ID,
+      isCodEligible,  // Add COD eligibility flag
+      walletBalance,  // Add wallet balance
+      isWalletEligible,  // Add wallet eligibility flag
       errorMessage: req.session.errorMessage,
       successMessage: req.session.successMessage
     });
@@ -243,8 +255,8 @@ const getCheckout = async (req, res) => {
 // Helper function to get available coupons for a user
 async function getAvailableCouponsForUser(userId, orderAmount) {
   try {
-    console.log('Fetching coupons for:', { 
-      userId, 
+    console.log('Fetching coupons for:', {
+      userId,
       orderAmount
     });
 
@@ -255,7 +267,7 @@ async function getAvailableCouponsForUser(userId, orderAmount) {
     }).lean();
 
     console.log('All active coupons found:', allCoupons.length);
-    
+
     // Filter based on usage limits
     const availableCoupons = allCoupons
       .filter((coupon) => {
@@ -282,7 +294,7 @@ async function getAvailableCouponsForUser(userId, orderAmount) {
         discountValue: coupon.discountValue,
         maxDiscountValue: coupon.maxDiscountValue,
         minOrderAmount: coupon.minOrderAmount,
-        discountDisplay: coupon.discountType === "percentage" 
+        discountDisplay: coupon.discountType === "percentage"
           ? `${coupon.discountValue}% OFF${coupon.maxDiscountValue ? ` (up to ₹${coupon.maxDiscountValue})` : ''}`
           : `₹${coupon.discountValue} OFF`,
         validUntil: new Date(coupon.expiryDate).toLocaleDateString('en-US', {
@@ -297,7 +309,7 @@ async function getAvailableCouponsForUser(userId, orderAmount) {
       discount: c.discountDisplay,
       minOrder: c.minOrderAmount
     })));
-    
+
     return availableCoupons;
   } catch (error) {
     console.error("Error fetching available coupons:", error);
@@ -372,9 +384,9 @@ const applyCoupon = async (req, res) => {
     // Check per-user usage limit
     const userUsage = coupon.usedBy.find((usage) => usage.userId.toString() === userId.toString());
     if (userUsage && userUsage.count >= coupon.usageLimitPerUser) {
-      return res.status(400).json({ 
-        success: false, 
-        message: "You have already used this coupon the maximum number of times" 
+      return res.status(400).json({
+        success: false,
+        message: "You have already used this coupon the maximum number of times"
       });
     }
 
@@ -514,7 +526,7 @@ const createRazorpayOrder = async (req, res) => {
 
     // Generate order number once and use it consistently
     const orderNumber = generateOrderNumber();
-    
+
     // Initialize arrays and variables for calculations
     const orderItems = [];
     let originalSubtotal = 0;
@@ -528,7 +540,7 @@ const createRazorpayOrder = async (req, res) => {
 
       // Get active offer for this product
       const offer = await getActiveOfferForProduct(
-        item.product._id, 
+        item.product._id,
         item.product.category,
         item.priceAtAddition
       );
@@ -538,7 +550,7 @@ const createRazorpayOrder = async (req, res) => {
         const { discountAmount, finalPrice } = calculateDiscount(offer, item.priceAtAddition);
         const itemDiscount = discountAmount * item.quantity;
         const itemTotalAfterOffer = finalPrice * item.quantity;
-        
+
         totalOfferDiscount += itemDiscount;
         subtotalAfterOffers += itemTotalAfterOffer;
 
@@ -594,7 +606,7 @@ const createRazorpayOrder = async (req, res) => {
     // Calculate final amounts exactly as shown in checkout page
     const checkoutSubtotal = originalSubtotal;
     const checkoutOfferDiscount = totalOfferDiscount;
-    
+
     // Check for applied coupon
     let couponDiscount = 0;
     let appliedCouponCode = null;
@@ -615,12 +627,12 @@ const createRazorpayOrder = async (req, res) => {
             if (itemCouponInfo) {
               item.couponDiscount = itemCouponInfo.amount;
               item.couponProportion = itemCouponInfo.proportion;
-              
+
               // Update priceBreakdown with coupon info
               item.priceBreakdown.couponDiscount = itemCouponInfo.amount;
               item.priceBreakdown.couponProportion = itemCouponInfo.proportion;
               item.priceBreakdown.finalPrice = item.priceBreakdown.priceAfterOffer - itemCouponInfo.amount;
-              
+
               // Recalculate final price using the helper
               const finalPriceDetails = calculateFinalItemPrice(item, { couponDiscount });
               item.finalPrice = finalPriceDetails.finalPrice / item.quantity;
@@ -726,27 +738,27 @@ const createRazorpayOrder = async (req, res) => {
 const verifyRazorpayPayment = async (req, res) => {
   try {
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
-    
+
     // Verify signature
     const expectedSignature = crypto
       .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
       .update(`${razorpay_order_id}|${razorpay_payment_id}`)
       .digest("hex");
-    
+
     const isAuthentic = expectedSignature === razorpay_signature;
-    
+
     if (!isAuthentic) {
       return res.status(400).json({ success: false, message: "Invalid payment signature" });
     }
-    
+
     // Get pending order from session
     const pendingOrder = req.session.pendingOrder;
     if (!pendingOrder) {
       return res.status(400).json({ success: false, message: "No pending order found" });
     }
-    
+
     const userId = req.session.user_id;
-    
+
     // Validate stock for all products before making any changes
     const stockUpdates = [];
     for (const item of pendingOrder.orderItems) {
@@ -767,10 +779,10 @@ const verifyRazorpayPayment = async (req, res) => {
     for (const update of stockUpdates) {
       await Product.findByIdAndUpdate(update.productId, { stock: update.newStock }, { new: true });
     }
-    
+
     // Fetch address
     const address = await Address.findById(pendingOrder.addressId);
-    
+
     // Add priceBreakdown to each order item
     const orderItems = pendingOrder.orderItems.map(item => ({
       ...item,
@@ -820,16 +832,16 @@ const verifyRazorpayPayment = async (req, res) => {
     });
 
     await order.save();
-    
+
     // Update coupon usage if applicable
     if (pendingOrder.couponCode) {
       const coupon = await Coupon.findOne({ code: pendingOrder.couponCode });
       if (coupon) {
         coupon.usedCount += 1;
-        
+
         // Check if user has used this coupon before
         const userUsageIndex = coupon.usedBy.findIndex((usage) => usage.userId.toString() === userId.toString());
-        
+
         if (userUsageIndex >= 0) {
           coupon.usedBy[userUsageIndex].count += 1;
           coupon.usedBy[userUsageIndex].usedAt = new Date();
@@ -840,18 +852,18 @@ const verifyRazorpayPayment = async (req, res) => {
             count: 1,
           });
         }
-        
+
         await coupon.save();
       }
     }
-    
+
     // Clear cart
     await Cart.findOneAndUpdate({ user: userId }, { items: [] });
-    
+
     // Clear pending order from session
     delete req.session.pendingOrder;
     delete req.session.appliedCoupon;
-    
+
     res.status(200).json({
       success: true,
       message: "Payment successful",
@@ -869,7 +881,7 @@ const handlePaymentFailure = async (req, res) => {
   try {
     // Clear pending order from session
     delete req.session.pendingOrder;
-    
+
     res.status(200).json({
       success: false,
       message: "Payment failed"
@@ -894,8 +906,8 @@ const placeOrder = async (req, res) => {
       throw new Error("Address and payment method are required");
     }
 
-    if (paymentMethod !== "COD") {
-      throw new Error("Only COD is supported at this time");
+    if (!["COD", "Wallet"].includes(paymentMethod)) {
+      throw new Error("Only COD and Wallet payments are supported at this time");
     }
 
     // Fetch address
@@ -986,12 +998,12 @@ const placeOrder = async (req, res) => {
             if (itemCouponInfo) {
               item.couponDiscount = itemCouponInfo.amount;
               item.couponProportion = itemCouponInfo.proportion;
-              
+
               // Update priceBreakdown with coupon info
               item.priceBreakdown.couponDiscount = itemCouponInfo.amount;
               item.priceBreakdown.couponProportion = itemCouponInfo.proportion;
               item.priceBreakdown.finalPrice = item.priceBreakdown.priceAfterOffer - itemCouponInfo.amount;
-              
+
               // Recalculate final price using the helper
               const finalPriceDetails = calculateFinalItemPrice(item, { couponDiscount });
               item.finalPrice = finalPriceDetails.finalPrice / item.quantity;
@@ -1020,6 +1032,24 @@ const placeOrder = async (req, res) => {
 
     const tax = (subtotal - couponDiscount) * 0.08;
     const total = subtotal - couponDiscount + tax;
+
+    // Validate COD eligibility (orders above ₹1000 are not eligible for COD)
+    if (paymentMethod === "COD" && total > 1000) {
+      throw new Error("Cash on Delivery is not available for orders above ₹1,000. Please choose an online payment method.");
+    }
+
+    // Validate wallet eligibility and balance
+    let wallet = null;
+    if (paymentMethod === "Wallet") {
+      wallet = await Wallet.findOne({ userId });
+      if (!wallet) {
+        throw new Error("Wallet not found. Please add money to your wallet first.");
+      }
+
+      if (wallet.balance < total) {
+        throw new Error(`Insufficient wallet balance. You need ₹${(total - wallet.balance).toFixed(2)} more to complete this order.`);
+      }
+    }
 
     // Step 1: Validate stock for all products before making any changes
     const stockUpdates = [];
@@ -1058,8 +1088,8 @@ const placeOrder = async (req, res) => {
         landmark: address.landmark,
         isDefault: address.isDefault,
       },
-      paymentMethod: "COD",
-      paymentStatus: "Pending",
+      paymentMethod: paymentMethod,
+      paymentStatus: paymentMethod === "Wallet" ? "Paid" : "Pending",
       orderStatus: "Placed",
       subtotal,
       shipping: 0,
@@ -1074,12 +1104,43 @@ const placeOrder = async (req, res) => {
 
     await order.save();
 
-    // Step 4: Clear cart
+    // Step 4: Process wallet payment if applicable
+    if (paymentMethod === "Wallet" && wallet) {
+      try {
+        // Deduct amount from wallet
+        wallet.balance = Number(wallet.balance) - Number(total);
+
+        // Add transaction record
+        wallet.transactions.push({
+          type: 'debit',
+          amount: Number(total),
+          orderId: order._id,
+          reason: `Payment for order #${order.orderNumber}`,
+          date: new Date()
+        });
+
+        await wallet.save();
+        console.log(`Wallet payment processed: ₹${total} deducted from user ${userId} wallet`);
+      } catch (walletError) {
+        console.error('Error processing wallet payment:', walletError);
+        // If wallet deduction fails, we should cancel the order
+        await Order.findByIdAndDelete(order._id);
+
+        // Restore stock
+        for (const update of stockUpdates) {
+          await Product.findByIdAndUpdate(update.productId, { stock: update.originalStock }, { new: true });
+        }
+
+        throw new Error("Failed to process wallet payment. Please try again.");
+      }
+    }
+
+    // Step 5: Clear cart
     await Cart.findOneAndUpdate({ user: userId }, { items: [] });
 
     res.status(201).json({
       success: true,
-      message: "Order placed successfully",
+      message: paymentMethod === "Wallet" ? "Order placed and paid successfully from wallet" : "Order placed successfully",
       orderId: order._id,
       orderNumber: order.orderNumber,
     });
@@ -1100,11 +1161,11 @@ const placeOrder = async (req, res) => {
   }
 };
 
-module.exports = { 
-  getCheckout, 
-  placeOrder, 
-  applyCoupon, 
-  removeCoupon, 
+module.exports = {
+  getCheckout,
+  placeOrder,
+  applyCoupon,
+  removeCoupon,
   addAddress,
   createRazorpayOrder,
   verifyRazorpayPayment,

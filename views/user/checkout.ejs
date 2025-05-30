@@ -60,7 +60,7 @@
           </div>
           <div class="card-body p-4">
             <div class="cart-items">
-              <% if (cartItems && cartItems.length > 0) { %> 
+              <% if (cartItems && cartItems.length > 0) { %>
                 <% cartItems.forEach(item => { %>
                 <div class="cart-item d-flex flex-wrap py-3 border-bottom">
                   <div class="cart-item-image me-3">
@@ -106,8 +106,8 @@
                         <!-- <div>Offer Discount: -₹<%= item.offerDiscount ? item.offerDiscount.toFixed(2) : '0.00' %></div> -->
                         <% if (appliedCoupon) { %>
                           <div>
-                            Coupon (<%= appliedCoupon.code %>): 
-                            -₹<%= couponShare.toFixed(2) %> 
+                            Coupon (<%= appliedCoupon.code %>):
+                            -₹<%= couponShare.toFixed(2) %>
                             (<%= (proportion * 100).toFixed(2) %>%)
                           </div>
                         <% } %>
@@ -623,7 +623,7 @@
                 </div>
 
                 <!-- Cash on Delivery -->
-                <div class="accordion-item border mb-3 rounded">
+                <div class="accordion-item border mb-3 rounded <%= !isCodEligible ? 'opacity-50' : '' %>">
                   <h2 class="accordion-header">
                     <button
                       class="accordion-button collapsed"
@@ -632,6 +632,7 @@
                       data-bs-target="#codPayment"
                       aria-expanded="false"
                       aria-controls="codPayment"
+                      <%= !isCodEligible ? 'disabled' : '' %>
                     >
                       <div class="d-flex align-items-center">
                         <div class="payment-icon me-3">
@@ -639,47 +640,81 @@
                         </div>
                         <div>
                           <span class="fw-medium">Cash on Delivery</span>
-                          <small class="d-block text-muted"
-                            >Pay when your order is delivered</small
-                          >
+                          <% if (isCodEligible) { %>
+                            <small class="d-block text-muted">Pay when your order is delivered</small>
+                          <% } else { %>
+                            <small class="d-block text-danger">Not available for orders above ₹1,000</small>
+                          <% } %>
                         </div>
                       </div>
                     </button>
                   </h2>
-                  <div
-                    id="codPayment"
-                    class="accordion-collapse collapse"
-                    data-bs-parent="#paymentAccordion"
-                  >
-                    <div class="accordion-body">
-                      <div
-                        class="alert alert-info d-flex align-items-center"
-                        role="alert"
-                      >
-                        <i class="bi bi-info-circle-fill me-2"></i>
-                        <div>
-                          You will pay ₹<%= totalAmount ? totalAmount.toFixed(2)
-                          : '0.00' %> when your order is delivered. Please keep
-                          exact change ready.
+                  <% if (isCodEligible) { %>
+                    <div
+                      id="codPayment"
+                      class="accordion-collapse collapse"
+                      data-bs-parent="#paymentAccordion"
+                    >
+                      <div class="accordion-body">
+                        <div
+                          class="alert alert-info d-flex align-items-center"
+                          role="alert"
+                        >
+                          <i class="bi bi-info-circle-fill me-2"></i>
+                          <div>
+                            You will pay ₹<%= totalAmount ? totalAmount.toFixed(2)
+                            : '0.00' %> when your order is delivered. Please keep
+                            exact change ready.
+                          </div>
+                        </div>
+                        <div class="form-check mt-3">
+                          <input
+                            class="form-check-input"
+                            type="checkbox"
+                            id="confirmCod"
+                          />
+                          <label class="form-check-label" for="confirmCod">
+                            I understand that I need to pay when the order is
+                            delivered
+                          </label>
                         </div>
                       </div>
-                      <div class="form-check mt-3">
-                        <input
-                          class="form-check-input"
-                          type="checkbox"
-                          id="confirmCod"
-                        />
-                        <label class="form-check-label" for="confirmCod">
-                          I understand that I need to pay when the order is
-                          delivered
-                        </label>
+                    </div>
+                  <% } else { %>
+                    <div
+                      id="codPayment"
+                      class="accordion-collapse collapse"
+                      data-bs-parent="#paymentAccordion"
+                    >
+                      <div class="accordion-body">
+                        <div
+                          class="alert alert-warning d-flex align-items-center"
+                          role="alert"
+                        >
+                          <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                          <div>
+                            <strong>Cash on Delivery is not available for orders above ₹1,000.</strong>
+                            <br>
+                            Your order total is ₹<%= totalAmount ? totalAmount.toFixed(2) : '0.00' %>.
+                            Please choose an online payment method to proceed.
+                          </div>
+                        </div>
+                        <div class="mt-3">
+                          <p class="mb-2 fw-medium">Available payment options:</p>
+                          <ul class="list-unstyled mb-0">
+                            <li class="mb-1"><i class="bi bi-credit-card-2-front me-2 text-primary"></i>Pay Online (Recommended)</li>
+                            <li class="mb-1"><i class="bi bi-phone me-2 text-success"></i>UPI Payment</li>
+                            <li class="mb-1"><i class="bi bi-credit-card me-2 text-info"></i>Credit/Debit Card</li>
+                            <li class="mb-1"><i class="bi bi-wallet2 me-2 text-warning"></i>Wallet</li>
+                          </ul>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  <% } %>
                 </div>
 
                 <!-- Wallet -->
-                <div class="accordion-item border mb-3 rounded">
+                <div class="accordion-item border mb-3 rounded <%= !isWalletEligible ? 'opacity-50' : '' %>">
                   <h2 class="accordion-header">
                     <button
                       class="accordion-button collapsed"
@@ -688,6 +723,7 @@
                       data-bs-target="#walletPayment"
                       aria-expanded="false"
                       aria-controls="walletPayment"
+                      <%= !isWalletEligible ? 'disabled' : '' %>
                     >
                       <div class="d-flex align-items-center">
                         <div class="payment-icon me-3">
@@ -695,9 +731,11 @@
                         </div>
                         <div>
                           <span class="fw-medium">Wallet</span>
-                          <small class="d-block text-muted"
-                            >Pay using your wallet balance</small
-                          >
+                          <% if (isWalletEligible) { %>
+                            <small class="d-block text-muted">Pay using your wallet balance</small>
+                          <% } else { %>
+                            <small class="d-block text-danger">Insufficient wallet balance</small>
+                          <% } %>
                         </div>
                       </div>
                     </button>
@@ -713,24 +751,59 @@
                       >
                         <div>
                           <h6 class="mb-1">Available Balance</h6>
-                          <h5 class="mb-0 fw-bold">₹5,000</h5>
+                          <h5 class="mb-0 fw-bold" id="walletBalanceDisplay">₹<%= walletBalance ? walletBalance.toFixed(2) : '0.00' %></h5>
                         </div>
                         <a href="/wallet" class="btn btn-outline-dark btn-sm"
                           >Add Money</a
                         >
                       </div>
-                      <div
-                        class="alert alert-warning d-flex align-items-center"
-                        role="alert"
-                      >
-                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                        <div>
-                          Your wallet balance is insufficient for this order.
-                          Please add ₹<%= totalAmount ? (totalAmount -
-                          5000).toFixed(2) : '0.00' %> more or choose another
-                          payment method.
+
+                      <% if (isWalletEligible) { %>
+                        <!-- Sufficient balance -->
+                        <div class="alert alert-success d-flex align-items-center" role="alert">
+                          <i class="bi bi-check-circle-fill me-2"></i>
+                          <div>
+                            <strong>Great! You have sufficient balance.</strong>
+                            <br>
+                            Order Total: ₹<%= totalAmount ? totalAmount.toFixed(2) : '0.00' %>
+                            <br>
+                            Remaining Balance: ₹<%= (walletBalance - totalAmount).toFixed(2) %>
+                          </div>
                         </div>
-                      </div>
+                        <div class="form-check mt-3">
+                          <input
+                            class="form-check-input"
+                            type="checkbox"
+                            id="confirmWallet"
+                          />
+                          <label class="form-check-label" for="confirmWallet">
+                            I confirm to pay ₹<%= totalAmount ? totalAmount.toFixed(2) : '0.00' %> from my wallet
+                          </label>
+                        </div>
+                      <% } else { %>
+                        <!-- Insufficient balance -->
+                        <div class="alert alert-warning d-flex align-items-center" role="alert">
+                          <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                          <div>
+                            <strong>Insufficient wallet balance.</strong>
+                            <br>
+                            Order Total: ₹<%= totalAmount ? totalAmount.toFixed(2) : '0.00' %>
+                            <br>
+                            You need ₹<%= totalAmount ? (totalAmount - walletBalance).toFixed(2) : '0.00' %> more to complete this order.
+                          </div>
+                        </div>
+                        <div class="mt-3">
+                          <p class="mb-2 fw-medium">Options:</p>
+                          <ul class="list-unstyled mb-0">
+                            <li class="mb-1"><i class="bi bi-plus-circle me-2 text-primary"></i><a href="/wallet" class="text-decoration-none">Add money to wallet</a></li>
+                            <li class="mb-1"><i class="bi bi-credit-card-2-front me-2 text-success"></i>Pay Online (Recommended)</li>
+                            <li class="mb-1"><i class="bi bi-phone me-2 text-info"></i>UPI Payment</li>
+                            <% if (isCodEligible) { %>
+                              <li class="mb-1"><i class="bi bi-cash me-2 text-warning"></i>Cash on Delivery</li>
+                            <% } %>
+                          </ul>
+                        </div>
+                      <% } %>
                     </div>
                   </div>
                 </div>
@@ -820,7 +893,7 @@
                 <div class="card border">
                   <div class="card-body p-0">
                     <div class="list-group list-group-flush">
-                      <% if (cartItems && cartItems.length > 0) { %> 
+                      <% if (cartItems && cartItems.length > 0) { %>
                         <% cartItems.forEach(item => { %>
                         <div class="list-group-item py-3">
                           <div class="d-flex">
@@ -864,11 +937,11 @@
                                   <div>Offer Discount: -₹<%= item.offerDiscount ? item.offerDiscount.toFixed(2) : '0.00' %></div>
                                   <% if (appliedCoupon) { %>
                                     <div>
-                                      Coupon (<%= appliedCoupon.code %>): 
+                                      Coupon (<%= appliedCoupon.code %>):
                                       <% const itemTotal = item.discountedPrice * item.quantity; %>
                                       <% const proportion = itemTotal / subtotal; %>
                                       <% const couponShare = Math.round((couponDiscount * proportion) * 100) / 100; %>
-                                      -₹<%= couponShare.toFixed(2) %> 
+                                      -₹<%= couponShare.toFixed(2) %>
                                       (<%= (proportion * 100).toFixed(2) %>%)
                                     </div>
                                   <% } %>
@@ -880,7 +953,7 @@
                             </div>
                           </div>
                         </div>
-                        <% }) %> 
+                        <% }) %>
                       <% } else { %>
                         <div class="list-group-item py-3">
                           <p class="text-muted mb-0">No items in cart</p>
@@ -936,14 +1009,14 @@
             <span class="text-muted">Subtotal (<%= cartItems ? cartItems.length : 0 %> items)</span>
             <span class="fw-medium" id="subtotal" data-value="<%= subtotal %>">₹<%= subtotal ? subtotal.toFixed(2) : '0.00' %></span>
           </div>
-          
+
           <% if (offerDiscount && offerDiscount > 0) { %>
           <div class="summary-item d-flex justify-content-between mb-3">
             <span class="text-muted">Offer Discount</span>
             <span class="fw-medium text-success">-₹<%= offerDiscount.toFixed(2) %></span>
           </div>
           <% } %>
-          
+
           <!-- Applied Coupon Section -->
           <div id="appliedCouponSection" class="summary-item d-flex justify-content-between mb-3 <%= !appliedCoupon ? 'd-none' : '' %>">
             <span class="text-muted d-flex align-items-center">
@@ -955,19 +1028,19 @@
             </span>
             <span class="fw-medium text-success" id="couponDiscount">-₹<%= couponDiscount ? couponDiscount.toFixed(2) : '0.00' %></span>
           </div>
-          
+
           <div class="summary-item d-flex justify-content-between mb-3">
             <span class="text-muted">Shipping</span>
             <span class="fw-medium">₹0</span>
           </div>
-          
+
           <div class="summary-item d-flex justify-content-between mb-3">
             <span class="text-muted">Tax (8%)</span>
             <span class="fw-medium" id="tax">₹<%= tax ? tax.toFixed(2) : '0.00' %></span>
           </div>
-          
+
           <hr />
-          
+
           <div class="summary-item d-flex justify-content-between mb-3">
             <span class="fw-bold">Total</span>
             <span class="fw-bold fs-5" id="totalAmount">₹<%= totalAmount ? totalAmount.toFixed(2) : '0.00' %></span>
@@ -1265,8 +1338,8 @@
                       <% } %>
                     </div>
                   </div>
-                  <button 
-                    class="btn btn-sm btn-outline-dark apply-coupon-btn" 
+                  <button
+                    class="btn btn-sm btn-outline-dark apply-coupon-btn"
                     data-coupon-code="<%= coupon.code %>"
                   >
                     Apply
@@ -1886,7 +1959,7 @@
       </div>
     `;
     }
-    
+
     // Update payment method summary
     function updatePaymentMethodSummary() {
       const summaryContainer = document.getElementById('paymentMethodSummary');
@@ -1932,7 +2005,7 @@
         updatePaymentMethodSummary();
       });
     });
-    
+
     // Update selected address summary
     function updateSelectedAddressSummary(address) {
       const summaryContainer = document.getElementById(
@@ -2245,7 +2318,7 @@
     // Apply coupon
     const applyCouponBtn = document.getElementById("applyCoupon");
     const couponCodeInput = document.getElementById("couponCode");
-    
+
     if (applyCouponBtn) {
       applyCouponBtn.addEventListener("click", function () {
         const couponCode = couponCodeInput.value.trim();
@@ -2383,11 +2456,11 @@
 
     // Razorpay integration
     let razorpayOrderId = '';
-    
+
     // Function to create Razorpay order
     async function createRazorpayOrder() {
       const selectedAddress = document.querySelector('input[name="selectedAddress"]:checked');
-      
+
       if (!selectedAddress) {
         Toast.fire({
           icon: 'error',
@@ -2395,7 +2468,7 @@
         });
         return false;
       }
-      
+
       const confirmRazorpay = document.getElementById('confirmRazorpay');
       if (!confirmRazorpay.checked) {
         Toast.fire({
@@ -2404,7 +2477,7 @@
         });
         return false;
       }
-      
+
       try {
         const response = await fetch('/checkout/create-razorpay-order', {
           method: 'POST',
@@ -2415,9 +2488,9 @@
             addressId: selectedAddress.value
           })
         });
-        
+
         const data = await response.json();
-        
+
         if (!data.success) {
           Toast.fire({
             icon: 'error',
@@ -2425,7 +2498,7 @@
           });
           return false;
         }
-        
+
         razorpayOrderId = data.order.id;
         return data;
       } catch (error) {
@@ -2460,7 +2533,7 @@
           verifyPayment(response);
         }
       };
-      
+
       // Log for debugging
       console.log('Razorpay Payment:', {
         amount: orderData.amount,
@@ -2482,9 +2555,9 @@
           },
           body: JSON.stringify(response)
         });
-        
+
         const data = await verifyResponse.json();
-        
+
         if (data.success) {
           // Redirect to success page
           window.location.href = `/order-success/${data.orderId}`;
@@ -2511,7 +2584,7 @@
             error: errorMessage
           })
         });
-        
+
         // Redirect to failure page
         window.location.href = `/payment-failure?error=${encodeURIComponent(errorMessage)}`;
       } catch (error) {
@@ -2554,6 +2627,16 @@
         // Determine payment method
         let paymentMethodValue;
         if (paymentMethod === "codPayment") {
+          // Check COD eligibility first
+          const totalAmount = parseFloat(document.getElementById("totalAmount").textContent.replace('₹', '').replace(',', ''));
+          if (totalAmount > 1000) {
+            Toast.fire({
+              icon: "error",
+              title: "Cash on Delivery is not available for orders above ₹1,000",
+            });
+            return;
+          }
+
           const confirmCod = document.getElementById("confirmCod");
           if (!confirmCod.checked) {
             Toast.fire({
@@ -2570,6 +2653,26 @@
         } else if (paymentMethod === "cardPayment") {
           paymentMethodValue = "Card";
         } else if (paymentMethod === "walletPayment") {
+          // Check wallet eligibility first
+          const totalAmount = parseFloat(document.getElementById("totalAmount").textContent.replace('₹', '').replace(',', ''));
+          const walletBalance = parseFloat(document.getElementById("walletBalanceDisplay").textContent.replace('₹', '').replace(',', ''));
+
+          if (walletBalance < totalAmount) {
+            Toast.fire({
+              icon: "error",
+              title: `Insufficient wallet balance. You need ₹${(totalAmount - walletBalance).toFixed(2)} more.`,
+            });
+            return;
+          }
+
+          const confirmWallet = document.getElementById("confirmWallet");
+          if (!confirmWallet.checked) {
+            Toast.fire({
+              icon: "error",
+              title: "Please confirm wallet payment terms",
+            });
+            return;
+          }
           paymentMethodValue = "Wallet";
         } else {
           Toast.fire({
@@ -2621,7 +2724,44 @@
                 "p"
               ).textContent = `Your order #${data.orderNumber} has been placed successfully. You will receive a confirmation email shortly.`;
               orderSuccessModal.show();
-              
+
+              // Redirect to order success page after a delay
+              setTimeout(() => {
+                window.location.href = `/order-success/${data.orderId}`;
+              }, 3000);
+            } else {
+              Toast.fire({
+                icon: "error",
+                title: data.message || "Failed to place order",
+              });
+            }
+          } else if (paymentMethodValue === "Wallet") {
+            // Handle Wallet payment
+            const response = await fetch("/checkout/place-order", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                addressId: selectedAddress.value,
+                paymentMethod: paymentMethodValue,
+              }),
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+              const orderSuccessModal = new bootstrap.Modal(
+                document.getElementById("orderSuccessModal")
+              );
+              const modalBody = document.querySelector(
+                "#orderSuccessModal .modal-body"
+              );
+              modalBody.querySelector(
+                "p"
+              ).textContent = `Your order #${data.orderNumber} has been placed successfully and paid from your wallet. You will receive a confirmation email shortly.`;
+              orderSuccessModal.show();
+
               // Redirect to order success page after a delay
               setTimeout(() => {
                 window.location.href = `/order-success/${data.orderId}`;
