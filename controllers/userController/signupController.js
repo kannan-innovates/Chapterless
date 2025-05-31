@@ -1,5 +1,7 @@
 const User = require("../../models/userSchema");
 const OTP = require("../../models/otpSchema"); // Import the new OTP model
+const Referral = require("../../models/referralSchema");
+const Wallet = require("../../models/walletSchema");
 const hashPasswordHelper = require("../../helpers/hash");
 const sendOtpEmail = require("../../helpers/sendMail");
 const { validateBasicOtp, validateOtpSession } = require("../../validators/user/basic-otp-validator");
@@ -17,6 +19,29 @@ const getOtp = async (req, res) => {
 const otpGenerator = () =>
   Math.floor(100000 + Math.random() * 900000).toString();
 
+// Generate unique referral code
+const generateReferralCode = async () => {
+  let code;
+  let isUnique = false;
+
+  while (!isUnique) {
+    // Generate a random 12-character code
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    code = 'REF';
+    for (let i = 0; i < 9; i++) {
+      code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+
+    // Check if code already exists
+    const existingUser = await User.findOne({ referralCode: code });
+    if (!existingUser) {
+      isUnique = true;
+    }
+  }
+
+  return code;
+};
+
 const getSignup = async (req, res) => {
   try {
     res.render("signup");
@@ -27,7 +52,7 @@ const getSignup = async (req, res) => {
 
 const postSignup = async (req, res) => {
   try {
-    const { fullName, email, phoneNumber, password } = req.body;
+    const { fullName, email, phoneNumber, password, referralCode } = req.body;
 
     // Trim and sanitize inputs
     const trimmedEmail = email.trim().toLowerCase();
@@ -56,7 +81,7 @@ const postSignup = async (req, res) => {
     try {
       await sendOtpEmail(trimmedEmail, trimmedName, otp, subjectContent,"signup");
     } catch (err) {
-      
+
       return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
         success: false,
         message: "Failed to send OTP email. Please try again later.",
@@ -82,6 +107,7 @@ const postSignup = async (req, res) => {
       email: trimmedEmail,
       phone: trimmedPhone,
       password: hashedPassword,
+      referralCode: referralCode || null,
     };
 
     return res.status(HttpStatus.OK).json({
@@ -140,14 +166,75 @@ const verifyOtp = async (req, res) => {
     }
 
 
+    // Generate referral code for new user
+    const userReferralCode = await generateReferralCode();
+
     const newUser = new User({
       fullName: tempUser.fullName,
       email: tempUser.email,
       phone: tempUser.phone,
       password: tempUser.password,
-      isVerified: true, 
+      isVerified: true,
+      referralCode: userReferralCode,
     });
     await newUser.save();
+
+    // Process referral if provided
+    if (tempUser.referralCode) {
+      try {
+        // Find the referrer by referral code
+        const referrer = await User.findOne({ referralCode: tempUser.referralCode });
+
+        if (referrer) {
+          // Create referral record
+          const referralRecord = new Referral({
+            referrer: referrer._id,
+            referred: newUser._id,
+            referralCode: tempUser.referralCode,
+            status: 'completed',
+            rewardGiven: true
+          });
+          await referralRecord.save();
+
+          // Add ₹100 to referrer's wallet
+          let referrerWallet = await Wallet.findOne({ userId: referrer._id });
+          if (!referrerWallet) {
+            referrerWallet = new Wallet({
+              userId: referrer._id,
+              balance: 0,
+              transactions: []
+            });
+          }
+
+          referrerWallet.balance += 100;
+          referrerWallet.transactions.push({
+            type: 'credit',
+            amount: 100,
+            reason: `Referral reward for ${newUser.fullName} joining`,
+            date: new Date()
+          });
+          await referrerWallet.save();
+
+          // Add ₹50 to new user's wallet
+          const newUserWallet = new Wallet({
+            userId: newUser._id,
+            balance: 50,
+            transactions: [{
+              type: 'credit',
+              amount: 50,
+              reason: 'Welcome bonus for using referral code',
+              date: new Date()
+            }]
+          });
+          await newUserWallet.save();
+
+          console.log(`Referral processed: ${referrer.fullName} got ₹100, ${newUser.fullName} got ₹50`);
+        }
+      } catch (referralError) {
+        console.error('Error processing referral:', referralError);
+        // Don't fail signup if referral processing fails
+      }
+    }
 
     // Clean up
     await OTP.deleteOne({ _id: otpDoc._id });

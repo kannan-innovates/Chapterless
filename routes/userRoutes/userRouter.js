@@ -36,6 +36,8 @@ const userCouponController = require('../../controllers/userController/user-coup
 
 const walletController = require('../../controllers/userController/wallet-controller');
 
+const referralController = require('../../controllers/userController/referral-controller');
+
 // Public routes
 router.get("/", userController.loadHomePage);
 router.get("/pageNotFound", userController.pageNotFound);
@@ -139,5 +141,9 @@ router.get('/user-coupons', isAuthenticated, userCouponController.getUserCoupons
 
 // Wallet routes
 router.get('/wallet',isAuthenticated,walletController.getWallet)
+
+// Referral routes
+router.get('/referrals', isAuthenticated, referralController.getReferrals);
+router.post('/validate-referral', referralController.validateReferral);
 
 module.exports = router;

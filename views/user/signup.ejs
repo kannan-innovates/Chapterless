@@ -171,6 +171,10 @@
                 Already have an account?
                 <a href="/login" class="text-decoration-none fw-medium">Log in</a>
               </p>
+              <p class="mb-0 small mt-2">
+                Have a referral code?
+                <a href="#" class="text-decoration-none fw-medium" data-bs-toggle="modal" data-bs-target="#referralModal">Enter here</a>
+              </p>
             </div>
           </form>
         </div>
@@ -180,6 +184,48 @@
         <p class="text-muted small">
           &copy; 2025 Chapterless. All rights reserved.
         </p>
+      </div>
+    </div>
+
+    <!-- Referral Modal -->
+    <div class="modal fade" id="referralModal" tabindex="-1" aria-labelledby="referralModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header border-0 pb-0">
+            <h5 class="modal-title" id="referralModalLabel">
+              <i class="ri-gift-line me-2 text-success"></i>Enter Referral Code
+            </h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body pt-2">
+            <div class="text-center mb-3">
+              <div class="bg-success bg-opacity-10 rounded-circle mx-auto mb-2 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+                <i class="ri-gift-fill text-success fs-3"></i>
+              </div>
+              <p class="text-muted small mb-0">Get ₹50 in your wallet when you use a friend's referral code!</p>
+            </div>
+            <form id="referralForm">
+              <div class="mb-3">
+                <label for="referralCode" class="form-label">Referral Code</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="referralCodeInput"
+                  placeholder="Enter referral code (e.g., SAVE30USER123)"
+                  style="text-transform: uppercase;"
+                />
+                <div id="referralCodeError" class="text-danger small mt-1"></div>
+                <div id="referralCodeSuccess" class="text-success small mt-1"></div>
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer border-0 pt-0">
+            <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Skip</button>
+            <button type="button" class="btn btn-success btn-sm" id="applyReferralBtn">
+              <i class="ri-check-line me-1"></i>Apply Code
+            </button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -200,17 +246,17 @@ function setValid(element) {
 function validateFullName(fullName) {
   const trimmedName = fullName.trim();
   if (trimmedName.length < 3) return false;
-  
+
   const nameWords = trimmedName.split(' ').filter(word => word.length > 0);
   if (nameWords.length < 2) return false;
-  
+
   return /^[A-Za-z\s'-]+$/.test(trimmedName);
 }
 
 function validateEmail(email) {
   const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
   if (!emailRegex.test(email)) return false;
-  
+
   // Check for disposable email domains
   const disposableDomains = ['mailinator.com', 'tempmail.com', 'temp-mail.org', 'guerrillamail.com', 'yopmail.com', 'sharklasers.com'];
   const domain = email.split('@')[1];
@@ -220,17 +266,17 @@ function validateEmail(email) {
 function validatePhoneNumber(phoneNumber) {
   // Remove any non-digit characters
   const cleanPhone = phoneNumber.replace(/\D/g, '');
-  
+
   // Check length (10 digits standard or 11-15 with country code)
   if (cleanPhone.length !== 10 && (cleanPhone.length < 11 || cleanPhone.length > 15)) {
     return false;
   }
-  
+
   // Check for obviously fake patterns
   if (/^(.)\1+$/.test(cleanPhone) || /^0{10}$/.test(cleanPhone) || /^1{10}$/.test(cleanPhone)) {
     return false;
   }
-  
+
   return true;
 }
 
@@ -240,10 +286,10 @@ function validatePassword(password) {
   const hasLowercase = /[a-z]/.test(password);
   const hasNumber = /\d/.test(password);
   const hasSpecial = /[@$!%*?&_\-#]/.test(password);
-  
+
   // Check for common patterns
   const hasCommonPattern = /123456|password|qwerty/i.test(password);
-  
+
   return minLength && hasUppercase && hasLowercase && hasNumber && hasSpecial && !hasCommonPattern;
 }
 
@@ -251,7 +297,7 @@ function validatePassword(password) {
 document.getElementById('fullName').addEventListener('input', function() {
   const fullName = this.value.trim();
   const fullNameError = document.getElementById('fullNameError');
-  
+
   if (fullName === '') {
     fullNameError.textContent = '';
     this.classList.remove('is-invalid');
@@ -275,7 +321,7 @@ document.getElementById('fullName').addEventListener('input', function() {
 document.getElementById('email').addEventListener('input', function() {
   const email = this.value.trim();
   const emailError = document.getElementById('emailError');
-  
+
   if (email === '') {
     emailError.textContent = '';
     this.classList.remove('is-invalid');
@@ -297,14 +343,14 @@ document.getElementById('email').addEventListener('input', function() {
 document.getElementById('phoneNumber').addEventListener('input', function() {
   const phoneNumber = this.value.trim();
   const phoneNumberError = document.getElementById('phoneNumberError');
-  
+
   if (phoneNumber === '') {
     phoneNumberError.textContent = '';
     this.classList.remove('is-invalid');
     this.classList.remove('is-valid');
   } else if (!validatePhoneNumber(phoneNumber)) {
     const cleanPhone = phoneNumber.replace(/\D/g, '');
-    
+
     if (/^(.)\1+$/.test(cleanPhone) || /^0{10}$/.test(cleanPhone) || /^1{10}$/.test(cleanPhone)) {
       phoneNumberError.textContent = 'Please enter a valid phone number.';
     } else {
@@ -320,7 +366,7 @@ document.getElementById('phoneNumber').addEventListener('input', function() {
 document.getElementById('password').addEventListener('input', function() {
   const password = this.value;
   const passwordError = document.getElementById('passwordError');
-  
+
   if (password === '') {
     passwordError.textContent = '';
     this.classList.remove('is-invalid');
@@ -333,24 +379,24 @@ document.getElementById('password').addEventListener('input', function() {
     const hasNumber = /\d/.test(password);
     const hasSpecial = /[@$!%*?&_\-#]/.test(password);
     const hasCommonPattern = /123456|password|qwerty/i.test(password);
-    
+
     let errorMsg = "Password must include: ";
     const missing = [];
-    
+
     if (!minLength) missing.push("at least 8 characters");
     if (!hasUppercase) missing.push("uppercase letter");
     if (!hasLowercase) missing.push("lowercase letter");
     if (!hasNumber) missing.push("numbers");
     if (!hasSpecial) missing.push("special characters");
     if (hasCommonPattern) missing.push("avoid common patterns (123456, password, qwerty)");
-    
+
     passwordError.textContent = errorMsg + missing.join(", ");
     setInvalid(this);
   } else {
     passwordError.textContent = '';
     setValid(this);
   }
-  
+
   // Also check confirm password if it has content
   const confirmPassword = document.getElementById('confirmPassword');
   if (confirmPassword.value) {
@@ -368,7 +414,7 @@ document.getElementById('confirmPassword').addEventListener('input', function() 
   const confirmPassword = this.value;
   const password = document.getElementById('password').value;
   const confirmPasswordError = document.getElementById('confirmPasswordError');
-  
+
   if (confirmPassword === '') {
     confirmPasswordError.textContent = '';
     this.classList.remove('is-invalid');
@@ -426,7 +472,7 @@ document.getElementById("userSignup").addEventListener("submit", async (event) =
   }
 
   if (!password || !validatePassword(password)) {
-    document.getElementById("passwordError").textContent = 
+    document.getElementById("passwordError").textContent =
       "Password must be at least 8 characters with uppercase, lowercase, numbers, and special characters.";
     setInvalid(document.getElementById("password"));
     isValid = false;
@@ -443,7 +489,7 @@ document.getElementById("userSignup").addEventListener("submit", async (event) =
     const submitButton = document.getElementById("submitButton");
     submitButton.disabled = true;
     submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Signing up...';
-    
+
     try {
       const response = await fetch("/signup", {
         method: "POST",
@@ -455,14 +501,15 @@ document.getElementById("userSignup").addEventListener("submit", async (event) =
           email,
           phoneNumber,
           password,
-          confirmPassword 
+          confirmPassword,
+          referralCode: window.appliedReferralCode || null
         }),
       });
 
       const result = await response.json();
       submitButton.disabled = false;
       submitButton.textContent = "Sign Up";
-      
+
       if (result.success) {
         Swal.fire({
           icon: "success",
@@ -497,13 +544,116 @@ document.getElementById("userSignup").addEventListener("submit", async (event) =
       console.log("Signup error:", err);
       submitButton.disabled = false;
       submitButton.textContent = "Sign Up";
-      
+
       Swal.fire({
         icon: "error",
         title: "Error",
         text: "Server not responding. Try again later.",
       });
     }
+  }
+});
+
+// Referral Modal Functionality
+let appliedReferralCode = null;
+window.appliedReferralCode = null;
+
+const referralCodeInput = document.getElementById('referralCodeInput');
+const referralCodeError = document.getElementById('referralCodeError');
+const referralCodeSuccess = document.getElementById('referralCodeSuccess');
+const applyReferralBtn = document.getElementById('applyReferralBtn');
+
+// Real-time referral code validation
+referralCodeInput.addEventListener('input', function() {
+  const code = this.value.trim().toUpperCase();
+  this.value = code;
+
+  // Clear previous messages
+  referralCodeError.textContent = '';
+  referralCodeSuccess.textContent = '';
+
+  if (code.length === 0) {
+    applyReferralBtn.disabled = false;
+    return;
+  }
+
+  // Basic validation
+  if (code.length < 6) {
+    referralCodeError.textContent = 'Referral code must be at least 6 characters';
+    applyReferralBtn.disabled = true;
+  } else {
+    applyReferralBtn.disabled = false;
+  }
+});
+
+// Apply referral code
+applyReferralBtn.addEventListener('click', async function() {
+  const code = referralCodeInput.value.trim().toUpperCase();
+
+  if (!code) {
+    // Skip referral
+    bootstrap.Modal.getInstance(document.getElementById('referralModal')).hide();
+    return;
+  }
+
+  // Show loading state
+  const originalText = this.innerHTML;
+  this.disabled = true;
+  this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Validating...';
+
+  try {
+    const response = await fetch('/validate-referral', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ referralCode: code }),
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      referralCodeSuccess.textContent = `✓ Valid referral code! You'll get ₹50 in your wallet.`;
+      referralCodeError.textContent = '';
+      appliedReferralCode = code;
+      window.appliedReferralCode = code;
+
+      // Show success and close modal after delay
+      setTimeout(() => {
+        bootstrap.Modal.getInstance(document.getElementById('referralModal')).hide();
+
+        // Show success toast
+        Swal.fire({
+          icon: 'success',
+          title: 'Referral Code Applied!',
+          text: 'You\'ll receive ₹50 in your wallet after signup.',
+          timer: 3000,
+          showConfirmButton: false,
+          toast: true,
+          position: 'top-end'
+        });
+      }, 1500);
+    } else {
+      referralCodeError.textContent = result.message || 'Invalid referral code';
+      referralCodeSuccess.textContent = '';
+    }
+  } catch (error) {
+    console.error('Error validating referral code:', error);
+    referralCodeError.textContent = 'Error validating referral code. Please try again.';
+    referralCodeSuccess.textContent = '';
+  }
+
+  // Reset button
+  this.disabled = false;
+  this.innerHTML = originalText;
+});
+
+// Reset modal when closed
+document.getElementById('referralModal').addEventListener('hidden.bs.modal', function() {
+  if (!appliedReferralCode) {
+    referralCodeInput.value = '';
+    referralCodeError.textContent = '';
+    referralCodeSuccess.textContent = '';
   }
 });
     </script>

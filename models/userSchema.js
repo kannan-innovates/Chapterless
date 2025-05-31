@@ -49,6 +49,11 @@ const userSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    referralCode: {
+      type: String,
+      unique: true,
+      sparse: true,
+    },
     orderHistory: [
       {
         type: mongoose.Schema.Types.ObjectId,
