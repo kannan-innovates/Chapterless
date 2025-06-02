@@ -123,6 +123,7 @@ const addToCart = async (req, res) => {
     // Fetch the user's cart to check existing quantity
     let cart = await Cart.findOne({ user: userId });
     let existingQuantity = 0;
+    const MAX_QUANTITY_PER_PRODUCT = 5; // Maximum 5 quantity per product
 
     if (cart) {
       const itemIndex = cart.items.findIndex(
@@ -135,6 +136,18 @@ const addToCart = async (req, res) => {
 
     // Calculate total quantity
     const totalQuantity = existingQuantity + parseInt(quantity);
+
+    // Check quantity limit per product
+    if (totalQuantity > MAX_QUANTITY_PER_PRODUCT) {
+      const remainingAllowed = MAX_QUANTITY_PER_PRODUCT - existingQuantity;
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        success: false,
+        message: remainingAllowed > 0
+          ? `You can only add ${remainingAllowed} more of this item. Maximum ${MAX_QUANTITY_PER_PRODUCT} items allowed per product.`
+          : `Maximum quantity reached! You can only have up to ${MAX_QUANTITY_PER_PRODUCT} of this item in your cart.`,
+        isQuantityLimitReached: true
+      });
+    }
 
     // Check stock
     if (totalQuantity > product.stock) {
@@ -226,6 +239,19 @@ const updateCartItem = async (req, res) => {
       return res
         .status(HttpStatus.NOT_FOUND)
         .json({ success: false, message: "Product not found or unavailable" });
+    }
+
+    const MAX_QUANTITY_PER_PRODUCT = 5; // Maximum 5 quantity per product
+
+    // Check quantity limit per product
+    if (quantity > MAX_QUANTITY_PER_PRODUCT) {
+      return res
+        .status(HttpStatus.BAD_REQUEST)
+        .json({
+          success: false,
+          message: `Maximum quantity reached! You can only have up to ${MAX_QUANTITY_PER_PRODUCT} of this item in your cart.`,
+          isQuantityLimitReached: true
+        });
     }
 
     if (quantity > product.stock) {

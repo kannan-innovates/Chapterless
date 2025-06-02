@@ -117,7 +117,7 @@
                 <button class="quantity-btn" onclick="decrementQuantity()">
                   <i class="ri-subtract-line"></i>
                 </button>
-                <input type="number" class="quantity-input" id="quantity" value="1" min="1" max="<%= product.stock %>" />
+                <input type="number" class="quantity-input" id="quantity" value="1" min="1" max="<%= Math.min(5, product.stock) %>" />
                 <button class="quantity-btn" onclick="incrementQuantity()">
                   <i class="ri-add-line"></i>
                 </button>

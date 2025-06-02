@@ -1121,12 +1121,6 @@
                                 <i class="ri-arrow-go-back-line"></i> Return Item
                               </button>
                             </div>
-                          <% } else if ((order.orderStatus === 'Placed' || order.orderStatus === 'Processing') && item.status === 'Active') { %>
-                            <div class="item-actions mt-2">
-                              <button class="btn btn-danger btn-sm btn-cancel-item" data-item-id="<%= item._id %>" data-order-id="<%= order._id %>">
-                                <i class="ri-close-line"></i> Cancel Item
-                              </button>
-                            </div>
                           <% } %>
                         <% } %>
                       </div>
@@ -1379,10 +1373,6 @@
                   ${statusOptions}
                 </select>
               </div>
-              <div class="form-group">
-                <label class="form-label">Status Message (Optional)</label>
-                <textarea class="form-textarea" id="status-message" placeholder="Add details about this status update..."></textarea>
-              </div>
             `,
             showCancelButton: true,
             confirmButtonColor: '#6f42c1',
@@ -1395,11 +1385,9 @@
             focusConfirm: false,
             preConfirm: () => {
               const statusSelect = document.getElementById('status-select');
-              const statusMessage = document.getElementById('status-message');
 
               return {
-                status: statusSelect.value,
-                message: statusMessage.value
+                status: statusSelect.value
               };
             }
           }).then((result) => {
@@ -1443,25 +1431,24 @@
           });
         });
 
-        // Item status update functionality
-        document.querySelectorAll('.btn-cancel-item, .btn-return-item').forEach(button => {
+        // Item return functionality (cancel functionality removed)
+        document.querySelectorAll('.btn-return-item').forEach(button => {
           button.addEventListener('click', function() {
             const itemId = this.getAttribute('data-item-id');
             const orderId = this.getAttribute('data-order-id');
-            const action = this.classList.contains('btn-cancel-item') ? 'cancel' : 'return';
 
             Swal.fire({
-              title: `${action === 'cancel' ? 'Cancel' : 'Return'} Item`,
+              title: 'Return Item',
               html: `
                 <div class="form-group">
-                  <label class="form-label">Reason for ${action === 'cancel' ? 'Cancellation' : 'Return'}</label>
+                  <label class="form-label">Reason for Return</label>
                   <textarea class="form-textarea" id="reason" placeholder="Please provide a reason..."></textarea>
                 </div>
               `,
               showCancelButton: true,
               confirmButtonColor: '#6f42c1',
               cancelButtonColor: '#d1d5db',
-              confirmButtonText: `${action === 'cancel' ? 'Cancel' : 'Return'} Item`,
+              confirmButtonText: 'Return Item',
               cancelButtonText: 'Close',
               customClass: {
                 popup: 'update-status-modal'
@@ -1484,13 +1471,13 @@
                     'Content-Type': 'application/json',
                   },
                   body: JSON.stringify({
-                    status: action === 'cancel' ? 'Cancelled' : 'Returned',
+                    status: 'Returned',
                     reason: result.value.reason
                   }),
                 })
                 .then(response => {
                   if (!response.ok) {
-                    throw new Error(`Failed to ${action} item`);
+                    throw new Error('Failed to return item');
                   }
                   return response.json();
                 })

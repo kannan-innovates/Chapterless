@@ -180,6 +180,7 @@ const addAllToCart = async (req, res) => {
     }
 
     const messages = [];
+    const MAX_QUANTITY_PER_PRODUCT = 5; // Maximum 5 quantity per product
     const availableItems = wishlist.items.filter(item => item.product && item.product.isListed && !item.product.isDeleted && item.product.stock > 0);
 
     for (const item of availableItems) {
@@ -188,6 +189,13 @@ const addAllToCart = async (req, res) => {
 
       if (itemIndex > -1) {
         const newQuantity = cart.items[itemIndex].quantity + 1;
+
+        // Check quantity limit per product
+        if (newQuantity > MAX_QUANTITY_PER_PRODUCT) {
+          messages.push(`${product.title}: Maximum ${MAX_QUANTITY_PER_PRODUCT} items allowed per product`);
+          continue;
+        }
+
         if (newQuantity <= product.stock) {
           cart.items[itemIndex].quantity = newQuantity;
           cart.items[itemIndex].priceAtAddition = product.salePrice;

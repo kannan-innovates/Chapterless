@@ -117,7 +117,7 @@
                 <div class="col-md-2 col-6 text-md-center">
                   <div class="quantity-selector d-flex align-items-center">
                     <button class="btn btn-sm btn-outline-dark quantity-btn">-</button>
-                    <input type="number" class="form-control form-control-sm mx-2 text-center quantity-input" value="<%= item.quantity %>" min="1" max="<%= item.product.stock %>" style="width: 50px;" />
+                    <input type="number" class="form-control form-control-sm mx-2 text-center quantity-input" value="<%= item.quantity %>" min="1" max="<%= Math.min(5, item.product.stock) %>" style="width: 50px;" />
                     <button class="btn btn-sm btn-outline-dark quantity-btn">+</button>
                   </div>
                 </div>
@@ -537,7 +537,11 @@ document.addEventListener('DOMContentLoaded', function () {
         const maxValue = parseInt(quantityInput.getAttribute('max') || '999');
         
         if (value >= maxValue) {
-          showNotification('error', `Only ${maxValue} items in stock`);
+          const isQuantityLimit = maxValue === 5;
+          const message = isQuantityLimit
+            ? `Maximum 5 items allowed per product`
+            : `Only ${maxValue} items in stock`;
+          showNotification('error', message);
           return;
         }
 

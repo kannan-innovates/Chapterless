@@ -118,13 +118,18 @@
             </div>
             <div class="compact-mb">
               <label for="password" class="form-label">Password</label>
-              <input
-                type="password"
-                name="password"
-                class="form-control form-control-sm"
-                id="password"
-                placeholder="Create a password"
-              />
+              <div class="input-group">
+                <input
+                  type="password"
+                  name="password"
+                  class="form-control form-control-sm"
+                  id="password"
+                  placeholder="Create a password"
+                />
+                <button class="btn btn-outline-secondary btn-sm toggle-password" type="button" tabindex="-1">
+                  <i class="ri-eye-off-line"></i>
+                </button>
+              </div>
               <div class="password-requirements small" id="passwordRequirements">
                 Password must be at least 8 characters with uppercase letter, lowercase letter, numbers, and special characters (@$!%*?&_-#)
               </div>
@@ -134,13 +139,18 @@
               <label for="confirmPassword" class="form-label"
                 >Confirm Password</label
               >
-              <input
-                type="password"
-                name="confirmPassword"
-                class="form-control form-control-sm"
-                id="confirmPassword"
-                placeholder="Confirm your password"
-              />
+              <div class="input-group">
+                <input
+                  type="password"
+                  name="confirmPassword"
+                  class="form-control form-control-sm"
+                  id="confirmPassword"
+                  placeholder="Confirm your password"
+                />
+                <button class="btn btn-outline-secondary btn-sm toggle-password" type="button" tabindex="-1">
+                  <i class="ri-eye-off-line"></i>
+                </button>
+              </div>
               <div
                 id="confirmPasswordError"
                 class="text-danger small mt-1"
@@ -292,6 +302,22 @@ function validatePassword(password) {
 
   return minLength && hasUppercase && hasLowercase && hasNumber && hasSpecial && !hasCommonPattern;
 }
+
+// Password toggle functionality
+document.querySelectorAll('.toggle-password').forEach(button => {
+  button.addEventListener('click', function() {
+    const input = this.previousElementSibling;
+    const icon = this.querySelector('i');
+
+    if (input.type === 'password') {
+      input.type = 'text';
+      icon.classList.replace('ri-eye-off-line', 'ri-eye-line');
+    } else {
+      input.type = 'password';
+      icon.classList.replace('ri-eye-line', 'ri-eye-off-line');
+    }
+  });
+});
 
 // Real-time validation events
 document.getElementById('fullName').addEventListener('input', function() {
