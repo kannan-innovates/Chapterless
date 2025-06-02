@@ -68,13 +68,18 @@
             </div>
             <div class="compact-mb">
               <label for="password" class="form-label">Password</label>
-              <input
-                type="password"
-                name="password"
-                class="form-control form-control-sm"
-                id="password"
-                placeholder="Enter your password"
-              />
+              <div class="input-group">
+                <input
+                  type="password"
+                  name="password"
+                  class="form-control form-control-sm"
+                  id="password"
+                  placeholder="Enter your password"
+                />
+                <button class="btn btn-outline-secondary btn-sm toggle-password" type="button" tabindex="-1">
+                  <i class="ri-eye-off-line"></i>
+                </button>
+              </div>
               <div id="passwordError" class="text-danger small mt-1"></div>
             </div>
 
@@ -104,6 +109,22 @@
       </div>
     </div>
     <script>
+      // Password toggle functionality
+      document.querySelectorAll('.toggle-password').forEach(button => {
+        button.addEventListener('click', function() {
+          const input = this.previousElementSibling;
+          const icon = this.querySelector('i');
+
+          if (input.type === 'password') {
+            input.type = 'text';
+            icon.classList.replace('ri-eye-off-line', 'ri-eye-line');
+          } else {
+            input.type = 'password';
+            icon.classList.replace('ri-eye-line', 'ri-eye-off-line');
+          }
+        });
+      });
+
       document
         .getElementById("adminLogin")
         .addEventListener("submit", async (event) => {
