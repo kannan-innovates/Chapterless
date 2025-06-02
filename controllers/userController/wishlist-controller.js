@@ -207,9 +207,8 @@ const addAllToCart = async (req, res) => {
     cart.totalAmount = cart.items.reduce((sum, item) => sum + (item.quantity * item.priceAtAddition), 0);
     await cart.save();
 
-    // Remove added items from wishlist
-    wishlist.items = wishlist.items.filter(item => !availableItems.some(avail => avail.product._id.toString() === item.product.toString()));
-    await wishlist.save();
+    // Keep wishlist items intact - don't remove them after adding to cart
+    // Users can manually clear wishlist using "Clear Wishlist" button if they want
 
     const cartCount = cart.items.reduce((sum, item) => sum + item.quantity, 0);
     const wishlistCount = wishlist.items.length;

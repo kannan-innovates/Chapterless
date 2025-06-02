@@ -433,10 +433,7 @@
             const result = await response.json();
   
             if (result.success) {
-              wishlistItemsContainer.innerHTML = '';
-              emptyWishlist.classList.remove('d-none');
-              wishlistItemsContainer.classList.add('d-none');
-              wishlistSummary.classList.add('d-none');
+              // Update cart count but keep wishlist intact
               cartCountElement.textContent = result.cartCount;
               cartCountElement.dataset.count = result.cartCount;
               wishlistCountElement.textContent = result.wishlistCount;
@@ -480,51 +477,67 @@
       }
     });
   
-    // Clear wishlist
+    // Clear wishlist with confirmation
     if (clearWishlistBtn) {
       clearWishlistBtn.addEventListener('click', async function () {
-        try {
-          const response = await fetch('/wishlist/clear', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' }
-          });
-          const result = await response.json();
-  
-          if (result.success) {
-            emptyWishlist.classList.remove('d-none');
-            wishlistItemsContainer.classList.add('d-none');
-            wishlistSummary.classList.add('d-none');
-            wishlistCountElement.textContent = result.wishlistCount;
-            wishlistCountElement.dataset.count = result.wishlistCount;
-  
-            Swal.fire({
-              toast: true,
-              position: 'top-end',
-              icon: 'success',
-              title: result.message,
-              showConfirmButton: false,
-              timer: 1500
+        // Show confirmation dialog
+        const result = await Swal.fire({
+          title: 'Clear Wishlist?',
+          text: 'Are you sure you want to remove all items from your wishlist? This action cannot be undone.',
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonColor: '#dc3545',
+          cancelButtonColor: '#6c757d',
+          confirmButtonText: 'Yes, clear it!',
+          cancelButtonText: 'Cancel',
+          reverseButtons: true
+        });
+
+        // If user confirmed, proceed with clearing
+        if (result.isConfirmed) {
+          try {
+            const response = await fetch('/wishlist/clear', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' }
             });
-          } else {
+            const apiResult = await response.json();
+
+            if (apiResult.success) {
+              emptyWishlist.classList.remove('d-none');
+              wishlistItemsContainer.classList.add('d-none');
+              wishlistSummary.classList.add('d-none');
+              wishlistCountElement.textContent = apiResult.wishlistCount;
+              wishlistCountElement.dataset.count = apiResult.wishlistCount;
+
+              Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: 'success',
+                title: 'Wishlist cleared successfully!',
+                showConfirmButton: false,
+                timer: 2000
+              });
+            } else {
+              Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: 'error',
+                title: apiResult.message,
+                showConfirmButton: false,
+                timer: 1500
+              });
+            }
+          } catch (error) {
+            console.error('Error clearing wishlist:', error);
             Swal.fire({
               toast: true,
               position: 'top-end',
               icon: 'error',
-              title: result.message,
+              title: 'Error clearing wishlist',
               showConfirmButton: false,
               timer: 1500
             });
           }
-        } catch (error) {
-          console.error('Error clearing wishlist:', error);
-          Swal.fire({
-            toast: true,
-            position: 'top-end',
-            icon: 'error',
-            title: 'Error clearing wishlist',
-            showConfirmButton: false,
-            timer: 1500
-          });
         }
       });
     }

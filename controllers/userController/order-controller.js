@@ -2,6 +2,7 @@ const Order = require("../../models/orderSchema");
 const User = require("../../models/userSchema");
 const Product = require("../../models/productSchema");
 const Cart = require("../../models/cartSchema"); // Added Cart import
+const Offer = require("../../models/offerSchema"); // Added Offer import
 const PDFDocument = require('pdfkit');
 const path = require('path');
 const { getActiveOfferForProduct, calculateDiscount, getItemPriceDetails } = require("../../utils/offer-helper");
@@ -603,12 +604,14 @@ const downloadInvoice = async (req, res) => {
 
     // Define colors and styles
     const colors = {
-      primary: '#4F46E5',      // Indigo
+      primary: '#2563EB',      // Professional Blue
       secondary: '#6B7280',    // Gray
       dark: '#111827',         // Dark gray
-      light: '#F9FAFB',        // Light gray
-      success: '#10B981',      // Green
-      border: '#E5E7EB'        // Border gray
+      light: '#F8FAFC',        // Light gray
+      success: '#059669',      // Green
+      danger: '#DC2626',       // Red
+      border: '#E5E7EB',       // Border gray
+      accent: '#7C3AED'        // Purple accent
     };
 
     // Document dimensions
@@ -617,75 +620,195 @@ const downloadInvoice = async (req, res) => {
     const leftMargin = 50;
     const rightMargin = pageWidth - 50;
 
-    // Add logo and company info
-    doc.image(path.join(__dirname, '../../public/assets/harryPotter.jpeg'), leftMargin, 50, { width: 50 })
-       .font('Helvetica-Bold')
-       .fontSize(24)
-       .fillColor(colors.primary)
-       .text('Chapterless', leftMargin + 70, 50)
-       .font('Helvetica')
-       .fontSize(10)
-       .fillColor(colors.secondary)
-       .text('WHERE STORIES FIND LOST SOULS', leftMargin + 70, 80);
+    // Add professional header with logo and company info
+    try {
+      doc.image(path.join(__dirname, '../../public/assets/harryPotter.jpeg'), leftMargin, 50, { width: 50 });
+    } catch (error) {
+      console.log('Logo image not found, continuing without logo');
+    }
 
-    // Add invoice title and details
+    // Company name with professional styling
     doc.font('Helvetica-Bold')
-       .fontSize(24)
-       .fillColor(colors.dark)
-       .text('INVOICE', rightMargin - 120, 50, { align: 'right', width: 120 })
-       .fontSize(10)
+       .fontSize(28)
+       .fillColor(colors.primary)
+       .text('CHAPTERLESS', leftMargin + 70, 50);
+
+    // Tagline with elegant typography
+    doc.font('Helvetica-Oblique')
+       .fontSize(11)
        .fillColor(colors.secondary)
-       .text(`Invoice Number:`, rightMargin - 120, 80, { align: 'right', width: 120 })
-       .fillColor(colors.dark)
-       .text(`#${order.orderNumber}`, rightMargin - 120, 92, { align: 'right', width: 120 })
+       .text('Where Stories Find Lost Souls', leftMargin + 70, 82);
+
+    // Add company contact information
+    doc.font('Helvetica')
+       .fontSize(9)
        .fillColor(colors.secondary)
-       .text(`Date:`, rightMargin - 120, 110, { align: 'right', width: 120 })
+       .text('Email: support@chapterless.com | Phone: +91 1234567890', leftMargin + 70, 98)
+       .text('Website: www.chapterless.com', leftMargin + 70, 110);
+
+    // Add professional accent line
+    doc.strokeColor(colors.primary)
+       .lineWidth(2)
+       .moveTo(leftMargin + 70, 125)
+       .lineTo(leftMargin + 250, 125)
+       .stroke();
+
+    // Add professional invoice title and details in a box
+    const invoiceBoxX = rightMargin - 180;
+    const invoiceBoxY = 50;
+    const invoiceBoxWidth = 170;
+    const invoiceBoxHeight = 100;
+
+    // Invoice box background
+    doc.fillColor(colors.light)
+       .rect(invoiceBoxX, invoiceBoxY, invoiceBoxWidth, invoiceBoxHeight)
+       .fill();
+
+    // Invoice box border
+    doc.strokeColor(colors.primary)
+       .lineWidth(2)
+       .rect(invoiceBoxX, invoiceBoxY, invoiceBoxWidth, invoiceBoxHeight)
+       .stroke();
+
+    // Invoice title
+    doc.font('Helvetica-Bold')
+       .fontSize(26)
+       .fillColor(colors.primary)
+       .text('INVOICE', invoiceBoxX + 10, invoiceBoxY + 15, { align: 'center', width: invoiceBoxWidth - 20 });
+
+    // Invoice details - vertical layout (line by line)
+    const detailsStartY = invoiceBoxY + 40;
+    const lineHeight = 18;
+
+    // Invoice Number
+    doc.fontSize(9)
+       .font('Helvetica')
+       .fillColor(colors.secondary)
+       .text('Invoice Number: ', invoiceBoxX + 10, detailsStartY, { continued: true })
+       .font('Helvetica-Bold')
        .fillColor(colors.dark)
-       .text(`${order.formattedDate}`, rightMargin - 120, 122, { align: 'right', width: 120 });
+       .text(`#${order.orderNumber}`);
+
+    // Date
+    doc.font('Helvetica')
+       .fontSize(9)
+       .fillColor(colors.secondary)
+       .text('Date: ', invoiceBoxX + 10, detailsStartY + lineHeight, { continued: true })
+       .font('Helvetica-Bold')
+       .fillColor(colors.dark)
+       .text(`${order.formattedDate}`);
+
+    // Status
+    const orderStatusColor = order.orderStatus === 'Delivered' ? colors.success :
+                            order.orderStatus === 'Returned' ? colors.danger :
+                            order.orderStatus === 'Cancelled' ? colors.danger : colors.primary;
+
+    doc.font('Helvetica')
+       .fontSize(9)
+       .fillColor(colors.secondary)
+       .text('Status: ', invoiceBoxX + 10, detailsStartY + (lineHeight * 2), { continued: true })
+       .font('Helvetica-Bold')
+       .fillColor(orderStatusColor)
+       .text(`${order.orderStatus}`);
 
     // Add separator line
     doc.strokeColor(colors.border)
        .lineWidth(1)
-       .moveTo(leftMargin, 150)
-       .lineTo(rightMargin, 150)
+       .moveTo(leftMargin, 160)
+       .lineTo(rightMargin, 160)
        .stroke();
 
     // Add billing and shipping info
-    const billingStartY = 170;
+    const billingStartY = 180;
 
-    // Billing info
+    // Billing info with professional styling
+    const billingBoxWidth = 250;
+    const billingBoxHeight = 120;
+
+    // Billing box background
+    doc.fillColor('#FAFBFC')
+       .rect(leftMargin, billingStartY, billingBoxWidth, billingBoxHeight)
+       .fill();
+
+    // Billing box border
+    doc.strokeColor(colors.border)
+       .lineWidth(1)
+       .rect(leftMargin, billingStartY, billingBoxWidth, billingBoxHeight)
+       .stroke();
+
+    // Billing header
     doc.font('Helvetica-Bold')
        .fontSize(14)
+       .fillColor(colors.primary)
+       .text('BILL TO', leftMargin + 10, billingStartY + 10);
+
+    // Billing details
+    doc.font('Helvetica-Bold')
+       .fontSize(11)
        .fillColor(colors.dark)
-       .text('Bill To:', leftMargin, billingStartY)
-       .font('Helvetica')
+       .text(order.shippingAddress.fullName || user.fullName || 'N/A', leftMargin + 10, billingStartY + 30);
+
+    doc.font('Helvetica')
        .fontSize(10)
        .fillColor(colors.dark)
-       .text(order.shippingAddress.fullName || user.fullName || 'N/A', leftMargin, billingStartY + 25)
-       .text(order.shippingAddress.street || '', leftMargin, billingStartY + 40)
-       .text(`${order.shippingAddress.district || ''}, ${order.shippingAddress.state || ''} - ${order.shippingAddress.pincode || ''}`, leftMargin, billingStartY + 55)
-       .text(`Phone: ${order.shippingAddress.phone || 'N/A'}`, leftMargin, billingStartY + 70)
-       .text(`Email: ${user.email || 'N/A'}`, leftMargin, billingStartY + 85);
+       .text(order.shippingAddress.street || '', leftMargin + 10, billingStartY + 45)
+       .text(`${order.shippingAddress.district || ''}, ${order.shippingAddress.state || ''} - ${order.shippingAddress.pincode || ''}`, leftMargin + 10, billingStartY + 60)
+       .text(`Phone: ${order.shippingAddress.phone || 'N/A'}`, leftMargin + 10, billingStartY + 75)
+       .text(`Email: ${user.email || 'N/A'}`, leftMargin + 10, billingStartY + 90);
 
-    // Payment info
+    // Payment info with professional styling
+    const paymentBoxX = rightMargin - 200;
+    const paymentBoxWidth = 190;
+    const paymentBoxHeight = 80;
+
+    // Payment box background
+    doc.fillColor('#F0F9FF')
+       .rect(paymentBoxX, billingStartY, paymentBoxWidth, paymentBoxHeight)
+       .fill();
+
+    // Payment box border
+    doc.strokeColor(colors.primary)
+       .lineWidth(1)
+       .rect(paymentBoxX, billingStartY, paymentBoxWidth, paymentBoxHeight)
+       .stroke();
+
+    // Payment header
     doc.font('Helvetica-Bold')
        .fontSize(14)
-       .fillColor(colors.dark)
-       .text('Payment Details:', rightMargin - 200, billingStartY)
-       .font('Helvetica')
+       .fillColor(colors.primary)
+       .text('PAYMENT DETAILS', paymentBoxX + 10, billingStartY + 10);
+
+    // Payment method
+    doc.font('Helvetica')
        .fontSize(10)
-       .text(`Method: ${order.paymentMethod || 'Cash on Delivery'}`, rightMargin - 200, billingStartY + 25)
-       .text(`Status: ${order.paymentStatus || 'Pending'}`, rightMargin - 200, billingStartY + 40);
+       .fillColor(colors.secondary)
+       .text('Method:', paymentBoxX + 10, billingStartY + 35)
+       .font('Helvetica-Bold')
+       .fillColor(colors.dark)
+       .text(`${order.paymentMethod || 'Cash on Delivery'}`, paymentBoxX + 10, billingStartY + 50);
+
+    // Payment status
+    doc.font('Helvetica')
+       .fontSize(10)
+       .fillColor(colors.secondary)
+       .text('Status:', paymentBoxX + 100, billingStartY + 35);
+
+    const paymentStatusColor = order.paymentStatus === 'Paid' ? colors.success :
+                              order.paymentStatus === 'Pending' ? '#F59E0B' : colors.danger;
+
+    doc.font('Helvetica-Bold')
+       .fillColor(paymentStatusColor)
+       .text(`${order.paymentStatus || 'Pending'}`, paymentBoxX + 100, billingStartY + 50);
 
     // Add separator line
     doc.strokeColor(colors.border)
        .lineWidth(1)
-       .moveTo(leftMargin, billingStartY + 120)
-       .lineTo(rightMargin, billingStartY + 120)
+       .moveTo(leftMargin, billingStartY + 140)
+       .lineTo(rightMargin, billingStartY + 140)
        .stroke();
 
     // Order items table
-    const tableTop = billingStartY + 140;
+    const tableTop = billingStartY + 160;
     const tableHeaders = ['Item', 'Price', 'Quantity', 'Discount', 'Total'];
     const colWidths = [0.40, 0.15, 0.15, 0.15, 0.15]; // Proportions of contentWidth
 
@@ -868,11 +991,32 @@ const downloadInvoice = async (req, res) => {
        .lineTo(rightMargin, footerY - 30)
        .stroke();
 
-    doc.fontSize(10)
-       .font('Helvetica')
+    // Professional footer with enhanced styling
+    const footerBoxHeight = 60;
+
+    // Footer background
+    doc.fillColor(colors.light)
+       .rect(leftMargin, footerY - 10, contentWidth, footerBoxHeight)
+       .fill();
+
+    // Footer border
+    doc.strokeColor(colors.border)
+       .lineWidth(1)
+       .rect(leftMargin, footerY - 10, contentWidth, footerBoxHeight)
+       .stroke();
+
+    // Thank you message
+    doc.font('Helvetica-Bold')
+       .fontSize(12)
+       .fillColor(colors.primary)
+       .text('Thank you for choosing Chapterless!', leftMargin, footerY + 5, { align: 'center', width: contentWidth });
+
+    // Footer details
+    doc.font('Helvetica')
+       .fontSize(9)
        .fillColor(colors.secondary)
-       .text('Thank you for shopping with Chapterless!', leftMargin, footerY, { align: 'center', width: contentWidth })
-       .text('This is a computer-generated invoice and does not require a signature.', leftMargin, footerY + 15, { align: 'center', width: contentWidth });
+       .text('This is a computer-generated invoice and does not require a signature.', leftMargin, footerY + 25, { align: 'center', width: contentWidth })
+       .text('For any queries, contact us at support@chapterless.com or +91 9876543210', leftMargin, footerY + 38, { align: 'center', width: contentWidth });
 
     // Add page numbers
     const pageCount = doc.bufferedPageRange().count;
@@ -1445,7 +1589,9 @@ const reorder = async (req, res) => {
       const shouldAddItem = item.status === 'Active' || !originalOrder.items.some(i => i.status === 'Active');
 
       if (shouldAddItem) {
-        const product = await Product.findById(item.product).lean();
+        const product = await Product.findById(item.product)
+          .populate('category')
+          .lean();
 
         if (!product || !product.isListed || product.isDeleted) {
           continue; // Skip unavailable products
@@ -1455,11 +1601,39 @@ const reorder = async (req, res) => {
         const quantityToAdd = Math.min(item.quantity, product.stock);
 
         if (quantityToAdd > 0) {
+          // Calculate current price with offers (similar to cart controller)
+          let finalPrice = product.salePrice;
+
+          // Check for active offers
+          const currentDate = new Date();
+          const activeOffers = await Offer.find({
+            isActive: true,
+            startDate: { $lte: currentDate },
+            endDate: { $gte: currentDate },
+            $or: [
+              { appliesTo: 'all_products' },
+              { appliesTo: 'specific_products', applicableProducts: product._id },
+              { appliesTo: 'all_categories' },
+              { appliesTo: 'specific_categories', applicableCategories: product.category._id }
+            ]
+          }).sort({ discountValue: -1 });
+
+          // Apply the best offer if available
+          if (activeOffers.length > 0) {
+            const bestOffer = activeOffers[0];
+            if (bestOffer.discountType === 'percentage') {
+              const discountAmount = (product.salePrice * bestOffer.discountValue) / 100;
+              finalPrice = product.salePrice - discountAmount;
+            } else if (bestOffer.discountType === 'fixed') {
+              finalPrice = Math.max(0, product.salePrice - bestOffer.discountValue);
+            }
+          }
+
           // Add item to cart
           cart.items.push({
             product: product._id,
             quantity: quantityToAdd,
-            priceAtAddition: product.price
+            priceAtAddition: finalPrice
           });
         }
       }

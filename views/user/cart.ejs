@@ -456,32 +456,48 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // Main Functions
   async function clearCart() {
-    try {
-      const response = await fetch('/cart/clear', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'same-origin'
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Server responded with ${response.status}: ${response.statusText}`);
-      }
-      
-      const result = await response.json();
+    // Show confirmation dialog
+    const result = await Swal.fire({
+      title: 'Clear Cart?',
+      text: 'Are you sure you want to remove all items from your cart? This action cannot be undone.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#dc3545',
+      cancelButtonColor: '#6c757d',
+      confirmButtonText: 'Yes, clear it!',
+      cancelButtonText: 'Cancel',
+      reverseButtons: true
+    });
 
-      if (result.success) {
-        emptyCart.classList.remove('d-none');
-        cartItemsContainer.classList.add('d-none');
-        orderSummary.classList.add('d-none');
-        updateCartCount(result.cartCount);
+    // If user confirmed, proceed with clearing
+    if (result.isConfirmed) {
+      try {
+        const response = await fetch('/cart/clear', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin'
+        });
 
-        showNotification('success', result.message);
-      } else {
-        showNotification('error', result.message || 'Failed to clear cart');
+        if (!response.ok) {
+          throw new Error(`Server responded with ${response.status}: ${response.statusText}`);
+        }
+
+        const apiResult = await response.json();
+
+        if (apiResult.success) {
+          emptyCart.classList.remove('d-none');
+          cartItemsContainer.classList.add('d-none');
+          orderSummary.classList.add('d-none');
+          updateCartCount(apiResult.cartCount);
+
+          showNotification('success', 'Cart cleared successfully!');
+        } else {
+          showNotification('error', apiResult.message || 'Failed to clear cart');
+        }
+      } catch (error) {
+        console.error('Clear cart error:', error);
+        showNotification('error', 'Error clearing cart');
       }
-    } catch (error) {
-      console.error('Clear cart error:', error);
-      showNotification('error', 'Error clearing cart');
     }
   }
 
