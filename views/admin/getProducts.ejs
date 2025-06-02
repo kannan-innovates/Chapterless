@@ -53,10 +53,15 @@
           <input
             type="text"
             class="search-input"
-            placeholder="Search..."
+            placeholder="Search products, authors, categories..."
             value="<%= search %>"
           />
           <i class="fas fa-search search-icon"></i>
+          <% if (search && search.length > 0) { %>
+          <button class="clear-search-btn" type="button" title="Clear search">
+            <i class="fas fa-times"></i>
+          </button>
+          <% } %>
         </div>
 
         <div class="filters">
@@ -167,7 +172,7 @@
             >
               <i class="fas fa-chevron-left"></i> Previous
             </a>
-            <% 
+            <%
               const maxPagesToShow = 5;
               const halfMax = Math.floor(maxPagesToShow / 2);
               let startPage = Math.max(1, currentPage - halfMax);
@@ -222,6 +227,16 @@
           const sort = document.getElementById('sortBy').value;
           window.location.href = `/admin/getProducts?search=${encodeURIComponent(this.value)}&category=${category}&sort=${sort}&page=1`;
         });
+
+        // Clear search functionality
+        const clearSearchBtn = document.querySelector('.clear-search-btn');
+        if (clearSearchBtn) {
+          clearSearchBtn.addEventListener('click', function () {
+            const category = document.getElementById('categoryFilter').value;
+            const sort = document.getElementById('sortBy').value;
+            window.location.href = `/admin/getProducts?search=&category=${category}&sort=${sort}&page=1`;
+          });
+        }
 
         // Filter and Sort functionality
         document.getElementById('categoryFilter').addEventListener('change', function () {

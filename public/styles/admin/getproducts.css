@@ -111,7 +111,7 @@ body {
 
 .search-input {
   width: 100%;
-  padding: 10px 40px 10px 16px;
+  padding: 10px 70px 10px 16px;
   border: 1px solid var(--border-color);
   border-radius: 8px;
   background-color: var(--white);
@@ -125,6 +125,34 @@ body {
   transform: translateY(-50%);
   color: var(--text-light);
   pointer-events: none;
+}
+
+.clear-search-btn {
+  position: absolute;
+  right: 40px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--text-light);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+}
+
+.clear-search-btn:hover {
+  color: var(--danger);
+  background-color: rgba(239, 68, 68, 0.1);
+}
+
+.clear-search-btn i {
+  font-size: 12px;
 }
 
 .filters {

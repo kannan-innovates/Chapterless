@@ -252,17 +252,6 @@
                   <a href="/products/<%= relatedProduct._id %>" class="text-decoration-none">
                     <img src="<%= relatedProduct.mainImage || '/api/placeholder/600/800' %>" alt="<%= relatedProduct.title %>" class="product-image" />
                   </a>
-                  <div class="product-actions">
-                    <button class="action-btn" title="Quick view">
-                      <i class="ri-eye-line"></i>
-                    </button>
-                    <button class="action-btn wishlist-btn" title="Add to wishlist" data-product-id="<%= relatedProduct._id %>" <%= relatedProduct.isWishlisted ? 'data-wishlisted="true"' : '' %>>
-                      <i class="<%= relatedProduct.isWishlisted ? 'ri-heart-fill' : 'ri-heart-line' %>"></i>
-                    </button>
-                    <button class="action-btn add-to-cart-btn" title="Add to cart" data-product-id="<%= relatedProduct._id %>" <%= relatedProduct.stock === 0 ? 'disabled' : '' %>>
-                      <i class="ri-shopping-cart-line"></i>
-                    </button>
-                  </div>
                 </div>
                 <div class="p-3">
                   <h3 class="fs-5 fw-semibold mb-1">
@@ -270,15 +259,25 @@
                   </h3>
                   <p class="text-muted small mb-2"><%= relatedProduct.author %></p>
                   <div class="d-flex justify-content-between align-items-center">
-                    <% if (relatedProduct.activeOffer && relatedProduct.discountPercentage > 0) { %>
-                      <span class="original-price">₹<%= relatedProduct.regularPrice.toFixed(2) %></span>
-                      <span class="fw-bold">₹<%= relatedProduct.finalPrice.toFixed(2) %></span>
-                    <% } else { %>
-                      <span class="fw-bold">₹<%= relatedProduct.finalPrice.toFixed(2) %></span>
-                    <% } %>
-                    <button class="add-to-cart border-0" data-product-id="<%= relatedProduct._id %>" <%= relatedProduct.stock === 0 ? 'disabled' : '' %>>
-                      <i class="ri-shopping-cart-line"></i>
-                    </button>
+                    <div>
+                      <% if (relatedProduct.activeOffer && relatedProduct.discountPercentage > 0) { %>
+                        <div class="d-flex align-items-center gap-2">
+                          <span class="fw-bold text-danger">₹<%= relatedProduct.finalPrice.toFixed(2) %></span>
+                          <span class="text-decoration-line-through text-muted small">₹<%= relatedProduct.regularPrice.toFixed(2) %></span>
+                        </div>
+                        <small class="text-success d-block"><%= relatedProduct.activeOffer.title %></small>
+                      <% } else { %>
+                        <span class="fw-bold">₹<%= relatedProduct.finalPrice.toFixed(2) %></span>
+                      <% } %>
+                    </div>
+                    <div class="d-flex gap-2 align-items-center">
+                      <button class="btn-wishlist-home <%= relatedProduct.isWishlisted ? 'wishlisted' : '' %>" data-product-id="<%= relatedProduct._id %>" <%= relatedProduct.isWishlisted ? 'data-wishlisted="true"' : '' %>>
+                        <i class="<%= relatedProduct.isWishlisted ? 'ri-heart-fill' : 'ri-heart-line' %>"></i>
+                      </button>
+                      <button class="add-to-cart border-0" data-product-id="<%= relatedProduct._id %>" <%= relatedProduct.stock === 0 ? 'disabled' : '' %>>
+                        <i class="ri-add-line"></i>
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -331,6 +330,36 @@
     font-size: 0.75rem;
     border-radius: 2px;
     margin-left: 0.5rem;
+  }
+
+  .btn-wishlist-home {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 50%;
+    background-color: #fff;
+    color: #000;
+    border: 2px solid #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    cursor: pointer;
+  }
+
+  .btn-wishlist-home:hover {
+    background-color: #000;
+    color: #fff;
+  }
+
+  .btn-wishlist-home.wishlisted {
+    background-color: #dc3545;
+    border-color: #dc3545;
+    color: #fff;
+  }
+
+  .btn-wishlist-home.wishlisted:hover {
+    background-color: #c82333;
+    border-color: #c82333;
   }
 </style>
 
@@ -509,7 +538,7 @@
 
     // Related products actions
     const relatedAddToCartButtons = document.querySelectorAll('.related-products .add-to-cart, .related-products .add-to-cart-btn');
-    const relatedWishlistButtons = document.querySelectorAll('.related-products .wishlist-btn');
+    const relatedWishlistButtons = document.querySelectorAll('.related-products .wishlist-btn, .related-products .btn-wishlist-home');
 
     relatedAddToCartButtons.forEach(button => {
       button.addEventListener('click', async function (e) {
@@ -591,7 +620,23 @@
           if (result.success) {
             const isWishlisted = result.isWishlisted;
             this.dataset.wishlisted = isWishlisted;
-            this.querySelector('i').className = isWishlisted ? 'ri-heart-fill' : 'ri-heart-line';
+
+            // Update button appearance based on button type
+            const icon = this.querySelector('i');
+            if (this.classList.contains('btn-wishlist-home')) {
+              // Home page style button
+              if (isWishlisted) {
+                icon.className = 'ri-heart-fill';
+                this.classList.add('wishlisted');
+              } else {
+                icon.className = 'ri-heart-line';
+                this.classList.remove('wishlisted');
+              }
+            } else {
+              // Regular wishlist button
+              icon.className = isWishlisted ? 'ri-heart-fill' : 'ri-heart-line';
+            }
+
             wishlistCountElement.textContent = result.wishlistCount;
             wishlistCountElement.dataset.count = result.wishlistCount;
 
