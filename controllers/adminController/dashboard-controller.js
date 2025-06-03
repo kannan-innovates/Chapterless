@@ -46,51 +46,89 @@ const getDashboard = async (req, res) => {
 const calculateDashboardStats = async () => {
   try {
     const now = new Date();
-    const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
 
-    // 1. Total Users (exclude admin users)
+    // Current month (this month)
+    const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const currentMonthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+
+    // Previous month
+    const previousMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const previousMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
+
+    // 1. Total Users (exclude admin users) - show total but compare monthly growth
     const totalUsers = await User.countDocuments({ isAdmin: false });
-    const lastMonthUsers = await User.countDocuments({
+    const currentMonthUsers = await User.countDocuments({
       isAdmin: false,
-      createdAt: { $gte: lastMonth, $lte: lastMonthEnd }
+      createdAt: { $gte: currentMonthStart, $lte: currentMonthEnd }
     });
-    const usersGrowth = calculateGrowthPercentage(totalUsers, totalUsers - lastMonthUsers);
+    const previousMonthUsers = await User.countDocuments({
+      isAdmin: false,
+      createdAt: { $gte: previousMonthStart, $lte: previousMonthEnd }
+    });
+    const usersGrowth = calculateGrowthPercentage(currentMonthUsers, previousMonthUsers);
 
-    // 2. Total Orders
+    // 2. Total Orders - show total but compare monthly growth
     const totalOrders = await Order.countDocuments({ isDeleted: false });
-    const lastMonthOrders = await Order.countDocuments({
+    const currentMonthOrders = await Order.countDocuments({
       isDeleted: false,
-      createdAt: { $gte: lastMonth, $lte: lastMonthEnd }
+      createdAt: { $gte: currentMonthStart, $lte: currentMonthEnd }
     });
-    const ordersGrowth = calculateGrowthPercentage(totalOrders, totalOrders - lastMonthOrders);
+    const previousMonthOrders = await Order.countDocuments({
+      isDeleted: false,
+      createdAt: { $gte: previousMonthStart, $lte: previousMonthEnd }
+    });
+    const ordersGrowth = calculateGrowthPercentage(currentMonthOrders, previousMonthOrders);
 
-    // 3. Total Sales (from successful orders)
+    // 3. Total Sales (from successful orders) - show total but compare monthly growth
     const salesOrders = await Order.find({
       orderStatus: { $in: ['Delivered', 'Shipped', 'Processing'] },
       isDeleted: false
     });
     const totalSales = salesOrders.reduce((sum, order) => sum + (order.total || 0), 0);
 
-    const lastMonthSalesOrders = await Order.find({
+    const currentMonthSalesOrders = await Order.find({
       orderStatus: { $in: ['Delivered', 'Shipped', 'Processing'] },
       isDeleted: false,
-      createdAt: { $gte: lastMonth, $lte: lastMonthEnd }
+      createdAt: { $gte: currentMonthStart, $lte: currentMonthEnd }
     });
-    const lastMonthSales = lastMonthSalesOrders.reduce((sum, order) => sum + (order.total || 0), 0);
-    const salesGrowth = calculateGrowthPercentage(totalSales, totalSales - lastMonthSales);
+    const currentMonthSales = currentMonthSalesOrders.reduce((sum, order) => sum + (order.total || 0), 0);
 
-    // 4. Pending Orders
+    const previousMonthSalesOrders = await Order.find({
+      orderStatus: { $in: ['Delivered', 'Shipped', 'Processing'] },
+      isDeleted: false,
+      createdAt: { $gte: previousMonthStart, $lte: previousMonthEnd }
+    });
+    const previousMonthSales = previousMonthSalesOrders.reduce((sum, order) => sum + (order.total || 0), 0);
+    const salesGrowth = calculateGrowthPercentage(currentMonthSales, previousMonthSales);
+
+    // 4. Pending Orders - show current total but compare monthly growth
     const pendingOrders = await Order.countDocuments({
       orderStatus: { $in: ['Placed', 'Processing'] },
       isDeleted: false
     });
-    const lastMonthPendingOrders = await Order.countDocuments({
+    const currentMonthPendingOrders = await Order.countDocuments({
       orderStatus: { $in: ['Placed', 'Processing'] },
       isDeleted: false,
-      createdAt: { $gte: lastMonth, $lte: lastMonthEnd }
+      createdAt: { $gte: currentMonthStart, $lte: currentMonthEnd }
     });
-    const pendingGrowth = calculateGrowthPercentage(pendingOrders, pendingOrders - lastMonthPendingOrders);
+    const previousMonthPendingOrders = await Order.countDocuments({
+      orderStatus: { $in: ['Placed', 'Processing'] },
+      isDeleted: false,
+      createdAt: { $gte: previousMonthStart, $lte: previousMonthEnd }
+    });
+    const pendingGrowth = calculateGrowthPercentage(currentMonthPendingOrders, previousMonthPendingOrders);
+
+    // Debug logging to help verify calculations
+    console.log('Dashboard Stats Debug (Fixed Logic):');
+    console.log('Users - Total:', totalUsers, 'Current Month:', currentMonthUsers, 'Previous Month:', previousMonthUsers);
+    console.log('Orders - Total:', totalOrders, 'Current Month:', currentMonthOrders, 'Previous Month:', previousMonthOrders);
+    console.log('Sales - Total:', totalSales, 'Current Month:', currentMonthSales, 'Previous Month:', previousMonthSales);
+    console.log('Pending - Total:', pendingOrders, 'Current Month:', currentMonthPendingOrders, 'Previous Month:', previousMonthPendingOrders);
+    console.log('Growth Calculations (Current vs Previous Month):');
+    console.log('Users Growth:', usersGrowth);
+    console.log('Orders Growth:', ordersGrowth);
+    console.log('Sales Growth:', salesGrowth);
+    console.log('Pending Growth:', pendingGrowth);
 
     return {
       totalUsers: {
@@ -127,12 +165,24 @@ const calculateDashboardStats = async () => {
 
 // Helper function to calculate growth percentage
 const calculateGrowthPercentage = (current, previous) => {
+  // Handle edge cases
   if (previous === 0) {
-    return { percentage: current > 0 ? 100 : 0, isPositive: current >= 0 };
+    if (current === 0) {
+      return { percentage: 0, isPositive: true };
+    }
+    // If previous was 0 and current > 0, it's infinite growth, show as 100%
+    return { percentage: 100, isPositive: true };
   }
 
-  const percentage = Math.abs(((current - previous) / previous) * 100);
-  const isPositive = current >= previous;
+  if (current === 0 && previous > 0) {
+    // Complete decline from previous value
+    return { percentage: 100, isPositive: false };
+  }
+
+  // Calculate percentage change: ((current - previous) / previous) * 100
+  const percentageChange = ((current - previous) / previous) * 100;
+  const isPositive = percentageChange >= 0;
+  const percentage = Math.abs(percentageChange);
 
   return {
     percentage: Math.round(percentage * 10) / 10, // Round to 1 decimal place
@@ -170,7 +220,6 @@ const calculateChartData = async (filter) => {
         endDate = now;
         labels = [];
         for (let i = 7; i >= 0; i--) {
-          const weekStart = new Date(now.getTime() - i * 7 * 24 * 60 * 60 * 1000);
           labels.push(`Week ${8-i}`);
         }
         groupBy = 'week';
