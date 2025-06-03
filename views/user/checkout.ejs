@@ -327,7 +327,7 @@
                         <div>
                           <span class="fw-medium">Pay Online</span>
                           <small class="d-block text-muted"
-                            >Pay using Credit/Debit Card, UPI, Netbanking, or Wallet</small
+                            >Pay using Razorpay's secure payment gateway</small
                           >
                         </div>
                       </div>
@@ -402,225 +402,9 @@
                   </div>
                 </div>
 
-                <!-- UPI Payment -->
-                <div class="accordion-item border mb-3 rounded">
-                  <h2 class="accordion-header">
-                    <button
-                      class="accordion-button collapsed"
-                      type="button"
-                      data-bs-toggle="collapse"
-                      data-bs-target="#upiPayment"
-                      aria-expanded="false"
-                      aria-controls="upiPayment"
-                    >
-                      <div class="d-flex align-items-center">
-                        <div class="payment-icon me-3">
-                          <i class="bi bi-phone"></i>
-                        </div>
-                        <div>
-                          <span class="fw-medium">UPI Payment</span>
-                          <small class="d-block text-muted"
-                            >Pay using Google Pay, PhonePe, Paytm, or any UPI
-                            app</small
-                          >
-                        </div>
-                      </div>
-                    </button>
-                  </h2>
-                  <div
-                    id="upiPayment"
-                    class="accordion-collapse collapse"
-                    data-bs-parent="#paymentAccordion"
-                  >
-                    <div class="accordion-body">
-                      <div class="mb-3">
-                        <label for="upiId" class="form-label"
-                          >Enter UPI ID</label
-                        >
-                        <div class="input-group">
-                          <input
-                            type="text"
-                            class="form-control"
-                            id="upiId"
-                            placeholder="yourname@upi"
-                          />
-                          <button class="btn btn-dark" type="button">
-                            Verify
-                          </button>
-                        </div>
-                        <div class="form-text">
-                          Example: yourname@okicici, yourname@ybl
-                        </div>
-                      </div>
-                      <div class="upi-apps mt-4">
-                        <p class="mb-2">Or pay using</p>
-                        <div class="d-flex flex-wrap gap-3">
-                          <div class="upi-app-option">
-                            <img
-                              src="/api/placeholder/60/60?query=gpay"
-                              alt="Google Pay"
-                              class="img-fluid mb-2"
-                            />
-                            <span>Google Pay</span>
-                          </div>
-                          <div class="upi-app-option">
-                            <img
-                              src="/api/placeholder/60/60?query=phonepe"
-                              alt="PhonePe"
-                              class="img-fluid mb-2"
-                            />
-                            <span>PhonePe</span>
-                          </div>
-                          <div class="upi-app-option">
-                            <img
-                              src="/api/placeholder/60/60?query=paytm"
-                              alt="Paytm"
-                              class="img-fluid mb-2"
-                            />
-                            <span>Paytm</span>
-                          </div>
-                          <div class="upi-app-option">
-                            <img
-                              src="/api/placeholder/60/60?query=amazonpay"
-                              alt="Amazon Pay"
-                              class="img-fluid mb-2"
-                            />
-                            <span>Amazon Pay</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
 
-                <!-- Credit/Debit Card -->
-                <div class="accordion-item border mb-3 rounded">
-                  <h2 class="accordion-header">
-                    <button
-                      class="accordion-button collapsed"
-                      type="button"
-                      data-bs-toggle="collapse"
-                      data-bs-target="#cardPayment"
-                      aria-expanded="false"
-                      aria-controls="cardPayment"
-                    >
-                      <div class="d-flex align-items-center">
-                        <div class="payment-icon me-3">
-                          <i class="bi bi-credit-card"></i>
-                        </div>
-                        <div>
-                          <span class="fw-medium">Credit/Debit Card</span>
-                          <small class="d-block text-muted"
-                            >Pay using Visa, Mastercard, RuPay, or American
-                            Express</small
-                          >
-                        </div>
-                      </div>
-                    </button>
-                  </h2>
-                  <div
-                    id="cardPayment"
-                    class="accordion-collapse collapse"
-                    data-bs-parent="#paymentAccordion"
-                  >
-                    <div class="accordion-body">
-                      <form id="cardPaymentForm">
-                        <div class="mb-3">
-                          <label for="cardNumber" class="form-label"
-                            >Card Number</label
-                          >
-                          <div class="input-group">
-                            <span
-                              class="input-group-text bg-light border-end-0"
-                            >
-                              <i class="bi bi-credit-card"></i>
-                            </span>
-                            <input
-                              type="text"
-                              class="form-control border-start-0"
-                              id="cardNumber"
-                              placeholder="1234 5678 9012 3456"
-                              maxlength="19"
-                            />
-                          </div>
-                          <div
-                            id="cardNumberError"
-                            class="text-danger small mt-1"
-                          ></div>
-                        </div>
 
-                        <div class="row g-3 mb-3">
-                          <div class="col-md-6">
-                            <label for="expiryDate" class="form-label"
-                              >Expiry Date</label
-                            >
-                            <input
-                              type="text"
-                              class="form-control"
-                              id="expiryDate"
-                              placeholder="MM/YY"
-                              maxlength="5"
-                            />
-                            <div
-                              id="expiryDateError"
-                              class="text-danger small mt-1"
-                            ></div>
-                          </div>
-                          <div class="col-md-6">
-                            <label for="cvv" class="form-label">CVV</label>
-                            <div class="input-group">
-                              <input
-                                type="password"
-                                class="form-control"
-                                id="cvv"
-                                placeholder="123"
-                                maxlength="3"
-                              />
-                              <span class="input-group-text bg-light">
-                                <i
-                                  class="bi bi-question-circle"
-                                  data-bs-toggle="tooltip"
-                                  title="3-digit code on the back of your card"
-                                ></i>
-                              </span>
-                            </div>
-                            <div
-                              id="cvvError"
-                              class="text-danger small mt-1"
-                            ></div>
-                          </div>
-                        </div>
 
-                        <div class="mb-3">
-                          <label for="nameOnCard" class="form-label"
-                            >Name on Card</label
-                          >
-                          <input
-                            type="text"
-                            class="form-control"
-                            id="nameOnCard"
-                            placeholder="John Doe"
-                          />
-                          <div
-                            id="nameOnCardError"
-                            class="text-danger small mt-1"
-                          ></div>
-                        </div>
-
-                        <div class="form-check mb-3">
-                          <input
-                            class="form-check-input"
-                            type="checkbox"
-                            id="saveCard"
-                          />
-                          <label class="form-check-label" for="saveCard">
-                            Save this card for future payments
-                          </label>
-                        </div>
-                      </form>
-                    </div>
-                  </div>
-                </div>
 
                 <!-- Cash on Delivery -->
                 <div class="accordion-item border mb-3 rounded <%= !isCodEligible ? 'opacity-50' : '' %>">
@@ -703,8 +487,6 @@
                           <p class="mb-2 fw-medium">Available payment options:</p>
                           <ul class="list-unstyled mb-0">
                             <li class="mb-1"><i class="bi bi-credit-card-2-front me-2 text-primary"></i>Pay Online (Recommended)</li>
-                            <li class="mb-1"><i class="bi bi-phone me-2 text-success"></i>UPI Payment</li>
-                            <li class="mb-1"><i class="bi bi-credit-card me-2 text-info"></i>Credit/Debit Card</li>
                             <li class="mb-1"><i class="bi bi-wallet2 me-2 text-warning"></i>Wallet</li>
                           </ul>
                         </div>
@@ -797,7 +579,6 @@
                           <ul class="list-unstyled mb-0">
                             <li class="mb-1"><i class="bi bi-plus-circle me-2 text-primary"></i><a href="/wallet" class="text-decoration-none">Add money to wallet</a></li>
                             <li class="mb-1"><i class="bi bi-credit-card-2-front me-2 text-success"></i>Pay Online (Recommended)</li>
-                            <li class="mb-1"><i class="bi bi-phone me-2 text-info"></i>UPI Payment</li>
                             <% if (isCodEligible) { %>
                               <li class="mb-1"><i class="bi bi-cash me-2 text-warning"></i>Cash on Delivery</li>
                             <% } %>
@@ -1976,21 +1757,13 @@
         displayName = 'Cash on Delivery';
         details = 'Pay when your order is delivered';
         iconClass = 'bi bi-cash';
-      } else if (activePaymentMethod === 'upiPayment') {
-        displayName = 'UPI Payment';
-        details = 'Pay using Google Pay, PhonePe, Paytm, or any UPI app';
-        iconClass = 'bi bi-phone';
-      } else if (activePaymentMethod === 'cardPayment') {
-        displayName = 'Credit/Debit Card';
-        details = 'Pay using Visa, Mastercard, RuPay, or American Express';
-        iconClass = 'bi bi-credit-card';
       } else if (activePaymentMethod === 'walletPayment') {
         displayName = 'Wallet';
         details = 'Pay using your wallet balance';
         iconClass = 'bi bi-wallet2';
       } else if (activePaymentMethod === 'razorpayPayment') {
         displayName = 'Pay Online';
-        details = 'Pay using Credit/Debit Card, UPI, Netbanking, or Wallet';
+        details = 'Pay using Razorpay\'s secure payment gateway';
         iconClass = 'bi bi-credit-card-2-front';
       }
 
@@ -2242,33 +2015,9 @@
       goToStep(4);
     });
 
-    // Card number formatting
-    const cardNumberInput = document.getElementById("cardNumber");
-    if (cardNumberInput) {
-      cardNumberInput.addEventListener("input", function (e) {
-        let value = e.target.value.replace(/\D/g, "");
-        if (value.length > 16) {
-          value = value.slice(0, 16);
-        }
-        const formattedValue = value.replace(/(\d{4})(?=\d)/g, "$1 ");
-        e.target.value = formattedValue;
-      });
-    }
 
-    // Expiry date formatting
-    const expiryDateInput = document.getElementById("expiryDate");
-    if (expiryDateInput) {
-      expiryDateInput.addEventListener("input", function (e) {
-        let value = e.target.value.replace(/\D/g, "");
-        if (value.length > 4) {
-          value = value.slice(0, 4);
-        }
-        if (value.length > 2) {
-          value = value.slice(0, 2) + "/" + value.slice(2);
-        }
-        e.target.value = value;
-      });
-    }
+
+
 
     // Remove item from cart
     document.querySelectorAll(".remove-item").forEach((button) => {
@@ -2648,10 +2397,6 @@
           paymentMethodValue = "COD";
         } else if (paymentMethod === "razorpayPayment") {
           paymentMethodValue = "Razorpay";
-        } else if (paymentMethod === "upiPayment") {
-          paymentMethodValue = "UPI";
-        } else if (paymentMethod === "cardPayment") {
-          paymentMethodValue = "Card";
         } else if (paymentMethod === "walletPayment") {
           // Check wallet eligibility first
           const totalAmount = parseFloat(document.getElementById("totalAmount").textContent.replace('₹', '').replace(',', ''));

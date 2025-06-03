@@ -724,7 +724,56 @@
 
             <div class="mb-3">
               <p class="info-title">Payment Status</p>
-              <p class="info-value"><%= order.paymentStatus || 'Pending' %></p>
+              <p class="info-value">
+                <%
+                  let paymentStatusDisplay = '';
+                  let paymentStatusClass = '';
+
+                  if (order.paymentMethod === 'COD') {
+                    if (order.orderStatus === 'Cancelled') {
+                      paymentStatusDisplay = 'No Payment Required';
+                      paymentStatusClass = 'text-muted';
+                    } else if (order.orderStatus === 'Delivered') {
+                      paymentStatusDisplay = 'Paid (Cash)';
+                      paymentStatusClass = 'text-success';
+                    } else {
+                      paymentStatusDisplay = 'Pay on Delivery';
+                      paymentStatusClass = 'text-warning';
+                    }
+                  } else {
+                    switch (order.paymentStatus) {
+                      case 'Paid':
+                        paymentStatusDisplay = 'Paid';
+                        paymentStatusClass = 'text-success';
+                        break;
+                      case 'Pending':
+                        paymentStatusDisplay = 'Payment Pending';
+                        paymentStatusClass = 'text-warning';
+                        break;
+                      case 'Failed':
+                        paymentStatusDisplay = 'Payment Failed';
+                        paymentStatusClass = 'text-danger';
+                        break;
+                      case 'Refunded':
+                        paymentStatusDisplay = 'Refunded';
+                        paymentStatusClass = 'text-info';
+                        break;
+                      case 'Partially Refunded':
+                        paymentStatusDisplay = 'Partially Refunded';
+                        paymentStatusClass = 'text-info';
+                        break;
+                      case 'Refund Processing':
+                        paymentStatusDisplay = 'Refund Processing';
+                        paymentStatusClass = 'text-warning';
+                        break;
+                      default:
+                        paymentStatusDisplay = order.paymentStatus || 'Unknown';
+                        paymentStatusClass = 'text-muted';
+                    }
+                  }
+                %>
+                <span class="<%= paymentStatusClass %>"><%= paymentStatusDisplay %></span>
+              </p>
             </div>
 
             <div>

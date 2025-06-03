@@ -1,6 +1,6 @@
 const Wallet = require("../../models/walletSchema");
 const Order = require("../../models/orderSchema");
-const { calculateDiscount } = require("../../utils/offer-helper");
+const { calculateDiscount, getUnifiedPriceBreakdown } = require("../../utils/offer-helper");
 const { HttpStatus } = require("../../helpers/status-code");
 
 const getWallet = async (req, res) => {
@@ -46,7 +46,7 @@ const safeCalculation = (value) => {
   return isNaN(num) ? 0 : num;
 };
 
-// Helper function to calculate refund amount for a single item
+// Helper function to calculate refund amount for a single item using unified pricing
 const calculateItemRefundAmount = (item, order) => {
   try {
     if (!item) {
@@ -54,92 +54,33 @@ const calculateItemRefundAmount = (item, order) => {
       return 0;
     }
 
-    console.log('Calculating refund for item:', {
+    console.log('Calculating refund for item using unified pricing:', {
       itemId: item._id,
       title: item.title,
-      priceBreakdown: item.priceBreakdown,
       price: item.price,
       discountedPrice: item.discountedPrice,
-      quantity: item.quantity
+      quantity: item.quantity,
+      paymentMethod: order.paymentMethod
     });
 
-    const quantity = Number(item.quantity || 1);
+    // **FIX: Use unified price calculation for consistency**
+    const priceBreakdown = getUnifiedPriceBreakdown(item, order);
 
-    // Case 1: Use priceBreakdown if available
-    if (item.priceBreakdown) {
-      // The finalPrice in priceBreakdown is already the total for all quantities
-      // So we don't need to multiply by quantity again
-      const baseAmount = Number(item.priceBreakdown.finalPrice || 0);
+    // For refunds, we use the final total (including tax) that the customer actually paid
+    const refundAmount = priceBreakdown.finalTotal;
 
-      // Calculate tax proportion
-      let taxAmount = 0;
-      if (order.tax && order.total) {
-        // Calculate tax proportion based on this item's contribution to total
-        const itemContribution = baseAmount / (order.total - order.tax);
-        taxAmount = order.tax * itemContribution;
-      }
+    console.log('Unified refund calculation:', {
+      originalPrice: priceBreakdown.originalPrice,
+      discountedPrice: priceBreakdown.discountedPrice,
+      offerDiscount: priceBreakdown.offerDiscount,
+      couponDiscount: priceBreakdown.couponDiscount,
+      finalPrice: priceBreakdown.finalPrice,
+      taxAmount: priceBreakdown.taxAmount,
+      finalTotal: priceBreakdown.finalTotal,
+      refundAmount
+    });
 
-      const totalRefund = baseAmount + taxAmount;
-
-      console.log('Calculated refund from priceBreakdown:', {
-        finalPriceTotal: baseAmount,
-        quantity,
-        baseAmount,
-        taxAmount,
-        totalRefund
-      });
-
-      return Number(totalRefund.toFixed(2));
-    }
-
-    // Case 2: Use discountedPrice as fallback
-    else if (typeof item.discountedPrice === 'number') {
-      const baseAmount = item.discountedPrice * quantity;
-      let taxAmount = 0;
-
-      if (order.tax && order.total) {
-        const itemContribution = baseAmount / (order.total - order.tax);
-        taxAmount = order.tax * itemContribution;
-      }
-
-      const totalRefund = baseAmount + taxAmount;
-
-      console.log('Using discountedPrice for refund:', {
-        discountedPrice: item.discountedPrice,
-        quantity,
-        baseAmount,
-        taxAmount,
-        totalRefund
-      });
-
-      return Number(totalRefund.toFixed(2));
-    }
-
-    // Case 3: Use original price as last resort
-    else if (typeof item.price === 'number') {
-      const baseAmount = item.price * quantity;
-      let taxAmount = 0;
-
-      if (order.tax && order.total) {
-        const itemContribution = baseAmount / (order.total - order.tax);
-        taxAmount = order.tax * itemContribution;
-      }
-
-      const totalRefund = baseAmount + taxAmount;
-
-      console.log('Using original price for refund:', {
-        price: item.price,
-        quantity,
-        baseAmount,
-        taxAmount,
-        totalRefund
-      });
-
-      return Number(totalRefund.toFixed(2));
-    }
-
-    console.log('No valid price found for refund calculation');
-    return 0;
+    return Number(refundAmount.toFixed(2));
   } catch (error) {
     console.error('Error in calculateItemRefundAmount:', error);
     return 0;
@@ -154,6 +95,8 @@ const processCancelRefund = async (userId, order, itemId = null) => {
       orderId: order._id,
       itemId,
       orderStatus: order.orderStatus,
+      paymentMethod: order.paymentMethod,
+      paymentStatus: order.paymentStatus,
       total: order.total,
       tax: order.tax
     });
@@ -161,6 +104,18 @@ const processCancelRefund = async (userId, order, itemId = null) => {
     if (!userId || !order) {
       console.error('Missing required parameters in processCancelRefund');
       return false;
+    }
+
+    // **FIX: Skip wallet refunds for COD cancellations since no payment was made**
+    if (order.paymentMethod === 'COD') {
+      console.log('COD order cancellation detected - no wallet refund needed (no payment made yet)');
+      return true; // Return success but don't process wallet refund
+    }
+
+    // Only process refunds for paid orders (Wallet, Razorpay, etc.)
+    if (order.paymentStatus !== 'Paid' && order.paymentStatus !== 'Partially Refunded') {
+      console.log('Order payment status does not allow refunds, skipping refund:', order.paymentStatus);
+      return true; // Return true as this is not an error condition
     }
 
     // Get existing wallet to check for previous refunds
@@ -347,7 +302,9 @@ const processReturnRefund = async (userId, order, itemId = null) => {
       userId,
       orderId: order._id,
       itemId,
-      orderStatus: order.orderStatus
+      orderStatus: order.orderStatus,
+      paymentMethod: order.paymentMethod,
+      paymentStatus: order.paymentStatus
     });
 
     if (!userId || !order) {
@@ -355,9 +312,30 @@ const processReturnRefund = async (userId, order, itemId = null) => {
       return false;
     }
 
+    // **FIX: For COD orders, only process wallet refunds if order was delivered (cash was paid)**
+    if (order.paymentMethod === 'COD') {
+      // Check if order was delivered (meaning customer paid cash)
+      if (order.orderStatus !== 'Delivered') {
+        console.log('COD order not delivered yet - no wallet refund needed (no cash payment made)');
+        return true; // Return success but don't process wallet refund
+      } else {
+        console.log('COD order was delivered - customer paid cash, wallet refund needed for return');
+        // Continue with refund processing since customer paid cash upon delivery
+      }
+    }
+
     // Only process refunds for paid orders (including partially refunded ones)
-    if (order.paymentStatus !== 'Paid' && order.paymentStatus !== 'Partially Refunded') {
-      console.log('Order payment status does not allow refunds, skipping refund:', order.paymentStatus);
+    // Exception: COD orders that were delivered are considered "paid" (cash payment)
+    const isPaymentValid = order.paymentStatus === 'Paid' ||
+                          order.paymentStatus === 'Partially Refunded' ||
+                          (order.paymentMethod === 'COD' && order.orderStatus === 'Delivered');
+
+    if (!isPaymentValid) {
+      console.log('Order payment status does not allow refunds, skipping refund:', {
+        paymentStatus: order.paymentStatus,
+        paymentMethod: order.paymentMethod,
+        orderStatus: order.orderStatus
+      });
       return true; // Return true as this is not an error condition
     }
 

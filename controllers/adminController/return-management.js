@@ -224,20 +224,57 @@ const processReturnRequest = async (req, res) => {
         returnedItems: order.items.filter(i => i.status === 'Returned').length
       });
 
-      if (order.paymentStatus === 'Paid' || order.paymentStatus === 'Partially Refunded') {
-        const refundSuccess = await processReturnRefund(order.user, order);
-        if (refundSuccess) {
-          order.paymentStatus = hasActiveItems ? 'Partially Refunded' : 'Refunded';
-          console.log('Return refund processed successfully');
+      // Process refund based on payment method and status
+      let refundProcessed = false;
+
+      if (order.paymentMethod === 'COD') {
+        // For COD orders, only process refund if order was delivered (cash was paid)
+        if (order.paymentStatus === 'Paid') {
+          const refundSuccess = await processReturnRefund(order.user, order);
+          if (refundSuccess) {
+            refundProcessed = true;
+            console.log('COD return refund processed successfully');
+          } else {
+            console.error('Failed to process COD return refund');
+            return res.status(500).json({
+              success: false,
+              message: 'Failed to process refund. Please try again.'
+            });
+          }
         } else {
-          console.error('Failed to process return refund');
-          return res.status(500).json({
-            success: false,
-            message: 'Failed to process refund. Please try again.'
-          });
+          console.log('COD order not paid yet - no refund needed');
+          refundProcessed = true; // No refund needed, but mark as processed
         }
       } else {
-        console.log('Skipping refund - payment status does not allow refunds:', order.paymentStatus);
+        // For online payment methods (Wallet, Razorpay, etc.)
+        if (order.paymentStatus === 'Paid' || order.paymentStatus === 'Partially Refunded') {
+          const refundSuccess = await processReturnRefund(order.user, order);
+          if (refundSuccess) {
+            refundProcessed = true;
+            console.log('Online payment return refund processed successfully');
+          } else {
+            console.error('Failed to process online payment return refund');
+            return res.status(500).json({
+              success: false,
+              message: 'Failed to process refund. Please try again.'
+            });
+          }
+        } else {
+          console.log('Order not paid - no refund needed');
+          refundProcessed = true; // No refund needed, but mark as processed
+        }
+      }
+
+      // Update payment status based on refund processing
+      if (refundProcessed) {
+        if (order.paymentMethod === 'COD' && order.paymentStatus !== 'Paid') {
+          // COD order not delivered yet - set to failed
+          order.paymentStatus = 'Failed';
+        } else if (hasActiveItems) {
+          order.paymentStatus = 'Partially Refunded';
+        } else {
+          order.paymentStatus = 'Refunded';
+        }
       }
     }
 
@@ -313,11 +350,41 @@ const bulkProcessReturns = async (req, res) => {
           order.orderStatus = 'Delivered';
         }
 
-        // Process refund if approved
-        if (approved && order.paymentStatus === 'Paid') {
-          const refundSuccess = await processReturnRefund(order.user, order);
-          if (refundSuccess) {
-            order.paymentStatus = hasActiveItems ? 'Partially Refunded' : 'Refunded';
+        // Process refund if approved - handle all payment methods
+        if (approved) {
+          let refundProcessed = false;
+
+          if (order.paymentMethod === 'COD') {
+            // For COD orders, only process refund if order was delivered (cash was paid)
+            if (order.paymentStatus === 'Paid') {
+              const refundSuccess = await processReturnRefund(order.user, order);
+              if (refundSuccess) {
+                refundProcessed = true;
+              }
+            } else {
+              refundProcessed = true; // No refund needed for unpaid COD
+            }
+          } else {
+            // For online payment methods
+            if (order.paymentStatus === 'Paid' || order.paymentStatus === 'Partially Refunded') {
+              const refundSuccess = await processReturnRefund(order.user, order);
+              if (refundSuccess) {
+                refundProcessed = true;
+              }
+            } else {
+              refundProcessed = true; // No refund needed for unpaid orders
+            }
+          }
+
+          // Update payment status based on refund processing
+          if (refundProcessed) {
+            if (order.paymentMethod === 'COD' && order.paymentStatus !== 'Paid') {
+              order.paymentStatus = 'Failed';
+            } else if (hasActiveItems) {
+              order.paymentStatus = 'Partially Refunded';
+            } else {
+              order.paymentStatus = 'Refunded';
+            }
           }
         }
 

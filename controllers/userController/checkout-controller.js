@@ -1,3 +1,4 @@
+const mongoose = require("mongoose");
 const Cart = require("../../models/cartSchema");
 const Address = require("../../models/addressSchema");
 const Order = require("../../models/orderSchema");
@@ -15,6 +16,24 @@ const {
 } = require("../../utils/offer-helper");
 
 const { HttpStatus } = require("../../helpers/status-code");
+
+/**
+ * Get initial payment status based on payment method
+ * @param {string} paymentMethod - The payment method used
+ * @returns {string} - The appropriate initial payment status
+ */
+const getInitialPaymentStatus = (paymentMethod) => {
+  switch (paymentMethod) {
+    case "Wallet":
+      return "Paid"; // Wallet payments are immediately processed
+    case "COD":
+      return "Pending"; // COD payment is pending until delivery
+    case "Razorpay":
+      return "Pending"; // Online payments are pending until verification
+    default:
+      return "Pending";
+  }
+};
 
 // Initialize Razorpay
 const razorpay = new Razorpay({
@@ -881,12 +900,81 @@ const verifyRazorpayPayment = async (req, res) => {
 // Handle payment failure
 const handlePaymentFailure = async (req, res) => {
   try {
+    const { razorpay_order_id, error_code, error_description } = req.body;
+
+    console.log('Payment failure details:', {
+      razorpay_order_id,
+      error_code,
+      error_description
+    });
+
+    // Get pending order from session
+    const pendingOrder = req.session.pendingOrder;
+
+    if (pendingOrder) {
+      // Create a failed order record for tracking
+      const userId = req.session.user_id;
+
+      if (userId) {
+        try {
+          // Fetch address for the failed order
+          const address = await Address.findById(pendingOrder.addressId);
+
+          if (address) {
+            // Create failed order record
+            const failedOrder = new Order({
+              user: userId,
+              orderNumber: pendingOrder.orderNumber,
+              items: pendingOrder.orderItems.map(item => ({
+                ...item,
+                status: "Cancelled"
+              })),
+              shippingAddress: {
+                userId: address.userId,
+                fullName: address.fullName,
+                phone: address.phone,
+                pincode: address.pincode,
+                district: address.district,
+                state: address.state,
+                street: address.street,
+                landmark: address.landmark,
+                isDefault: address.isDefault,
+              },
+              paymentMethod: "Razorpay",
+              paymentStatus: "Failed",
+              orderStatus: "Cancelled",
+              subtotal: pendingOrder.subtotal,
+              shipping: 0,
+              tax: pendingOrder.tax,
+              discount: pendingOrder.offerDiscount,
+              couponCode: pendingOrder.couponCode,
+              couponDiscount: pendingOrder.couponDiscount,
+              total: pendingOrder.total,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+              razorpayOrderId: razorpay_order_id,
+              cancelledAt: new Date(),
+              cancellationReason: `Payment failed: ${error_description || 'Unknown error'}`
+            });
+
+            await failedOrder.save();
+            console.log('Failed order record created:', failedOrder.orderNumber);
+          }
+        } catch (orderError) {
+          console.error('Error creating failed order record:', orderError);
+          // Don't throw error here, just log it
+        }
+      }
+    }
+
     // Clear pending order from session
     delete req.session.pendingOrder;
+    delete req.session.appliedCoupon;
 
     res.status(200).json({
       success: false,
-      message: "Payment failed"
+      message: error_description || "Payment failed. Please try again.",
+      error_code: error_code
     });
   } catch (error) {
     console.error("Error handling payment failure:", error);
@@ -908,14 +996,43 @@ const placeOrder = async (req, res) => {
       throw new Error("Address and payment method are required");
     }
 
-    if (!["COD", "Wallet"].includes(paymentMethod)) {
-      throw new Error("Only COD and Wallet payments are supported at this time");
+    if (!["COD", "Wallet", "Razorpay"].includes(paymentMethod)) {
+      throw new Error("Only COD, Wallet, and Razorpay payments are supported");
     }
 
-    // Fetch address
+    // Fetch and validate address
     const address = await Address.findById(addressId);
-    if (!address || address.userId.toString() !== userId.toString()) {
-      throw new Error("Invalid or unauthorized address");
+    if (!address) {
+      throw new Error("Selected address not found");
+    }
+
+    if (address.userId.toString() !== userId.toString()) {
+      throw new Error("Unauthorized access to address");
+    }
+
+    // Comprehensive address validation
+    if (!address.fullName || address.fullName.trim().length < 3) {
+      throw new Error("Invalid address: Full name is required and must be at least 3 characters");
+    }
+
+    if (!address.phone || !/^\d{10}$/.test(address.phone.replace(/\D/g, ""))) {
+      throw new Error("Invalid address: Valid 10-digit phone number is required");
+    }
+
+    if (!address.pincode || !/^\d{6}$/.test(address.pincode)) {
+      throw new Error("Invalid address: Valid 6-digit pincode is required");
+    }
+
+    if (!address.district || address.district.trim().length < 3) {
+      throw new Error("Invalid address: District is required");
+    }
+
+    if (!address.state || address.state.trim().length < 3) {
+      throw new Error("Invalid address: State is required");
+    }
+
+    if (!address.street || address.street.trim().length < 10) {
+      throw new Error("Invalid address: Complete street address is required (minimum 10 characters)");
     }
 
     // Fetch cart
@@ -985,49 +1102,77 @@ const placeOrder = async (req, res) => {
     // Check for applied coupon
     if (req.session.appliedCoupon) {
       const coupon = await Coupon.findById(req.session.appliedCoupon);
-      if (coupon && coupon.isActive && new Date() <= coupon.expiryDate) {
-        // Verify minimum order amount
-        if (subtotal >= coupon.minOrderAmount) {
-          appliedCoupon = coupon;
 
-          // Calculate proportional coupon discount
-          const couponResult = calculateProportionalCouponDiscount(coupon, orderItems);
-          couponDiscount = couponResult.totalDiscount;
-
-          // Update order items with coupon discounts
-          orderItems.forEach(item => {
-            const itemCouponInfo = couponResult.itemDiscounts[item.product.toString()];
-            if (itemCouponInfo) {
-              item.couponDiscount = itemCouponInfo.amount;
-              item.couponProportion = itemCouponInfo.proportion;
-
-              // Update priceBreakdown with coupon info
-              item.priceBreakdown.couponDiscount = itemCouponInfo.amount;
-              item.priceBreakdown.couponProportion = itemCouponInfo.proportion;
-              item.priceBreakdown.finalPrice = item.priceBreakdown.priceAfterOffer - itemCouponInfo.amount;
-
-              // Recalculate final price using the helper
-              const finalPriceDetails = calculateFinalItemPrice(item, { couponDiscount });
-              item.finalPrice = finalPriceDetails.finalPrice / item.quantity;
-            }
-          });
-
-          // Update coupon usage
-          coupon.usedCount += 1;
-          const userUsageIndex = coupon.usedBy.findIndex((usage) => usage.userId.toString() === userId.toString());
-          if (userUsageIndex >= 0) {
-            coupon.usedBy[userUsageIndex].count += 1;
-            coupon.usedBy[userUsageIndex].usedAt = new Date();
-          } else {
-            coupon.usedBy.push({
-              userId,
-              usedAt: new Date(),
-              count: 1,
-            });
-          }
-          await coupon.save();
-        }
+      if (!coupon) {
+        throw new Error("Applied coupon not found");
       }
+
+      // Comprehensive coupon validation
+      if (!coupon.isActive) {
+        throw new Error("Applied coupon is inactive");
+      }
+
+      const now = new Date();
+      if (now < coupon.startDate || now > coupon.expiryDate) {
+        throw new Error("Applied coupon has expired or is not yet active");
+      }
+
+      // Check minimum order amount
+      if (subtotal < coupon.minOrderAmount) {
+        throw new Error(`Minimum order amount of ₹${coupon.minOrderAmount} required for coupon ${coupon.code}`);
+      }
+
+      // Check global usage limit
+      if (coupon.usageLimitGlobal && coupon.usedCount >= coupon.usageLimitGlobal) {
+        throw new Error("Coupon has reached its global usage limit");
+      }
+
+      // Check per-user usage limit
+      const userUsage = coupon.usedBy.find((usage) => usage.userId.toString() === userId.toString());
+      if (userUsage && userUsage.count >= coupon.usageLimitPerUser) {
+        throw new Error("You have already used this coupon the maximum number of times");
+      }
+
+      // All validations passed - apply coupon
+      appliedCoupon = coupon;
+
+      // Calculate proportional coupon discount
+      const couponResult = calculateProportionalCouponDiscount(coupon, orderItems);
+      couponDiscount = couponResult.totalDiscount;
+
+      // Update order items with coupon discounts
+      orderItems.forEach(item => {
+        const itemCouponInfo = couponResult.itemDiscounts[item.product.toString()];
+        if (itemCouponInfo) {
+          item.couponDiscount = itemCouponInfo.amount;
+          item.couponProportion = itemCouponInfo.proportion;
+
+          // Update priceBreakdown with coupon info
+          item.priceBreakdown.couponDiscount = itemCouponInfo.amount;
+          item.priceBreakdown.couponProportion = itemCouponInfo.proportion;
+          item.priceBreakdown.finalPrice = item.priceBreakdown.priceAfterOffer - itemCouponInfo.amount;
+
+          // Recalculate final price using the helper
+          const finalPriceDetails = calculateFinalItemPrice(item, { couponDiscount });
+          item.finalPrice = finalPriceDetails.finalPrice / item.quantity;
+        }
+      });
+
+      // Update coupon usage
+      coupon.usedCount += 1;
+      const userUsageIndex = coupon.usedBy.findIndex((usage) => usage.userId.toString() === userId.toString());
+      if (userUsageIndex >= 0) {
+        coupon.usedBy[userUsageIndex].count += 1;
+        coupon.usedBy[userUsageIndex].usedAt = new Date();
+      } else {
+        coupon.usedBy.push({
+          userId,
+          usedAt: new Date(),
+          count: 1,
+        });
+      }
+      await coupon.save();
+
       // Clear applied coupon from session
       delete req.session.appliedCoupon;
     }
@@ -1053,26 +1198,63 @@ const placeOrder = async (req, res) => {
       }
     }
 
-    // Step 1: Validate stock for all products before making any changes
+    // Step 1: Atomic stock validation and update to prevent race conditions
     const stockUpdates = [];
-    for (const item of orderItems) {
-      const product = await Product.findById(item.product);
-      if (!product) {
-        throw new Error(`Product ${item.title} not found`);
-      }
+    const session = await mongoose.startSession();
 
-      const newStock = product.stock - item.quantity;
-      if (newStock < 0) {
-        throw new Error(`Insufficient stock for ${item.title}. Only ${product.stock} items available.`);
-      }
+    try {
+      await session.withTransaction(async () => {
+        // Validate and update stock atomically for all products
+        for (const item of orderItems) {
+          const product = await Product.findById(item.product).session(session);
+          if (!product) {
+            throw new Error(`Product ${item.title} not found`);
+          }
 
-      stockUpdates.push({ productId: item.product, originalStock: product.stock, newStock });
+          // Check if product is still available and listed
+          if (!product.isListed || product.isDeleted) {
+            throw new Error(`Product ${item.title} is no longer available`);
+          }
+
+          const newStock = product.stock - item.quantity;
+          if (newStock < 0) {
+            throw new Error(`Insufficient stock for ${item.title}. Only ${product.stock} items available.`);
+          }
+
+          // Atomic stock update with optimistic locking
+          const updateResult = await Product.findOneAndUpdate(
+            {
+              _id: item.product,
+              stock: product.stock // Ensure stock hasn't changed since we read it
+            },
+            {
+              stock: newStock,
+              updatedAt: new Date()
+            },
+            {
+              new: true,
+              session: session
+            }
+          );
+
+          if (!updateResult) {
+            throw new Error(`Stock for ${item.title} was updated by another transaction. Please try again.`);
+          }
+
+          stockUpdates.push({
+            productId: item.product,
+            originalStock: product.stock,
+            newStock: newStock,
+            productTitle: item.title
+          });
+        }
+      });
+    } catch (error) {
+      await session.endSession();
+      throw error;
     }
 
-    // Step 2: Update stock for all products
-    for (const update of stockUpdates) {
-      await Product.findByIdAndUpdate(update.productId, { stock: update.newStock }, { new: true });
-    }
+    await session.endSession();
 
     // Step 3: Create order
     const order = new Order({
@@ -1091,7 +1273,7 @@ const placeOrder = async (req, res) => {
         isDefault: address.isDefault,
       },
       paymentMethod: paymentMethod,
-      paymentStatus: paymentMethod === "Wallet" ? "Paid" : "Pending",
+      paymentStatus: getInitialPaymentStatus(paymentMethod),
       orderStatus: "Placed",
       subtotal,
       shipping: 0,
@@ -1147,18 +1329,87 @@ const placeOrder = async (req, res) => {
       orderNumber: order.orderNumber,
     });
   } catch (error) {
-    console.log("Error placing order:", error.message);
+    console.error("Error placing order:", error);
 
-    // Step 5: Rollback stock updates if an error occurs after stock changes
-    if (error.stockUpdates) {
-      for (const update of error.stockUpdates) {
-        await Product.findByIdAndUpdate(update.productId, { stock: update.originalStock }, { new: true });
+    // Comprehensive rollback mechanism
+    try {
+      // Rollback stock updates if they were made
+      if (stockUpdates && stockUpdates.length > 0) {
+        console.log('Rolling back stock updates...');
+        for (const update of stockUpdates) {
+          await Product.findByIdAndUpdate(
+            update.productId,
+            { stock: update.originalStock },
+            { new: true }
+          );
+          console.log(`Restored stock for ${update.productTitle}: ${update.originalStock}`);
+        }
       }
+
+      // Rollback wallet deduction if it was made
+      if (error.walletDeducted && wallet) {
+        console.log('Rolling back wallet deduction...');
+        wallet.balance = Number(wallet.balance) + Number(total);
+
+        // Remove the transaction record
+        wallet.transactions = wallet.transactions.filter(
+          transaction => !transaction.orderId || transaction.orderId.toString() !== error.orderId
+        );
+
+        await wallet.save();
+        console.log(`Restored wallet balance: ₹${wallet.balance}`);
+      }
+
+      // Rollback coupon usage if it was updated
+      if (error.couponUpdated && appliedCoupon) {
+        console.log('Rolling back coupon usage...');
+        appliedCoupon.usedCount = Math.max(0, appliedCoupon.usedCount - 1);
+
+        const userUsageIndex = appliedCoupon.usedBy.findIndex(
+          (usage) => usage.userId.toString() === userId.toString()
+        );
+
+        if (userUsageIndex >= 0) {
+          appliedCoupon.usedBy[userUsageIndex].count = Math.max(0, appliedCoupon.usedBy[userUsageIndex].count - 1);
+          if (appliedCoupon.usedBy[userUsageIndex].count === 0) {
+            appliedCoupon.usedBy.splice(userUsageIndex, 1);
+          }
+        }
+
+        await appliedCoupon.save();
+        console.log('Restored coupon usage');
+      }
+
+    } catch (rollbackError) {
+      console.error('Error during rollback:', rollbackError);
+      // Log rollback failure but don't throw - we still need to respond to user
     }
 
-    res.status(error.message.includes("Insufficient stock") ? HttpStatus.BAD_REQUEST : HttpStatus.INTERNAL_SERVER_ERROR).json({
+    // Determine appropriate error status and message
+    let statusCode = HttpStatus.INTERNAL_SERVER_ERROR;
+    let errorMessage = "Failed to place order. Please try again.";
+
+    if (error.message.includes("Insufficient stock") ||
+        error.message.includes("Stock for") ||
+        error.message.includes("not found") ||
+        error.message.includes("no longer available")) {
+      statusCode = HttpStatus.BAD_REQUEST;
+      errorMessage = error.message;
+    } else if (error.message.includes("address") ||
+               error.message.includes("payment method") ||
+               error.message.includes("coupon") ||
+               error.message.includes("wallet")) {
+      statusCode = HttpStatus.BAD_REQUEST;
+      errorMessage = error.message;
+    } else if (error.message.includes("unauthorized") ||
+               error.message.includes("Unauthorized")) {
+      statusCode = HttpStatus.UNAUTHORIZED;
+      errorMessage = "Unauthorized access";
+    }
+
+    res.status(statusCode).json({
       success: false,
-      message: error.message || "Failed to place order",
+      message: errorMessage,
     });
   }
 };

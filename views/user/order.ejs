@@ -172,8 +172,59 @@
                             <a href="/orders/<%= order._id %>" class="btn btn-outline-danger btn-sm">Cancel Order</a>
                           <% } %>
                           <div class="mt-2 text-center">
-                            <span class="badge <%= order.paymentStatus === 'Paid' ? 'bg-success' : order.paymentStatus === 'Pending' ? 'bg-warning' : 'bg-info' %>">
-                              <%= order.paymentStatus || 'Payment Pending' %>
+                            <%
+                              let paymentStatusDisplay = '';
+                              let paymentStatusClass = '';
+
+                              if (order.paymentMethod === 'COD') {
+                                if (order.orderStatus === 'Cancelled') {
+                                  paymentStatusDisplay = 'No Payment Required';
+                                  paymentStatusClass = 'bg-secondary';
+                                } else if (order.orderStatus === 'Delivered') {
+                                  paymentStatusDisplay = 'Paid (Cash)';
+                                  paymentStatusClass = 'bg-success';
+                                } else {
+                                  paymentStatusDisplay = 'Pay on Delivery';
+                                  paymentStatusClass = 'bg-warning';
+                                }
+                              } else {
+                                switch (order.paymentStatus) {
+                                  case 'Paid':
+                                    paymentStatusDisplay = 'Paid';
+                                    paymentStatusClass = 'bg-success';
+                                    break;
+                                  case 'Pending':
+                                    paymentStatusDisplay = 'Payment Pending';
+                                    paymentStatusClass = 'bg-warning';
+                                    break;
+                                  case 'Failed':
+                                    paymentStatusDisplay = 'Payment Failed';
+                                    paymentStatusClass = 'bg-danger';
+                                    break;
+                                  case 'Refunded':
+                                    paymentStatusDisplay = 'Refunded';
+                                    paymentStatusClass = 'bg-info';
+                                    break;
+                                  case 'Partially Refunded':
+                                    paymentStatusDisplay = 'Partially Refunded';
+                                    paymentStatusClass = 'bg-info';
+                                    break;
+                                  case 'Refund Processing':
+                                    paymentStatusDisplay = 'Refund Processing';
+                                    paymentStatusClass = 'bg-warning';
+                                    break;
+                                  case 'Refund Initiated':
+                                    paymentStatusDisplay = 'Refund Initiated';
+                                    paymentStatusClass = 'bg-warning';
+                                    break;
+                                  default:
+                                    paymentStatusDisplay = order.paymentStatus || 'Unknown';
+                                    paymentStatusClass = 'bg-secondary';
+                                }
+                              }
+                            %>
+                            <span class="badge <%= paymentStatusClass %>">
+                              <%= paymentStatusDisplay %>
                             </span>
                           </div>
                         </div>

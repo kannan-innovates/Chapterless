@@ -181,20 +181,36 @@ const getOrderDetails = async (req, res) => {
 
         // Handle refund amount for cancelled/returned items
         if (item.status === 'Cancelled' || item.status === 'Returned') {
-          // Calculate tax proportion for this item
-          let taxAmount = 0;
-          if (order.tax && order.totalAmount && order.totalAmount > 0) {
-            // Calculate this item's proportion of total order
-            const itemProportion = finalPricePerUnit / (order.totalAmount - order.tax);
-            taxAmount = Number(order.tax) * itemProportion;
+          // **FIX: Only show refund for items that actually get wallet refunds**
+          const shouldShowRefund = (
+            // For COD orders: only show refund if order was delivered (return scenario)
+            (order.paymentMethod === 'COD' && order.orderStatus === 'Delivered' && item.status === 'Returned') ||
+            // For paid orders: always show refund for cancelled/returned items
+            (order.paymentMethod !== 'COD' && (order.paymentStatus === 'Paid' || order.paymentStatus === 'Partially Refunded'))
+          );
+
+          if (shouldShowRefund) {
+            // Calculate tax proportion for this item
+            let taxAmount = 0;
+            if (order.tax && order.totalAmount && order.totalAmount > 0) {
+              // Calculate this item's proportion of total order
+              const itemProportion = finalPricePerUnit / (order.totalAmount - order.tax);
+              taxAmount = Number(order.tax) * itemProportion;
+            }
+
+            item.refundAmount = finalPricePerUnit + taxAmount;
+            item.formattedRefund = `₹${item.refundAmount.toFixed(2)}`;
+
+            // Store tax details for display
+            item.taxAmount = taxAmount;
+            item.formattedTaxAmount = `₹${taxAmount.toFixed(2)}`;
+          } else {
+            // No refund for COD cancellations or unpaid orders
+            item.refundAmount = 0;
+            item.formattedRefund = null;
+            item.taxAmount = 0;
+            item.formattedTaxAmount = null;
           }
-
-          item.refundAmount = finalPricePerUnit + taxAmount;
-          item.formattedRefund = `₹${item.refundAmount.toFixed(2)}`;
-
-          // Store tax details for display
-          item.taxAmount = taxAmount;
-          item.formattedTaxAmount = `₹${taxAmount.toFixed(2)}`;
         }
 
       } else {
@@ -217,20 +233,36 @@ const getOrderDetails = async (req, res) => {
 
         // Handle refund amount for cancelled/returned items
         if (item.status === 'Cancelled' || item.status === 'Returned') {
-          // Calculate tax proportion for this item
-          let taxAmount = 0;
-          if (order.tax && order.totalAmount && order.totalAmount > 0) {
-            // Calculate this item's proportion of total order
-            const itemProportion = discountedPrice / (order.totalAmount - order.tax);
-            taxAmount = Number(order.tax) * itemProportion;
+          // **FIX: Only show refund for items that actually get wallet refunds**
+          const shouldShowRefund = (
+            // For COD orders: only show refund if order was delivered (return scenario)
+            (order.paymentMethod === 'COD' && order.orderStatus === 'Delivered' && item.status === 'Returned') ||
+            // For paid orders: always show refund for cancelled/returned items
+            (order.paymentMethod !== 'COD' && (order.paymentStatus === 'Paid' || order.paymentStatus === 'Partially Refunded'))
+          );
+
+          if (shouldShowRefund) {
+            // Calculate tax proportion for this item
+            let taxAmount = 0;
+            if (order.tax && order.totalAmount && order.totalAmount > 0) {
+              // Calculate this item's proportion of total order
+              const itemProportion = discountedPrice / (order.totalAmount - order.tax);
+              taxAmount = Number(order.tax) * itemProportion;
+            }
+
+            item.refundAmount = discountedPrice + taxAmount;
+            item.formattedRefund = `₹${item.refundAmount.toFixed(2)}`;
+
+            // Store tax details for display
+            item.taxAmount = taxAmount;
+            item.formattedTaxAmount = `₹${taxAmount.toFixed(2)}`;
+          } else {
+            // No refund for COD cancellations or unpaid orders
+            item.refundAmount = 0;
+            item.formattedRefund = null;
+            item.taxAmount = 0;
+            item.formattedTaxAmount = null;
           }
-
-          item.refundAmount = discountedPrice + taxAmount;
-          item.formattedRefund = `₹${item.refundAmount.toFixed(2)}`;
-
-          // Store tax details for display
-          item.taxAmount = taxAmount;
-          item.formattedTaxAmount = `₹${taxAmount.toFixed(2)}`;
         }
       }
 
@@ -255,14 +287,20 @@ const getOrderDetails = async (req, res) => {
         totals.couponDiscount += item.totalCouponSavings;
 
         if (item.status === 'Cancelled' || item.status === 'Returned') {
-          totals.totalRefunded += item.refundAmount;
+          // Only add to total refunded if there's actually a refund amount
+          if (item.refundAmount && item.refundAmount > 0) {
+            totals.totalRefunded += item.refundAmount;
+          }
         }
       } else {
         totals.subtotal += item.totalOriginalPrice;
         totals.offerDiscount += (item.totalOriginalPrice - item.totalDiscountedPrice);
 
         if (item.status === 'Cancelled' || item.status === 'Returned') {
-          totals.totalRefunded += item.refundAmount;
+          // Only add to total refunded if there's actually a refund amount
+          if (item.refundAmount && item.refundAmount > 0) {
+            totals.totalRefunded += item.refundAmount;
+          }
         }
       }
     });
@@ -359,6 +397,7 @@ const getOrderDetails = async (req, res) => {
           }) : 'N/A',
         message: `Order has been ${order.orderStatus.toLowerCase()}`,
         completed: true,
+        // Only show refund amount if there's actually a refund (not for COD cancellations)
         refundAmount: order.formattedTotalRefunded
       });
     }
@@ -587,19 +626,27 @@ const updateOrderStatus = async (req, res) => {
       }
     } else if (status === "Cancelled") {
       order.cancelledAt = now
-      // If order is cancelled, payment status should reflect as "Failed" for COD
+      // Handle payment status based on payment method and current status
       if (order.paymentMethod === "COD") {
-        order.paymentStatus = "Failed"
+        order.paymentStatus = "Failed" // COD cancelled = no payment needed
       } else if (order.paymentStatus === "Paid") {
-        order.paymentStatus = "Refund Initiated"
+        order.paymentStatus = "Refund Initiated" // Paid orders get refund initiated
+      } else if (order.paymentStatus === "Pending") {
+        order.paymentStatus = "Failed" // Pending online payments become failed
       }
     } else if (status === "Returned") {
       order.returnedAt = now
-      // For COD orders, if returned, payment status should be "Refunded" (assuming payment was collected)
-      if (order.paymentMethod === "COD" && order.paymentStatus === "Paid") {
-        order.paymentStatus = "Refunded"
+      // Handle payment status based on payment method and current status
+      if (order.paymentMethod === "COD") {
+        if (order.paymentStatus === "Paid") {
+          order.paymentStatus = "Refund Processing" // COD delivered then returned
+        } else {
+          order.paymentStatus = "Failed" // COD not delivered yet
+        }
       } else if (order.paymentStatus === "Paid") {
-        order.paymentStatus = "Refund Processing"
+        order.paymentStatus = "Refund Processing" // Paid orders get refund processing
+      } else if (order.paymentStatus === "Pending") {
+        order.paymentStatus = "Failed" // Pending online payments become failed
       }
     }
 
@@ -694,13 +741,29 @@ const updateItemStatus = async (req, res) => {
       }
     }
 
-    // Update payment status if needed
+    // Update payment status based on payment method and item status changes
     if (status === "Cancelled" || status === "Returned") {
-      if (order.paymentStatus === "Paid") {
+      if (order.paymentMethod === "COD") {
+        // COD payment status logic
         if (!hasActiveItems) {
-          order.paymentStatus = status === "Cancelled" ? "Refund Initiated" : "Refund Processing";
-        } else {
-          order.paymentStatus = "Partially Refunded";
+          // All items cancelled/returned
+          if (order.paymentStatus === "Paid") {
+            order.paymentStatus = status === "Cancelled" ? "Failed" : "Refund Processing";
+          } else {
+            order.paymentStatus = "Failed";
+          }
+        }
+        // For partial cancellations/returns, keep existing status
+      } else {
+        // Online payment methods (Wallet, Razorpay, etc.)
+        if (order.paymentStatus === "Paid") {
+          if (!hasActiveItems) {
+            order.paymentStatus = status === "Cancelled" ? "Refund Initiated" : "Refund Processing";
+          } else {
+            order.paymentStatus = "Partially Refunded";
+          }
+        } else if (order.paymentStatus === "Pending" && !hasActiveItems) {
+          order.paymentStatus = "Failed";
         }
       }
     }

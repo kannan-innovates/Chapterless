@@ -354,6 +354,107 @@ const calculateFinalItemPrice = (item, order = null) => {
   }
 };
 
+/**
+ * Unified price calculation for consistent pricing across all modules
+ * @param {Object} item - The order item
+ * @param {Object} order - The order object
+ * @returns {Object} - Standardized price breakdown
+ */
+const getUnifiedPriceBreakdown = (item, order = null) => {
+  try {
+    const quantity = item.quantity || 1;
+
+    // 1. Original price (base price before any discounts)
+    const originalPrice = item.price || item.priceAtAddition || 0;
+    const originalTotal = originalPrice * quantity;
+
+    // 2. Price after offer discount
+    const discountedPrice = item.discountedPrice || originalPrice;
+    const offerDiscount = originalPrice - discountedPrice;
+    const offerDiscountTotal = offerDiscount * quantity;
+    const priceAfterOffer = discountedPrice * quantity;
+
+    // 3. Coupon discount (if applicable)
+    let couponDiscount = 0;
+    let couponProportion = 0;
+
+    if (item.priceBreakdown && item.priceBreakdown.couponDiscount) {
+      couponDiscount = item.priceBreakdown.couponDiscount;
+      couponProportion = item.priceBreakdown.couponProportion || 0;
+    } else if (item.couponDiscount) {
+      couponDiscount = item.couponDiscount;
+      couponProportion = item.couponProportion || 0;
+    }
+
+    // 4. Final price after all discounts
+    const finalPrice = priceAfterOffer - couponDiscount;
+
+    // 5. Tax calculation (proportional to item's contribution)
+    let taxAmount = 0;
+    if (order && order.tax && order.total) {
+      // Calculate item's proportion of the order total (excluding tax)
+      const orderSubtotal = order.total - order.tax;
+      if (orderSubtotal > 0) {
+        const itemProportion = finalPrice / orderSubtotal;
+        taxAmount = order.tax * itemProportion;
+      }
+    }
+
+    // 6. Final total including tax
+    const finalTotal = finalPrice + taxAmount;
+
+    return {
+      originalPrice,
+      originalTotal,
+      discountedPrice,
+      offerDiscount,
+      offerDiscountTotal,
+      priceAfterOffer,
+      couponDiscount,
+      couponProportion,
+      finalPrice,
+      taxAmount,
+      finalTotal,
+      quantity,
+      // Formatted values for display
+      formattedOriginalPrice: `₹${originalPrice.toFixed(2)}`,
+      formattedOriginalTotal: `₹${originalTotal.toFixed(2)}`,
+      formattedDiscountedPrice: `₹${discountedPrice.toFixed(2)}`,
+      formattedOfferDiscount: `₹${offerDiscount.toFixed(2)}`,
+      formattedPriceAfterOffer: `₹${priceAfterOffer.toFixed(2)}`,
+      formattedCouponDiscount: `₹${couponDiscount.toFixed(2)}`,
+      formattedFinalPrice: `₹${finalPrice.toFixed(2)}`,
+      formattedTaxAmount: `₹${taxAmount.toFixed(2)}`,
+      formattedFinalTotal: `₹${finalTotal.toFixed(2)}`
+    };
+  } catch (error) {
+    console.error('Error in getUnifiedPriceBreakdown:', error);
+    return {
+      originalPrice: 0,
+      originalTotal: 0,
+      discountedPrice: 0,
+      offerDiscount: 0,
+      offerDiscountTotal: 0,
+      priceAfterOffer: 0,
+      couponDiscount: 0,
+      couponProportion: 0,
+      finalPrice: 0,
+      taxAmount: 0,
+      finalTotal: 0,
+      quantity: item.quantity || 1,
+      formattedOriginalPrice: '₹0.00',
+      formattedOriginalTotal: '₹0.00',
+      formattedDiscountedPrice: '₹0.00',
+      formattedOfferDiscount: '₹0.00',
+      formattedPriceAfterOffer: '₹0.00',
+      formattedCouponDiscount: '₹0.00',
+      formattedFinalPrice: '₹0.00',
+      formattedTaxAmount: '₹0.00',
+      formattedFinalTotal: '₹0.00'
+    };
+  }
+};
+
 module.exports = {
   getActiveOfferForProduct,
   calculateDiscount,
@@ -363,5 +464,6 @@ module.exports = {
   getOfferPriority,
   calculateProportionalCouponDiscount,
   getItemPriceDetails,
-  calculateFinalItemPrice
+  calculateFinalItemPrice,
+  getUnifiedPriceBreakdown
 }

@@ -27,37 +27,7 @@ function validatePincode(pincode) {
   return cleanPincode.length === 6 && /^\d+$/.test(cleanPincode);
 }
 
-// Validate card number
-function validateCardNumber(cardNumber) {
-  const cleanCardNumber = cardNumber.replace(/\D/g, "");
-  return cleanCardNumber.length === 16 && /^\d+$/.test(cleanCardNumber);
-}
 
-// Validate expiry date
-function validateExpiryDate(expiryDate) {
-  if (!/^\d{2}\/\d{2}$/.test(expiryDate)) return false;
-
-  const [month, year] = expiryDate.split("/").map((part) => parseInt(part, 10));
-  const currentDate = new Date();
-  const currentYear = currentDate.getFullYear() % 100;
-  const currentMonth = currentDate.getMonth() + 1;
-
-  if (month < 1 || month > 12) return false;
-  if (year < currentYear) return false;
-  if (year === currentYear && month < currentMonth) return false;
-
-  return true;
-}
-
-// Validate CVV
-function validateCVV(cvv) {
-  return /^\d{3}$/.test(cvv);
-}
-
-// Validate UPI ID
-function validateUPI(upiId) {
-  return /^[a-zA-Z0-9._-]+@[a-zA-Z0-9]+$/.test(upiId);
-}
 
 // Validate address form
 function validateAddressForm(formData) {

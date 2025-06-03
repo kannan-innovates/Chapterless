@@ -146,11 +146,20 @@ const getOrders = async (req, res) => {
           ['Placed', 'Processing'].includes(order.orderStatus)
         );
 
-        // Check if item can be returned
-        if (order.orderStatus === 'Delivered' && item.status === 'Active') {
-          const deliveredDate = order.deliveredAt || order.updatedAt;
-          const returnPeriod = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
-          item.canBeReturned = (Date.now() - deliveredDate <= returnPeriod);
+        // Check if item can be returned - enhanced logic
+        if ((order.orderStatus === 'Delivered' ||
+             order.orderStatus === 'Partially Cancelled' ||
+             order.orderStatus === 'Partially Returned') &&
+            item.status === 'Active') {
+
+          const deliveredDate = order.deliveredAt;
+          if (deliveredDate) {
+            const returnPeriod = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
+            const timeRemaining = returnPeriod - (Date.now() - deliveredDate.getTime());
+            item.canBeReturned = timeRemaining > 0;
+          } else {
+            item.canBeReturned = false;
+          }
         } else {
           item.canBeReturned = false;
         }
@@ -268,13 +277,42 @@ const getOrderDetails = async (req, res) => {
         ['Placed', 'Processing'].includes(order.orderStatus)
       );
 
-      // Check if item can be returned
-      if (order.orderStatus === 'Delivered' && item.status === 'Active') {
-        const deliveredDate = order.deliveredAt || order.updatedAt;
-        const returnPeriod = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
-        item.canBeReturned = (Date.now() - deliveredDate <= returnPeriod);
+      // Check if item can be returned - enhanced logic
+      if ((order.orderStatus === 'Delivered' ||
+           order.orderStatus === 'Partially Cancelled' ||
+           order.orderStatus === 'Partially Returned') &&
+          item.status === 'Active') {
+
+        const deliveredDate = order.deliveredAt;
+        if (deliveredDate) {
+          const returnPeriod = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
+          const timeRemaining = returnPeriod - (Date.now() - deliveredDate.getTime());
+
+          item.canBeReturned = timeRemaining > 0;
+
+          if (item.canBeReturned) {
+            const daysRemaining = Math.ceil(timeRemaining / (24 * 60 * 60 * 1000));
+            item.returnTimeRemaining = daysRemaining;
+            item.returnDeadline = new Date(deliveredDate.getTime() + returnPeriod).toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric'
+            });
+          } else {
+            const daysSinceDelivery = Math.floor((Date.now() - deliveredDate.getTime()) / (24 * 60 * 60 * 1000));
+            item.returnExpiredDays = daysSinceDelivery - 7;
+          }
+        } else {
+          item.canBeReturned = false;
+          item.returnNotEligibleReason = 'Order not yet delivered';
+        }
       } else {
         item.canBeReturned = false;
+        if (item.status !== 'Active') {
+          item.returnNotEligibleReason = `Item is ${item.status.toLowerCase()}`;
+        } else if (order.orderStatus !== 'Delivered') {
+          item.returnNotEligibleReason = 'Order must be delivered first';
+        }
       }
     }
 
@@ -1098,14 +1136,21 @@ const cancelOrder = async (req, res) => {
       }
     }
 
-    // If payment was made, process refund to wallet
-    if (order.paymentStatus === 'Paid' || order.paymentStatus === 'Partially Refunded') {
+    // Handle payment status based on payment method and current status
+    if (order.paymentMethod === 'COD') {
+      // For COD orders, set payment status to 'Failed' since no payment was made
+      order.paymentStatus = 'Failed';
+    } else if (order.paymentStatus === 'Paid' || order.paymentStatus === 'Partially Refunded') {
+      // For paid orders (Wallet, Razorpay, etc.), process refund to wallet
       const refundSuccess = await processCancelRefund(userId, order);
       if (refundSuccess) {
         order.paymentStatus = 'Refunded';
       } else {
         order.paymentStatus = 'Refund Failed';
       }
+    } else {
+      // For unpaid online orders, set to 'Failed'
+      order.paymentStatus = 'Failed';
     }
 
     await order.save();
@@ -1201,8 +1246,16 @@ const cancelOrderItem = async (req, res) => {
       userId: userId
     });
 
-    // Allow refunds for both 'Paid' and 'Partially Refunded' orders
-    if (order.paymentStatus === 'Paid' || order.paymentStatus === 'Partially Refunded') {
+    // Handle payment status based on payment method and current status
+    if (order.paymentMethod === 'COD') {
+      // For COD orders, update payment status appropriately
+      if (!hasActiveItems) {
+        order.paymentStatus = 'Failed'; // All items cancelled, no payment needed
+        console.log('✅ COD order fully cancelled - payment status set to Failed');
+      }
+      // For partial cancellations, keep payment status as 'Pending'
+    } else if (order.paymentStatus === 'Paid' || order.paymentStatus === 'Partially Refunded') {
+      // For paid orders (Wallet, Razorpay, etc.), process refund to wallet
       console.log('💰 Processing cancellation refund...');
       const refundSuccess = await processCancelRefund(userId, order, orderItem._id);
       console.log('💰 Refund result:', refundSuccess);
@@ -1271,21 +1324,39 @@ const returnOrder = async (req, res) => {
 
     // Check if order can be returned
     if (order.orderStatus !== 'Delivered' &&
-        !order.orderStatus.includes('Partially')) {
+        order.orderStatus !== 'Partially Cancelled' &&
+        order.orderStatus !== 'Partially Returned') {
       return res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
-        message: `Order cannot be returned in ${order.orderStatus} status`
+        message: `Order cannot be returned in ${order.orderStatus} status. Only delivered orders can be returned.`
       });
     }
 
-    // Check if return is within allowed time period (e.g., 7 days)
-    const deliveredDate = order.deliveredAt || order.updatedAt;
-    const returnPeriod = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
-
-    if (Date.now() - deliveredDate > returnPeriod) {
-      return res.status(400).json({
+    // Check if return is within allowed time period (7 days from delivery)
+    const deliveredDate = order.deliveredAt;
+    if (!deliveredDate) {
+      return res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
-        message: 'Return period has expired'
+        message: 'Order must be delivered before it can be returned.'
+      });
+    }
+
+    const returnPeriod = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
+    const daysSinceDelivery = Math.floor((Date.now() - deliveredDate.getTime()) / (24 * 60 * 60 * 1000));
+
+    if (Date.now() - deliveredDate.getTime() > returnPeriod) {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        success: false,
+        message: `Return period has expired. Returns are only allowed within 7 days of delivery. Your order was delivered ${daysSinceDelivery} days ago.`
+      });
+    }
+
+    // Check if there are any active items to return
+    const activeItems = order.items.filter(item => item.status === 'Active');
+    if (activeItems.length === 0) {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        success: false,
+        message: 'No active items found to return. All items have already been cancelled or returned.'
       });
     }
 
@@ -1356,22 +1427,32 @@ const returnOrderItem = async (req, res) => {
       return res.status(HttpStatus.NOT_FOUND).json({ success: false, message: 'Order not found' });
     }
 
-    // Check if order can be returned - simplified
-    if (order.orderStatus !== 'Delivered') {
+    // Check if order can be returned
+    if (order.orderStatus !== 'Delivered' &&
+        order.orderStatus !== 'Partially Cancelled' &&
+        order.orderStatus !== 'Partially Returned') {
       return res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
-        message: `Items in this order cannot be returned in ${order.orderStatus} status`
+        message: `Items cannot be returned when order is in ${order.orderStatus} status. Only delivered orders can be returned.`
       });
     }
 
-    // Check if return is within allowed time period (e.g., 7 days)
-    const deliveredDate = order.deliveredAt || order.updatedAt;
-    const returnPeriod = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
-
-    if (Date.now() - deliveredDate > returnPeriod) {
+    // Check if return is within allowed time period (7 days from delivery)
+    const deliveredDate = order.deliveredAt;
+    if (!deliveredDate) {
       return res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
-        message: 'Return period has expired'
+        message: 'Order must be delivered before items can be returned.'
+      });
+    }
+
+    const returnPeriod = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
+    const daysSinceDelivery = Math.floor((Date.now() - deliveredDate.getTime()) / (24 * 60 * 60 * 1000));
+
+    if (Date.now() - deliveredDate.getTime() > returnPeriod) {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        success: false,
+        message: `Return period has expired. Returns are only allowed within 7 days of delivery. Your order was delivered ${daysSinceDelivery} days ago.`
       });
     }
 

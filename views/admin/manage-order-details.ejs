@@ -1024,8 +1024,8 @@
                               <span class="price-total"><%= item.formattedTotalFinalPrice %></span>
                             </div>
 
-                            <!-- Refund Info -->
-                            <% if (item.status === 'Cancelled' || item.status === 'Returned') { %>
+                            <!-- Refund Info - Only show if there's actually a refund amount -->
+                            <% if ((item.status === 'Cancelled' || item.status === 'Returned') && item.formattedRefund) { %>
                               <div class="refund-info">
                                 <i class="bi bi-arrow-return-right"></i>
                                 <span class="refund-label">Refunded:</span>
@@ -1056,7 +1056,8 @@
                               </span>
                             </div>
 
-                            <% if (item.status === 'Cancelled' || item.status === 'Returned') { %>
+                            <!-- Refund Info - Only show if there's actually a refund amount -->
+                            <% if ((item.status === 'Cancelled' || item.status === 'Returned') && item.formattedRefund) { %>
                               <div class="refund-info">
                                 <i class="bi bi-arrow-return-right"></i>
                                 <span class="refund-label">Refunded:</span>
@@ -1186,16 +1187,12 @@
               <span class="total-value"><%= order.formattedTotal %></span>
             </div>
 
-            <!-- Refund Information -->
+            <!-- Refund Information - Only count items that actually have refunds -->
             <%
               let totalRefunded = 0;
               order.items.forEach(item => {
-                if (item.status === 'Cancelled' || item.status === 'Returned') {
-                  if (item.priceBreakdown && item.priceBreakdown.finalPrice) {
-                    totalRefunded += item.priceBreakdown.finalPrice * item.quantity;
-                  } else {
-                    totalRefunded += item.discountedPrice * item.quantity;
-                  }
+                if ((item.status === 'Cancelled' || item.status === 'Returned') && item.refundAmount && item.refundAmount > 0) {
+                  totalRefunded += item.refundAmount;
                 }
               });
             %>
