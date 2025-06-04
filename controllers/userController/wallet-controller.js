@@ -66,8 +66,9 @@ const calculateItemRefundAmount = (item, order) => {
     // **FIX: Use unified price calculation for consistency**
     const priceBreakdown = getUnifiedPriceBreakdown(item, order);
 
-    // For refunds, we use the final total (including tax) that the customer actually paid
-    const refundAmount = priceBreakdown.finalTotal;
+    // **CRITICAL FIX: For refunds, use the finalPrice (what customer actually paid) NOT finalTotal (which adds tax)**
+    // The finalPrice already includes all discounts and is what's displayed to the customer
+    const refundAmount = priceBreakdown.finalPrice;
 
     console.log('Unified refund calculation:', {
       originalPrice: priceBreakdown.originalPrice,
@@ -77,7 +78,8 @@ const calculateItemRefundAmount = (item, order) => {
       finalPrice: priceBreakdown.finalPrice,
       taxAmount: priceBreakdown.taxAmount,
       finalTotal: priceBreakdown.finalTotal,
-      refundAmount
+      refundAmount: refundAmount,
+      note: 'Using finalPrice (not finalTotal) for accurate refund'
     });
 
     return Number(refundAmount.toFixed(2));
@@ -106,15 +108,49 @@ const processCancelRefund = async (userId, order, itemId = null) => {
       return false;
     }
 
-    // **FIX: Skip wallet refunds for COD cancellations since no payment was made**
+    // **FIX: Handle COD cancellations based on delivery status**
     if (order.paymentMethod === 'COD') {
-      console.log('COD order cancellation detected - no wallet refund needed (no payment made yet)');
-      return true; // Return success but don't process wallet refund
+      // For COD cancellations, check if order was delivered (cash was collected)
+      const wasDeliveredAndPaid = order.paymentStatus === 'Paid' ||
+                                  order.orderStatus === 'Delivered' ||
+                                  order.deliveredAt ||
+                                  order.items.some(item =>
+                                    item.status === 'Delivered' ||
+                                    item.status === 'Returned' ||
+                                    (item.status === 'Active' && order.orderStatus === 'Delivered')
+                                  );
+
+      if (!wasDeliveredAndPaid) {
+        console.log('COD order cancellation before delivery - no wallet refund needed (no payment made yet)');
+        return true; // Return success but don't process wallet refund
+      } else {
+        console.log('COD order cancellation after delivery - customer paid cash, wallet refund needed');
+        // Continue with refund processing since customer paid cash upon delivery
+      }
     }
 
-    // Only process refunds for paid orders (Wallet, Razorpay, etc.)
-    if (order.paymentStatus !== 'Paid' && order.paymentStatus !== 'Partially Refunded') {
-      console.log('Order payment status does not allow refunds, skipping refund:', order.paymentStatus);
+    // **FIX: Enhanced payment validation for all payment methods including COD post-delivery**
+    const isPaymentValid = order.paymentStatus === 'Paid' ||
+                          order.paymentStatus === 'Partially Refunded' ||
+                          // For COD: if delivered, consider it paid (cash was collected)
+                          (order.paymentMethod === 'COD' && (
+                            order.paymentStatus === 'Paid' ||
+                            order.orderStatus === 'Delivered' ||
+                            order.deliveredAt ||
+                            order.items.some(item =>
+                              item.status === 'Delivered' ||
+                              item.status === 'Returned' ||
+                              (item.status === 'Active' && order.orderStatus === 'Delivered')
+                            )
+                          ));
+
+    if (!isPaymentValid) {
+      console.log('Order payment status does not allow refunds, skipping refund:', {
+        paymentStatus: order.paymentStatus,
+        paymentMethod: order.paymentMethod,
+        orderStatus: order.orderStatus,
+        deliveredAt: order.deliveredAt
+      });
       return true; // Return true as this is not an error condition
     }
 
@@ -314,27 +350,49 @@ const processReturnRefund = async (userId, order, itemId = null) => {
 
     // **FIX: For COD orders, only process wallet refunds if order was delivered (cash was paid)**
     if (order.paymentMethod === 'COD') {
-      // Check if order was delivered (meaning customer paid cash)
-      if (order.orderStatus !== 'Delivered') {
-        console.log('COD order not delivered yet - no wallet refund needed (no cash payment made)');
+      // For COD returns, check if payment was made (order was delivered and cash collected)
+      // Check multiple indicators that the order was delivered and cash was collected
+      const wasDeliveredAndPaid = order.paymentStatus === 'Paid' ||
+                                  order.orderStatus === 'Delivered' ||
+                                  order.deliveredAt ||
+                                  // Check if any items were delivered (for partial deliveries)
+                                  order.items.some(item =>
+                                    item.status === 'Delivered' ||
+                                    item.status === 'Returned' ||
+                                    // For items that are still "Active" but order is delivered
+                                    (item.status === 'Active' && order.orderStatus === 'Delivered')
+                                  );
+
+      if (!wasDeliveredAndPaid) {
+        console.log('COD order not delivered/paid yet - no wallet refund needed (no cash payment made)');
         return true; // Return success but don't process wallet refund
       } else {
-        console.log('COD order was delivered - customer paid cash, wallet refund needed for return');
+        console.log('COD order was delivered and paid - customer paid cash, wallet refund needed for return');
         // Continue with refund processing since customer paid cash upon delivery
       }
     }
 
-    // Only process refunds for paid orders (including partially refunded ones)
-    // Exception: COD orders that were delivered are considered "paid" (cash payment)
+    // **FIX: Improved payment validation logic for all payment methods**
     const isPaymentValid = order.paymentStatus === 'Paid' ||
                           order.paymentStatus === 'Partially Refunded' ||
-                          (order.paymentMethod === 'COD' && order.orderStatus === 'Delivered');
+                          // For COD: if delivered, consider it paid (cash was collected)
+                          (order.paymentMethod === 'COD' && (
+                            order.paymentStatus === 'Paid' ||
+                            order.orderStatus === 'Delivered' ||
+                            order.deliveredAt ||
+                            order.items.some(item =>
+                              item.status === 'Delivered' ||
+                              item.status === 'Returned' ||
+                              (item.status === 'Active' && order.orderStatus === 'Delivered')
+                            )
+                          ));
 
     if (!isPaymentValid) {
       console.log('Order payment status does not allow refunds, skipping refund:', {
         paymentStatus: order.paymentStatus,
         paymentMethod: order.paymentMethod,
-        orderStatus: order.orderStatus
+        orderStatus: order.orderStatus,
+        deliveredAt: order.deliveredAt
       });
       return true; // Return true as this is not an error condition
     }

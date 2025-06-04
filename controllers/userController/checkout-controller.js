@@ -236,9 +236,13 @@ const getCheckout = async (req, res) => {
     const walletBalance = wallet ? wallet.balance : 0;
     const isWalletEligible = walletBalance >= totalAmount;
 
+    // Calculate original subtotal for frontend reference
+    const originalSubtotal = cartItems.reduce((sum, item) => sum + item.quantity * item.originalPrice, 0);
+
     res.render("checkout", {
       cartItems,
       subtotal,
+      originalSubtotal, // Add original subtotal for frontend calculations
       tax,
       totalAmount,
       cartCount,
@@ -1060,7 +1064,7 @@ const placeOrder = async (req, res) => {
 
     for (const item of cartItems) {
       // Get active offer for this product
-      const offer = await getActiveOfferForProduct(item.product._id, item.product.category);
+      const offer = await getActiveOfferForProduct(item.product._id, item.product.category, item.priceAtAddition);
       let itemPrice = item.priceAtAddition;
       let itemDiscount = 0;
       let offerTitle = null;
@@ -1177,8 +1181,8 @@ const placeOrder = async (req, res) => {
       delete req.session.appliedCoupon;
     }
 
-    const tax = (subtotal - couponDiscount) * 0.08;
-    const total = subtotal - couponDiscount + tax;
+    const tax = (subtotal - offerDiscount - couponDiscount) * 0.08;
+    const total = subtotal - offerDiscount - couponDiscount + tax;
 
     // Validate COD eligibility (orders above ₹1000 are not eligible for COD)
     if (paymentMethod === "COD" && total > 1000) {
@@ -1190,7 +1194,7 @@ const placeOrder = async (req, res) => {
     if (paymentMethod === "Wallet") {
       wallet = await Wallet.findOne({ userId });
       if (!wallet) {
-        throw new Error("Wallet not found. Please add money to your wallet first.");
+        throw new Error("Wallet not found. Wallet balance is credited through refunds and referral bonuses.");
       }
 
       if (wallet.balance < total) {
@@ -1414,6 +1418,86 @@ const placeOrder = async (req, res) => {
   }
 };
 
+// Get current cart total for wallet validation
+const getCurrentCartTotal = async (req, res) => {
+  try {
+    const userId = req.session.user_id;
+    if (!userId) {
+      return res.status(HttpStatus.UNAUTHORIZED).json({ success: false, message: "Please log in" });
+    }
+
+    // Get cart
+    const cart = await Cart.findOne({ user: userId }).populate("items.product");
+    if (!cart || !cart.items.length) {
+      return res.status(HttpStatus.BAD_REQUEST).json({ success: false, message: "Cart is empty" });
+    }
+
+    // Filter valid cart items
+    const cartItems = cart.items.filter((item) => item.product && item.product.isListed && !item.product.isDeleted);
+
+    if (!cartItems.length) {
+      return res.status(HttpStatus.BAD_REQUEST).json({ success: false, message: "No valid items in cart" });
+    }
+
+    // Calculate subtotal with offers
+    let subtotal = 0;
+    let offerDiscount = 0;
+
+    for (const item of cartItems) {
+      const originalItemTotal = item.priceAtAddition * item.quantity;
+      subtotal += originalItemTotal;
+
+      // Get active offer for this product
+      const offer = await getActiveOfferForProduct(item.product._id, item.product.category, item.priceAtAddition);
+      if (offer) {
+        const { discountAmount, finalPrice } = calculateDiscount(offer, item.priceAtAddition);
+        offerDiscount += discountAmount * item.quantity;
+        item.discountedPrice = finalPrice; // Set discounted price for coupon calculation
+      } else {
+        item.discountedPrice = item.priceAtAddition; // No offer, use original price
+      }
+    }
+
+    // Check for applied coupon
+    let couponDiscount = 0;
+    if (req.session.appliedCoupon) {
+      const coupon = await Coupon.findById(req.session.appliedCoupon);
+      if (coupon && coupon.isActive && new Date() <= coupon.expiryDate) {
+        const amountAfterOffers = subtotal - offerDiscount;
+        if (amountAfterOffers >= coupon.minOrderAmount) {
+          const couponResult = calculateProportionalCouponDiscount(coupon, cartItems);
+          couponDiscount = couponResult.totalDiscount;
+        }
+      }
+    }
+
+    // Calculate final total
+    const tax = (subtotal - offerDiscount - couponDiscount) * 0.08;
+    const total = subtotal - offerDiscount - couponDiscount + tax;
+
+    // Get wallet balance
+    const wallet = await Wallet.findOne({ userId });
+    const walletBalance = wallet ? wallet.balance : 0;
+
+    res.status(HttpStatus.OK).json({
+      success: true,
+      data: {
+        subtotal,
+        offerDiscount,
+        couponDiscount,
+        tax,
+        total,
+        walletBalance,
+        isWalletEligible: walletBalance >= total
+      }
+    });
+
+  } catch (error) {
+    console.error("Error getting current cart total:", error);
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ success: false, message: "Internal server error" });
+  }
+};
+
 module.exports = {
   getCheckout,
   placeOrder,
@@ -1422,5 +1506,6 @@ module.exports = {
   addAddress,
   createRazorpayOrder,
   verifyRazorpayPayment,
-  handlePaymentFailure
+  handlePaymentFailure,
+  getCurrentCartTotal
 };

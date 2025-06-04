@@ -78,27 +78,77 @@ router.get("/auth/google/callback", googleController.googleController);
 router.get('/shopPage', shopPageController.shopPage);
 router.get('/products/:id', productDetailsController.productDetails);
 
-// Cart routes
+// Cart routes with validation
+const cartValidator = require('../../validators/user/cart-validator');
 router.get('/cart', isAuthenticated, cartController.getCart);
-router.post('/cart/add', cartController.addToCart);
-router.post('/cart/update', isAuthenticated, cartController.updateCartItem);
-router.post('/cart/remove', isAuthenticated, cartController.removeCartItem);
-router.post('/cart/clear', isAuthenticated, cartController.clearCart);
+router.post('/cart/add',
+  cartValidator.validateAddToCart,
+  cartValidator.validateCartItemOwnership,
+  cartController.addToCart
+);
+router.post('/cart/update',
+  isAuthenticated,
+  cartValidator.validateUpdateCartQuantity,
+  cartValidator.validateCartItemOwnership,
+  cartController.updateCartItem
+);
+router.post('/cart/remove',
+  isAuthenticated,
+  cartValidator.validateRemoveFromCart,
+  cartValidator.validateCartItemOwnership,
+  cartController.removeCartItem
+);
+router.post('/cart/clear',
+  isAuthenticated,
+  cartValidator.validateCartCheckout,
+  cartController.clearCart
+);
 
-// Wishlist routes
+// Wishlist routes with validation
+const wishlistValidator = require('../../validators/user/wishlist-validator');
 router.get('/wishlist', isAuthenticated, wishlistController.getWishlist);
-router.post('/wishlist/toggle', wishlistController.toggleWishlist);
-router.post('/wishlist/add-all-to-cart', isAuthenticated, wishlistController.addAllToCart);
-router.post('/wishlist/clear', isAuthenticated, wishlistController.clearWishlist);
+router.post('/wishlist/toggle',
+  wishlistValidator.validateWishlistToggle,
+  wishlistValidator.validateWishlistAuth,
+  wishlistController.toggleWishlist
+);
+router.post('/wishlist/add-all-to-cart',
+  isAuthenticated,
+  wishlistValidator.validateWishlistAuth,
+  wishlistController.addAllToCart
+);
+router.post('/wishlist/clear',
+  isAuthenticated,
+  wishlistValidator.validateClearWishlist,
+  wishlistController.clearWishlist
+);
 
-// Search route
-router.get('/search', searchProducts);
+// Search route with validation
+const searchValidator = require('../../validators/user/search-validator');
+router.get('/search', searchValidator.validateSearchQuery, searchProducts);
 
-// Profile Routes
+// Profile Routes with validation
+const profileValidator = require('../../validators/user/profile-validator');
 router.get('/profile', isAuthenticated, profileController.getProfile);
-router.patch('/profile', isAuthenticated, profileController.updateProfile);
-router.post('/profile/image', isAuthenticated, profileController.uploadProfileImage);
-router.post('/request-email-update', isAuthenticated, profileController.requestEmailUpdate);
+router.patch('/profile',
+  isAuthenticated,
+  profileValidator.validateProfileUpdate,
+  profileValidator.validateProfileAuth,
+  profileValidator.validateDateOfBirth,
+  profileController.updateProfile
+);
+router.post('/profile/image',
+  isAuthenticated,
+  profileValidator.validateProfileImage,
+  profileValidator.validateProfileAuth,
+  profileController.uploadProfileImage
+);
+router.post('/request-email-update',
+  isAuthenticated,
+  profileValidator.validateEmailUpdate,
+  profileValidator.validateProfileAuth,
+  profileController.requestEmailUpdate
+);
 router.get('/verify-email-otp', isAuthenticated, preventBackButtonCache, (req, res) => res.render('profile-otp'));
 router.post('/verify-email-otp', isAuthenticated, profileController.verifyEmailOtp);
 router.post('/resend-email-otp', isAuthenticated, profileController.resendEmailOtp);
@@ -113,6 +163,7 @@ router.get('/address/:id', isAuthenticated, addressController.getAddressById);
 
 // Checkout routes
 router.get('/checkout', isAuthenticated, checkoutController.getCheckout);
+router.get('/checkout/current-total', isAuthenticated, checkoutController.getCurrentCartTotal);
 router.post('/checkout/place-order', isAuthenticated, checkoutController.placeOrder);
 router.post("/checkout/apply-coupon", isAuthenticated, checkoutController.applyCoupon);
 router.post("/checkout/remove-coupon", isAuthenticated, checkoutController.removeCoupon);

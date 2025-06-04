@@ -3,7 +3,7 @@ const OTP = require("../../models/otpSchema"); // Import the new OTP model
 const Referral = require("../../models/referralSchema");
 const Wallet = require("../../models/walletSchema");
 const hashPasswordHelper = require("../../helpers/hash");
-const sendOtpEmail = require("../../helpers/sendMail");
+const { sendOtpEmail } = require("../../helpers/sendMail");
 const { validateBasicOtp, validateOtpSession } = require("../../validators/user/basic-otp-validator");
 const { HttpStatus } = require("../../helpers/status-code");
 
@@ -81,7 +81,7 @@ const postSignup = async (req, res) => {
     try {
       await sendOtpEmail(trimmedEmail, trimmedName, otp, subjectContent,"signup");
     } catch (err) {
-
+      console.error("Email sending error:", err.message);
       return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
         success: false,
         message: "Failed to send OTP email. Please try again later.",

@@ -513,15 +513,16 @@ const updateOrderStatus = async (req, res) => {
     }
 
     // Define allowed status transitions for the entire order
+    // Note: Returns are handled separately through the Return Management system
     const statusTransitions = {
       Placed: ["Processing", "Cancelled"],
       Processing: ["Shipped", "Cancelled"],
       Shipped: ["Delivered"],
-      Delivered: ["Returned"],
+      Delivered: [], // Delivered is terminal - returns handled separately
       Cancelled: [],
       Returned: [],
       "Partially Cancelled": ["Shipped", "Cancelled"],
-      "Partially Returned": ["Returned"],
+      "Partially Returned": [],
     }
 
     // Check if the transition is allowed
@@ -554,22 +555,8 @@ const updateOrderStatus = async (req, res) => {
             ).catch(err => console.error("Error updating product stock:", err));
           }
         })
-      } else if (status === "Returned") {
-        // Return all remaining active items
-        order.items.forEach((item) => {
-          if (item.status === "Active") {
-            item.status = "Returned"
-            item.returnedAt = now
-            item.returnReason = "Returned by admin"
-
-            // Restore product stock
-            Product.findByIdAndUpdate(
-              item.product,
-              { $inc: { stock: item.quantity } }
-            ).catch(err => console.error("Error updating product stock:", err));
-          }
-        })
       }
+      // Note: Return handling removed - returns are handled through Return Management system
     } else if (status === "Cancelled") {
       // Cancel all items
       order.items.forEach((item) => {
@@ -585,22 +572,8 @@ const updateOrderStatus = async (req, res) => {
           ).catch(err => console.error("Error updating product stock:", err));
         }
       })
-    } else if (status === "Returned") {
-      // Return all items
-      order.items.forEach((item) => {
-        if (item.status === "Active") {
-          item.status = "Returned"
-          item.returnedAt = now
-          item.returnReason = "Returned by admin"
-
-          // Restore product stock
-          Product.findByIdAndUpdate(
-            item.product,
-            { $inc: { stock: item.quantity } }
-          ).catch(err => console.error("Error updating product stock:", err));
-        }
-      })
     }
+    // Note: Return handling removed - returns are handled through Return Management system
 
     // Set the appropriate timestamp based on the new status
     if (status === "Processing") {
@@ -634,21 +607,8 @@ const updateOrderStatus = async (req, res) => {
       } else if (order.paymentStatus === "Pending") {
         order.paymentStatus = "Failed" // Pending online payments become failed
       }
-    } else if (status === "Returned") {
-      order.returnedAt = now
-      // Handle payment status based on payment method and current status
-      if (order.paymentMethod === "COD") {
-        if (order.paymentStatus === "Paid") {
-          order.paymentStatus = "Refund Processing" // COD delivered then returned
-        } else {
-          order.paymentStatus = "Failed" // COD not delivered yet
-        }
-      } else if (order.paymentStatus === "Paid") {
-        order.paymentStatus = "Refund Processing" // Paid orders get refund processing
-      } else if (order.paymentStatus === "Pending") {
-        order.paymentStatus = "Failed" // Pending online payments become failed
-      }
     }
+    // Note: Return status handling removed - returns are handled through Return Management system
 
     await order.save()
 
@@ -714,55 +674,79 @@ const updateItemStatus = async (req, res) => {
       );
     }
 
-    // Update overall order status based on item statuses
+    // **FIX: Enhanced order status calculation for admin item updates**
     const hasActiveItems = order.items.some(i => i.status === "Active");
     const hasCancelledItems = order.items.some(i => i.status === "Cancelled");
     const hasReturnedItems = order.items.some(i => i.status === "Returned");
+    const hasReturnRequestedItems = order.items.some(i => i.status === "Return Requested");
 
-    if (!hasActiveItems) {
-      // If no active items remain
-      if (hasReturnedItems && !hasCancelledItems) {
-        order.orderStatus = "Returned";
-      } else if (hasCancelledItems && !hasReturnedItems) {
-        order.orderStatus = "Cancelled";
-      } else if (hasReturnedItems && hasCancelledItems) {
-        // Both returned and cancelled items exist
-        order.orderStatus = "Partially Returned";
-      }
-    } else {
-      // Some active items remain
+    if (!hasActiveItems && !hasReturnRequestedItems) {
+      // No active or return requested items remain
       if (hasReturnedItems && hasCancelledItems) {
-        // Both returned and cancelled items exist
-        order.orderStatus = "Partially Returned";
+        order.orderStatus = "Partially Returned"; // Mixed returned and cancelled
       } else if (hasReturnedItems) {
-        order.orderStatus = "Partially Returned";
+        order.orderStatus = "Returned"; // All returned
+      } else if (hasCancelledItems) {
+        order.orderStatus = "Cancelled"; // All cancelled
+      }
+    } else if (hasCancelledItems || hasReturnedItems) {
+      // Some items cancelled/returned, some still active or return requested
+      if (hasCancelledItems && hasReturnedItems) {
+        order.orderStatus = "Partially Returned"; // Mixed scenario
       } else if (hasCancelledItems) {
         order.orderStatus = "Partially Cancelled";
+      } else if (hasReturnedItems) {
+        order.orderStatus = "Partially Returned";
       }
+    } else if (hasReturnRequestedItems && hasActiveItems) {
+      // Some items have return requests, some are still active
+      order.orderStatus = "Partially Return Requested";
+    } else if (hasReturnRequestedItems && !hasActiveItems) {
+      // All remaining items have return requests
+      order.orderStatus = "Return Requested";
     }
+    // If only active items remain, keep the current order status
 
-    // Update payment status based on payment method and item status changes
+    // **FIX: Enhanced payment status handling for all edge cases**
     if (status === "Cancelled" || status === "Returned") {
       if (order.paymentMethod === "COD") {
-        // COD payment status logic
-        if (!hasActiveItems) {
-          // All items cancelled/returned
-          if (order.paymentStatus === "Paid") {
-            order.paymentStatus = status === "Cancelled" ? "Failed" : "Refund Processing";
+        // COD payment status logic based on delivery status
+        const wasDeliveredAndPaid = order.paymentStatus === "Paid" ||
+                                    order.orderStatus === "Delivered" ||
+                                    order.deliveredAt ||
+                                    order.items.some(item =>
+                                      item.status === "Delivered" ||
+                                      item.status === "Returned" ||
+                                      (item.status === "Active" && order.orderStatus === "Delivered")
+                                    );
+
+        if (wasDeliveredAndPaid) {
+          // COD was delivered, customer paid cash
+          if (!hasActiveItems && !hasReturnRequestedItems) {
+            // All items processed
+            order.paymentStatus = status === "Cancelled" ? "Refunded" : "Refunded";
           } else {
-            order.paymentStatus = "Failed";
-          }
-        }
-        // For partial cancellations/returns, keep existing status
-      } else {
-        // Online payment methods (Wallet, Razorpay, etc.)
-        if (order.paymentStatus === "Paid") {
-          if (!hasActiveItems) {
-            order.paymentStatus = status === "Cancelled" ? "Refund Initiated" : "Refund Processing";
-          } else {
+            // Partial processing
             order.paymentStatus = "Partially Refunded";
           }
-        } else if (order.paymentStatus === "Pending" && !hasActiveItems) {
+        } else {
+          // COD not delivered yet
+          if (!hasActiveItems && !hasReturnRequestedItems) {
+            order.paymentStatus = "Failed"; // No payment was made
+          }
+          // For partial operations before delivery, keep existing status
+        }
+      } else {
+        // Online payment methods (Wallet, Razorpay, etc.)
+        if (order.paymentStatus === "Paid" || order.paymentStatus === "Partially Refunded") {
+          if (!hasActiveItems && !hasReturnRequestedItems) {
+            // All items processed
+            order.paymentStatus = "Refunded";
+          } else {
+            // Partial processing
+            order.paymentStatus = "Partially Refunded";
+          }
+        } else if (order.paymentStatus === "Pending" && !hasActiveItems && !hasReturnRequestedItems) {
           order.paymentStatus = "Failed";
         }
       }

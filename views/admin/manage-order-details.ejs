@@ -1222,85 +1222,13 @@
             </h5>
             <div class="alert alert-info mb-3">
               <i class="ri-information-line"></i>
-              Review and approve/reject return requests. Approved returns will refund the amount to customer's wallet.
+              This order has return requests. Please use the Return Management page to review and process them.
             </div>
-            <div class="table-container">
-              <table>
-                <thead>
-                  <tr>
-                    <th style="width: 40%;">Product</th>
-                    <th>Price</th>
-                    <th>Qty</th>
-                    <th>Return Reason</th>
-                    <th>Requested Date</th>
-                    <th style="text-align: center;">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <% order.items.forEach(item => { %>
-                    <% if (item.status === 'Return Requested') { %>
-                      <tr>
-                        <td>
-                          <div class="product-cell">
-                            <img
-                              src="<%= item.image || '/api/placeholder/60/75' %>"
-                              alt="<%= item.title || 'Product' %>"
-                              class="product-image"
-                              onerror="this.src='/api/placeholder/60/75'"
-                            >
-                            <div class="product-details">
-                              <div class="product-name"><%= item.title || 'Unknown Product' %></div>
-                              <div class="product-meta">
-                                <div>ISBN: <%= item.isbn || 'N/A' %></div>
-                                <div>Author: <%= item.author || 'N/A' %></div>
-                              </div>
-                            </div>
-                          </div>
-                        </td>
-                        <td class="price-cell">
-                          <%= item.formattedPrice %>
-                        </td>
-                        <td><%= item.quantity || 1 %></td>
-                        <td>
-                          <div class="return-reason">
-                            <%= item.returnReason || 'No reason provided' %>
-                          </div>
-                        </td>
-                        <td>
-                          <% if (item.returnRequestedAt) { %>
-                            <small class="text-muted">
-                              <%= new Date(item.returnRequestedAt).toLocaleDateString('en-US', {
-                                year: 'numeric',
-                                month: 'short',
-                                day: 'numeric'
-                              }) %>
-                            </small>
-                          <% } else { %>
-                            <small class="text-muted">N/A</small>
-                          <% } %>
-                        </td>
-                        <td style="text-align: center;">
-                          <div class="return-actions">
-                            <a href="/admin/return-management/<%= order._id %>" class="btn btn-info btn-sm"
-                               title="Manage this return request">
-                              <i class="ri-external-link-line"></i> Manage Return
-                            </a>
-                          </div>
-                        </td>
-                      </tr>
-                    <% } %>
-                  <% }) %>
-                </tbody>
-              </table>
+            <div class="d-flex justify-content-center">
+              <a href="/admin/return-management/<%= order._id %>" class="btn btn-primary">
+                <i class="ri-external-link-line"></i> Go to Return Management
+              </a>
             </div>
-
-            <% if (order.orderStatus === 'Return Requested') { %>
-              <div class="d-flex justify-content-end mt-3">
-                <a href="/admin/return-management/<%= order._id %>" class="btn btn-info">
-                  <i class="ri-external-link-line"></i> Manage All Returns
-                </a>
-              </div>
-            <% } %>
           </div>
         </div>
         <% } %>
@@ -1338,11 +1266,9 @@
           } else if (currentStatus === 'Shipped') {
             allowedStatuses = ['Delivered'];
           } else if (currentStatus === 'Delivered') {
-            allowedStatuses = ['Return Requested'];
-          } else if (currentStatus === 'Return Requested') {
-            allowedStatuses = ['Returned', 'Delivered'];
+            allowedStatuses = []; // Delivered is terminal - returns handled separately
           } else {
-            allowedStatuses = []; // Cancelled or Returned are terminal states
+            allowedStatuses = []; // Cancelled, Returned, Return Requested are terminal states
           }
 
           // If no transitions are allowed, show a message
@@ -1428,81 +1354,8 @@
           });
         });
 
-        // Item return functionality (cancel functionality removed)
-        document.querySelectorAll('.btn-return-item').forEach(button => {
-          button.addEventListener('click', function() {
-            const itemId = this.getAttribute('data-item-id');
-            const orderId = this.getAttribute('data-order-id');
-
-            Swal.fire({
-              title: 'Return Item',
-              html: `
-                <div class="form-group">
-                  <label class="form-label">Reason for Return</label>
-                  <textarea class="form-textarea" id="reason" placeholder="Please provide a reason..."></textarea>
-                </div>
-              `,
-              showCancelButton: true,
-              confirmButtonColor: '#6f42c1',
-              cancelButtonColor: '#d1d5db',
-              confirmButtonText: 'Return Item',
-              cancelButtonText: 'Close',
-              customClass: {
-                popup: 'update-status-modal'
-              },
-              focusConfirm: false,
-              preConfirm: () => {
-                const reason = document.getElementById('reason').value;
-                if (!reason.trim()) {
-                  Swal.showValidationMessage('Please provide a reason');
-                  return false;
-                }
-                return { reason };
-              }
-            }).then((result) => {
-              if (result.isConfirmed) {
-                // Send AJAX request to update item status
-                fetch(`/admin/orders/${orderId}/items/${itemId}/status`, {
-                  method: 'PUT',
-                  headers: {
-                    'Content-Type': 'application/json',
-                  },
-                  body: JSON.stringify({
-                    status: 'Returned',
-                    reason: result.value.reason
-                  }),
-                })
-                .then(response => {
-                  if (!response.ok) {
-                    throw new Error('Failed to return item');
-                  }
-                  return response.json();
-                })
-                .then(data => {
-                  // Success message
-                  Swal.fire({
-                    title: 'Item Updated!',
-                    text: data.message,
-                    icon: 'success',
-                    confirmButtonColor: '#6f42c1'
-                  }).then(() => {
-                    // Refresh the page to show updated status
-                    window.location.reload();
-                  });
-                })
-                .catch(error => {
-                  // Error message
-                  Swal.fire({
-                    title: 'Error!',
-                    text: error.message,
-                    icon: 'error',
-                    confirmButtonColor: '#6f42c1'
-                  });
-                });
-              }
-            });
-          });
-        });
+        // Note: Return functionality removed from order details page
+        // Returns are now handled exclusively through the Return Management page
 
         // Invoice download button
         document.querySelectorAll('.btn-outline').forEach(btn => {
@@ -1528,223 +1381,8 @@
           });
         });
 
-        // Add event listeners for return approval buttons
-        document.querySelectorAll('.approve-return-btn').forEach(button => {
-          button.addEventListener('click', function() {
-            const itemId = this.getAttribute('data-item-id');
-            const orderId = this.getAttribute('data-order-id');
-
-            Swal.fire({
-              title: 'Approve Return',
-              text: 'Are you sure you want to approve this return request?',
-              icon: 'question',
-              showCancelButton: true,
-              confirmButtonColor: '#28a745',
-              cancelButtonColor: '#d33',
-              confirmButtonText: 'Yes, approve it!'
-            }).then((result) => {
-              if (result.isConfirmed) {
-                // Send AJAX request to approve return
-                fetch(`/admin/orders/${orderId}/return-request`, {
-                  method: 'PUT',
-                  headers: {
-                    'Content-Type': 'application/json',
-                  },
-                  body: JSON.stringify({
-                    itemId: itemId,
-                    approved: true
-                  }),
-                })
-                .then(response => {
-                  if (!response.ok) {
-                    throw new Error('Failed to approve return');
-                  }
-                  return response.json();
-                })
-                .then(data => {
-                  Swal.fire({
-                    title: 'Approved!',
-                    text: data.message,
-                    icon: 'success',
-                    confirmButtonColor: '#6f42c1'
-                  }).then(() => {
-                    window.location.reload();
-                  });
-                })
-                .catch(error => {
-                  Swal.fire({
-                    title: 'Error!',
-                    text: error.message,
-                    icon: 'error',
-                    confirmButtonColor: '#6f42c1'
-                  });
-                });
-              }
-            });
-          });
-        });
-
-        // Reject single return
-        document.querySelectorAll('.reject-return-btn').forEach(button => {
-          button.addEventListener('click', function() {
-            const itemId = this.getAttribute('data-item-id');
-            const orderId = this.getAttribute('data-order-id');
-
-            Swal.fire({
-              title: 'Reject Return',
-              text: 'Are you sure you want to reject this return request?',
-              icon: 'warning',
-              showCancelButton: true,
-              confirmButtonColor: '#d33',
-              cancelButtonColor: '#3085d6',
-              confirmButtonText: 'Yes, reject it!'
-            }).then((result) => {
-              if (result.isConfirmed) {
-                // Send AJAX request to reject return
-                fetch(`/admin/orders/${orderId}/return-request`, {
-                  method: 'PUT',
-                  headers: {
-                    'Content-Type': 'application/json',
-                  },
-                  body: JSON.stringify({
-                    itemId: itemId,
-                    approved: false
-                  }),
-                })
-                .then(response => {
-                  if (!response.ok) {
-                    throw new Error('Failed to reject return');
-                  }
-                  return response.json();
-                })
-                .then(data => {
-                  Swal.fire({
-                    title: 'Rejected!',
-                    text: data.message,
-                    icon: 'success',
-                    confirmButtonColor: '#6f42c1'
-                  }).then(() => {
-                    window.location.reload();
-                  });
-                })
-                .catch(error => {
-                  Swal.fire({
-                    title: 'Error!',
-                    text: error.message,
-                    icon: 'error',
-                    confirmButtonColor: '#6f42c1'
-                  });
-                });
-              }
-            });
-          });
-        });
-
-        // Approve all returns
-        const approveAllBtn = document.querySelector('.approve-all-returns-btn');
-        if (approveAllBtn) {
-          approveAllBtn.addEventListener('click', function() {
-            const orderId = this.getAttribute('data-order-id');
-
-            Swal.fire({
-              title: 'Approve All Returns',
-              text: 'Are you sure you want to approve all return requests for this order?',
-              icon: 'question',
-              showCancelButton: true,
-              confirmButtonColor: '#28a745',
-              cancelButtonColor: '#d33',
-              confirmButtonText: 'Yes, approve all!'
-            }).then((result) => {
-              if (result.isConfirmed) {
-                // Send AJAX request to approve all returns
-                fetch(`/admin/orders/${orderId}/return-request`, {
-                  method: 'PUT',
-                  headers: {
-                    'Content-Type': 'application/json',
-                  },
-                  body: JSON.stringify({ approved: true }),
-                })
-                .then(response => {
-                  if (!response.ok) {
-                    throw new Error('Failed to approve returns');
-                  }
-                  return response.json();
-                })
-                .then(data => {
-                  Swal.fire({
-                    title: 'Approved!',
-                    text: data.message,
-                    icon: 'success',
-                    confirmButtonColor: '#6f42c1'
-                  }).then(() => {
-                    window.location.reload();
-                  });
-                })
-                .catch(error => {
-                  Swal.fire({
-                    title: 'Error!',
-                    text: error.message,
-                    icon: 'error',
-                    confirmButtonColor: '#6f42c1'
-                  });
-                });
-              }
-            });
-          });
-        }
-
-        // Reject all returns
-        const rejectAllBtn = document.querySelector('.reject-all-returns-btn');
-        if (rejectAllBtn) {
-          rejectAllBtn.addEventListener('click', function() {
-            const orderId = this.getAttribute('data-order-id');
-
-            Swal.fire({
-              title: 'Reject All Returns',
-              text: 'Are you sure you want to reject all return requests for this order?',
-              icon: 'warning',
-              showCancelButton: true,
-              confirmButtonColor: '#d33',
-              cancelButtonColor: '#3085d6',
-              confirmButtonText: 'Yes, reject all!'
-            }).then((result) => {
-              if (result.isConfirmed) {
-                // Send AJAX request to reject all returns
-                fetch(`/admin/orders/${orderId}/return-request`, {
-                  method: 'PUT',
-                  headers: {
-                    'Content-Type': 'application/json',
-                  },
-                  body: JSON.stringify({ approved: false }),
-                })
-                .then(response => {
-                  if (!response.ok) {
-                    throw new Error('Failed to reject returns');
-                  }
-                  return response.json();
-                })
-                .then(data => {
-                  Swal.fire({
-                    title: 'Rejected!',
-                    text: data.message,
-                    icon: 'success',
-                    confirmButtonColor: '#6f42c1'
-                  }).then(() => {
-                    window.location.reload();
-                  });
-                })
-                .catch(error => {
-                  Swal.fire({
-                    title: 'Error!',
-                    text: error.message,
-                    icon: 'error',
-                    confirmButtonColor: '#6f42c1'
-                  });
-                });
-              }
-            });
-          });
-        }
+        // Return approval/rejection functionality removed
+        // All return management is now handled in the dedicated Return Management page
       });
     </script>
   </body>

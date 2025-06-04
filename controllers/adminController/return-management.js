@@ -229,7 +229,17 @@ const processReturnRequest = async (req, res) => {
 
       if (order.paymentMethod === 'COD') {
         // For COD orders, only process refund if order was delivered (cash was paid)
-        if (order.paymentStatus === 'Paid') {
+        // Check multiple indicators that the order was delivered and cash was collected
+        const wasDeliveredAndPaid = order.paymentStatus === 'Paid' ||
+                                    order.orderStatus === 'Delivered' ||
+                                    order.deliveredAt ||
+                                    order.items.some(item =>
+                                      item.status === 'Delivered' ||
+                                      item.status === 'Returned' ||
+                                      (item.status === 'Active' && order.orderStatus === 'Delivered')
+                                    );
+
+        if (wasDeliveredAndPaid) {
           const refundSuccess = await processReturnRefund(order.user, order);
           if (refundSuccess) {
             refundProcessed = true;
@@ -242,7 +252,7 @@ const processReturnRequest = async (req, res) => {
             });
           }
         } else {
-          console.log('COD order not paid yet - no refund needed');
+          console.log('COD order not delivered/paid yet - no refund needed');
           refundProcessed = true; // No refund needed, but mark as processed
         }
       } else {
@@ -356,7 +366,17 @@ const bulkProcessReturns = async (req, res) => {
 
           if (order.paymentMethod === 'COD') {
             // For COD orders, only process refund if order was delivered (cash was paid)
-            if (order.paymentStatus === 'Paid') {
+            // Check multiple indicators that the order was delivered and cash was collected
+            const wasDeliveredAndPaid = order.paymentStatus === 'Paid' ||
+                                        order.orderStatus === 'Delivered' ||
+                                        order.deliveredAt ||
+                                        order.items.some(item =>
+                                          item.status === 'Delivered' ||
+                                          item.status === 'Returned' ||
+                                          (item.status === 'Active' && order.orderStatus === 'Delivered')
+                                        );
+
+            if (wasDeliveredAndPaid) {
               const refundSuccess = await processReturnRefund(order.user, order);
               if (refundSuccess) {
                 refundProcessed = true;

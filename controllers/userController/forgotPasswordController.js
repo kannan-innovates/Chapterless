@@ -1,7 +1,7 @@
 const User = require("../../models/userSchema");
 const OTP = require("../../models/otpSchema");
 const hashPasswordHelper = require("../../helpers/hash");
-const sendOtpEmail = require("../../helpers/sendMail");
+const { sendOtpEmail } = require("../../helpers/sendMail");
 
 const {
   validateBasicOtp,

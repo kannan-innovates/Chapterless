@@ -1136,10 +1136,30 @@ const cancelOrder = async (req, res) => {
       }
     }
 
-    // Handle payment status based on payment method and current status
+    // **FIX: Enhanced payment status handling for full order cancellation**
     if (order.paymentMethod === 'COD') {
-      // For COD orders, set payment status to 'Failed' since no payment was made
-      order.paymentStatus = 'Failed';
+      // For COD orders, handle based on delivery status
+      const wasDeliveredAndPaid = order.paymentStatus === 'Paid' ||
+                                  order.orderStatus === 'Delivered' ||
+                                  order.deliveredAt ||
+                                  order.items.some(item =>
+                                    item.status === 'Delivered' ||
+                                    item.status === 'Returned' ||
+                                    (item.status === 'Active' && order.orderStatus === 'Delivered')
+                                  );
+
+      if (wasDeliveredAndPaid) {
+        // COD order was delivered, customer paid cash - process wallet refund
+        const refundSuccess = await processCancelRefund(userId, order);
+        if (refundSuccess) {
+          order.paymentStatus = 'Refunded';
+        } else {
+          order.paymentStatus = 'Refund Failed';
+        }
+      } else {
+        // COD order not delivered yet - no payment was made
+        order.paymentStatus = 'Failed';
+      }
     } else if (order.paymentStatus === 'Paid' || order.paymentStatus === 'Partially Refunded') {
       // For paid orders (Wallet, Razorpay, etc.), process refund to wallet
       const refundSuccess = await processCancelRefund(userId, order);
@@ -1221,14 +1241,32 @@ const cancelOrderItem = async (req, res) => {
     orderItem.cancelledAt = new Date();
     orderItem.cancellationReason = reason;
 
-    // Update overall order status - simplified logic
+    // **FIX: Enhanced order status calculation for mixed item statuses**
     const hasActiveItems = order.items.some(item => item.status === 'Active');
+    const hasCancelledItems = order.items.some(item => item.status === 'Cancelled');
+    const hasReturnedItems = order.items.some(item => item.status === 'Returned');
+    const hasReturnRequestedItems = order.items.some(item => item.status === 'Return Requested');
 
-    if (!hasActiveItems) {
-      // All items are cancelled
-      order.orderStatus = 'Cancelled';
+    if (!hasActiveItems && !hasReturnRequestedItems) {
+      // No active or return requested items remain
+      if (hasReturnedItems && hasCancelledItems) {
+        order.orderStatus = 'Partially Returned'; // Mixed returned and cancelled
+      } else if (hasReturnedItems) {
+        order.orderStatus = 'Returned'; // All returned
+      } else if (hasCancelledItems) {
+        order.orderStatus = 'Cancelled'; // All cancelled
+      }
+    } else if (hasCancelledItems || hasReturnedItems) {
+      // Some items cancelled/returned, some still active
+      if (hasCancelledItems && hasReturnedItems) {
+        order.orderStatus = 'Partially Returned'; // Mixed scenario
+      } else if (hasCancelledItems) {
+        order.orderStatus = 'Partially Cancelled';
+      } else if (hasReturnedItems) {
+        order.orderStatus = 'Partially Returned';
+      }
     }
-    // If there are still active items, keep the current order status
+    // If only active items remain, keep the current order status
 
     // Restore product stock
     await Product.findByIdAndUpdate(
@@ -1246,32 +1284,61 @@ const cancelOrderItem = async (req, res) => {
       userId: userId
     });
 
-    // Handle payment status based on payment method and current status
+    // **FIX: Enhanced payment status handling for all scenarios**
     if (order.paymentMethod === 'COD') {
-      // For COD orders, update payment status appropriately
-      if (!hasActiveItems) {
-        order.paymentStatus = 'Failed'; // All items cancelled, no payment needed
-        console.log('✅ COD order fully cancelled - payment status set to Failed');
+      // For COD orders, handle based on delivery status
+      const wasDeliveredAndPaid = order.paymentStatus === 'Paid' ||
+                                  order.orderStatus === 'Delivered' ||
+                                  order.deliveredAt ||
+                                  order.items.some(item =>
+                                    item.status === 'Delivered' ||
+                                    item.status === 'Returned' ||
+                                    (item.status === 'Active' && order.orderStatus === 'Delivered')
+                                  );
+
+      if (wasDeliveredAndPaid) {
+        // COD order was delivered, customer paid cash - process wallet refund
+        console.log('💰 Processing COD cancellation refund (post-delivery)...');
+        const refundSuccess = await processCancelRefund(userId, order, orderItem._id);
+        console.log('💰 COD Refund result:', refundSuccess);
+
+        if (refundSuccess) {
+          if (!hasActiveItems) {
+            order.paymentStatus = 'Refunded';
+            console.log('✅ COD order fully refunded to wallet');
+          } else {
+            order.paymentStatus = 'Partially Refunded';
+            console.log('✅ COD order partially refunded to wallet');
+          }
+        } else {
+          console.error(`❌ Failed to process COD refund for cancelled item ${orderItem._id}`);
+          order.paymentStatus = 'Refund Failed';
+        }
+      } else {
+        // COD order not delivered yet - no refund needed
+        if (!hasActiveItems) {
+          order.paymentStatus = 'Failed'; // All items cancelled, no payment needed
+          console.log('✅ COD order fully cancelled before delivery - no refund needed');
+        }
+        // For partial cancellations before delivery, keep payment status as 'Pending'
       }
-      // For partial cancellations, keep payment status as 'Pending'
     } else if (order.paymentStatus === 'Paid' || order.paymentStatus === 'Partially Refunded') {
       // For paid orders (Wallet, Razorpay, etc.), process refund to wallet
-      console.log('💰 Processing cancellation refund...');
+      console.log('💰 Processing online payment cancellation refund...');
       const refundSuccess = await processCancelRefund(userId, order, orderItem._id);
-      console.log('💰 Refund result:', refundSuccess);
+      console.log('💰 Online payment refund result:', refundSuccess);
 
       if (refundSuccess) {
         if (!hasActiveItems) {
           order.paymentStatus = 'Refunded';
-          console.log('✅ Order fully refunded');
+          console.log('✅ Online order fully refunded');
         } else {
           order.paymentStatus = 'Partially Refunded';
-          console.log('✅ Order partially refunded');
+          console.log('✅ Online order partially refunded');
         }
       } else {
-        // For cancellations, if refund fails, log error but don't set "Refund Processing"
         console.error(`❌ Failed to process refund for cancelled item ${orderItem._id} in order ${order._id}`);
-        // Keep the payment status as is and let the user contact support
+        order.paymentStatus = 'Refund Failed';
       }
     } else {
       console.log('⚠️ Order payment status does not allow refunds:', order.paymentStatus);
@@ -1475,16 +1542,21 @@ const returnOrderItem = async (req, res) => {
     orderItem.returnReason = reason;
     orderItem.returnRequestedAt = new Date();
 
-    // Check item statuses to determine order status - simplified
+    // **FIX: Enhanced return request status calculation**
     const hasActiveItems = order.items.some(item => item.status === 'Active');
     const hasReturnRequestedItems = order.items.some(item => item.status === 'Return Requested');
+    const hasCancelledItems = order.items.some(item => item.status === 'Cancelled');
+    const hasReturnedItems = order.items.some(item => item.status === 'Returned');
 
-    // Update order status based on item statuses
-    if (!hasActiveItems && hasReturnRequestedItems) {
-      // If all items are in return requested state
+    // Update order status based on comprehensive item status analysis
+    if (!hasActiveItems && hasReturnRequestedItems && !hasCancelledItems && !hasReturnedItems) {
+      // All items are in return requested state
       order.orderStatus = 'Return Requested';
+    } else if (hasReturnRequestedItems && (hasActiveItems || hasCancelledItems || hasReturnedItems)) {
+      // Mixed statuses with some return requests
+      order.orderStatus = 'Partially Return Requested';
     }
-    // If there are still active items, keep the order as delivered
+    // If there are still active items without return requests, keep the order as delivered
 
     await order.save();
 

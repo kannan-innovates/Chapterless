@@ -1,6 +1,6 @@
 const User = require("../../models/userSchema");
 const OTP = require("../../models/otpSchema");
-const sendOtpEmail = require("../../helpers/sendMail");
+const { sendOtpEmail } = require("../../helpers/sendMail");
 const upload = require("../../config/multer");
 const cloudinary = require("../../config/cloudinary");
 const path = require("path");

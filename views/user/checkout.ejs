@@ -535,9 +535,10 @@
                           <h6 class="mb-1">Available Balance</h6>
                           <h5 class="mb-0 fw-bold" id="walletBalanceDisplay">₹<%= walletBalance ? walletBalance.toFixed(2) : '0.00' %></h5>
                         </div>
-                        <a href="/wallet" class="btn btn-outline-dark btn-sm"
-                          >Add Money</a
-                        >
+                        <small class="text-muted">
+                          <i class="bi bi-info-circle me-1"></i>
+                          Credited via refunds & referrals
+                        </small>
                       </div>
 
                       <% if (isWalletEligible) { %>
@@ -788,7 +789,7 @@
         <div class="card-body p-4">
           <div class="summary-item d-flex justify-content-between mb-3">
             <span class="text-muted">Subtotal (<%= cartItems ? cartItems.length : 0 %> items)</span>
-            <span class="fw-medium" id="subtotal" data-value="<%= subtotal %>">₹<%= subtotal ? subtotal.toFixed(2) : '0.00' %></span>
+            <span class="fw-medium" id="subtotal" data-value="<%= originalSubtotal %>" data-after-offers="<%= subtotal %>">₹<%= originalSubtotal ? originalSubtotal.toFixed(2) : '0.00' %></span>
           </div>
 
           <% if (offerDiscount && offerDiscount > 0) { %>
@@ -2109,9 +2110,9 @@
               document.getElementById("couponDiscount").textContent = `-₹${discount}`;
 
               // Update total
-              const subtotal = parseFloat(document.getElementById("subtotal").getAttribute("data-value"));
-              const tax = parseFloat((subtotal - data.discount) * 0.08).toFixed(2);
-              const total = (subtotal - data.discount + parseFloat(tax)).toFixed(2);
+              const subtotalAfterOffers = parseFloat(document.getElementById("subtotal").getAttribute("data-after-offers"));
+              const tax = parseFloat((subtotalAfterOffers - data.discount) * 0.08).toFixed(2);
+              const total = (subtotalAfterOffers - data.discount + parseFloat(tax)).toFixed(2);
 
               document.getElementById("tax").textContent = `₹${tax}`;
               document.getElementById("totalAmount").textContent = `₹${total}`;
@@ -2398,14 +2399,33 @@
         } else if (paymentMethod === "razorpayPayment") {
           paymentMethodValue = "Razorpay";
         } else if (paymentMethod === "walletPayment") {
-          // Check wallet eligibility first
-          const totalAmount = parseFloat(document.getElementById("totalAmount").textContent.replace('₹', '').replace(',', ''));
-          const walletBalance = parseFloat(document.getElementById("walletBalanceDisplay").textContent.replace('₹', '').replace(',', ''));
+          // Get real-time total from backend to ensure accuracy
+          try {
+            const response = await fetch('/checkout/current-total');
+            const result = await response.json();
 
-          if (walletBalance < totalAmount) {
+            if (result.success) {
+              const { total, walletBalance, isWalletEligible } = result.data;
+
+              if (!isWalletEligible) {
+                Toast.fire({
+                  icon: "error",
+                  title: `Insufficient wallet balance. You need ₹${(total - walletBalance).toFixed(2)} more to complete this order.`,
+                });
+                return;
+              }
+            } else {
+              Toast.fire({
+                icon: "error",
+                title: "Unable to validate wallet balance. Please try again.",
+              });
+              return;
+            }
+          } catch (error) {
+            console.error('Error validating wallet balance:', error);
             Toast.fire({
               icon: "error",
-              title: `Insufficient wallet balance. You need ₹${(totalAmount - walletBalance).toFixed(2)} more.`,
+              title: "Unable to validate wallet balance. Please try again.",
             });
             return;
           }
