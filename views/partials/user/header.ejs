@@ -166,6 +166,31 @@
           margin-top: 0.5rem;
         }
       }
+
+      /* Navigation hover effects */
+      .nav-link {
+        transition: color 0.2s ease;
+        color: #6c757d;
+      }
+
+      .nav-link:hover {
+        color: #000 !important;
+      }
+
+      /* Active page indicator */
+      .nav-link.active {
+        color: #000 !important;
+        font-weight: 600 !important;
+      }
+
+      /* Brand hover effect */
+      .navbar-brand {
+        transition: color 0.2s ease;
+      }
+
+      .navbar-brand:hover {
+        color: #000;
+      }
     </style>
   </head>
   <body class="paper-texture">
@@ -193,9 +218,6 @@
             </li>
             <li class="nav-item mx-2">
               <a class="nav-link fw-medium" href="/shopPage">Shop</a>
-            </li>
-            <li class="nav-item mx-2">
-              <a class="nav-link fw-medium" href="/collections">Collections</a>
             </li>
             <li class="nav-item mx-2">
               <a class="nav-link fw-medium" href="/about">About</a>
@@ -378,6 +400,42 @@
             e.preventDefault();
           });
         });
+
+        // Active page highlighting
+        function setActiveNavLink() {
+          const currentPath = window.location.pathname;
+          const navLinks = document.querySelectorAll('.nav-link');
+
+          // Remove active class from all links
+          navLinks.forEach(link => link.classList.remove('active'));
+
+          // Add active class to current page link
+          navLinks.forEach(link => {
+            const linkPath = new URL(link.href).pathname;
+
+            // Exact match for home page
+            if (currentPath === '/' && linkPath === '/') {
+              link.classList.add('active');
+            }
+            // For other pages, check if current path starts with link path
+            else if (currentPath !== '/' && linkPath !== '/' && currentPath.startsWith(linkPath)) {
+              link.classList.add('active');
+            }
+            // Special cases for specific routes
+            else if (currentPath.includes('/products') && linkPath === '/shopPage') {
+              link.classList.add('active');
+            }
+            else if (currentPath === '/about' && linkPath === '/about') {
+              link.classList.add('active');
+            }
+            else if (currentPath === '/contact' && linkPath === '/contact') {
+              link.classList.add('active');
+            }
+          });
+        }
+
+        // Set active link on page load
+        setActiveNavLink();
       });
     </script>
   </body>

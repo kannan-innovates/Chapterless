@@ -1,0 +1,533 @@
+<%- include("../partials/user/header") %>
+
+<!-- Contact Hero Section -->
+<section class="contact-hero-section">
+  <div class="container">
+    <div class="hero-content text-white text-center">
+      <h1 class="display-4 fw-bold mb-4">Get In Touch</h1>
+      <p class="fs-5 mb-0">We're here to help you find your next great read</p>
+    </div>
+  </div>
+</section>
+
+<!-- Contact Form Section -->
+<section class="py-5 bg-white">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-lg-8">
+        <div class="contact-form-card bg-white shadow-sm">
+          <div class="row g-0">
+            <div class="col-md-6">
+              <div class="contact-info p-4 p-md-5 bg-dark text-white h-100">
+                <h3 class="fs-4 fw-bold mb-4">Let's Connect</h3>
+                <p class="mb-4 text-white-50">
+                  Whether you have questions about our curated collection, need book recommendations, or just want to share your reading journey with us.
+                </p>
+                
+                <div class="contact-item mb-4">
+                  <div class="d-flex align-items-center mb-2">
+                    <i class="ri-map-pin-line fs-5 me-3"></i>
+                    <h4 class="fs-6 fw-semibold mb-0">Visit Our Store</h4>
+                  </div>
+                  <p class="text-white-50 mb-0 ms-4">
+                    123 Literary Lane<br>
+                    Bookworm District<br>
+                    Kochi, Kerala 682001
+                  </p>
+                </div>
+
+                <div class="contact-item mb-4">
+                  <div class="d-flex align-items-center mb-2">
+                    <i class="ri-phone-line fs-5 me-3"></i>
+                    <h4 class="fs-6 fw-semibold mb-0">Call Us</h4>
+                  </div>
+                  <p class="text-white-50 mb-0 ms-4">+91 1234567890</p>
+                </div>
+
+                <div class="contact-item mb-4">
+                  <div class="d-flex align-items-center mb-2">
+                    <i class="ri-mail-line fs-5 me-3"></i>
+                    <h4 class="fs-6 fw-semibold mb-0">Email Us</h4>
+                  </div>
+                  <p class="text-white-50 mb-0 ms-4">hello@chapterless.com</p>
+                </div>
+
+                <div class="contact-item">
+                  <div class="d-flex align-items-center mb-2">
+                    <i class="ri-time-line fs-5 me-3"></i>
+                    <h4 class="fs-6 fw-semibold mb-0">Store Hours</h4>
+                  </div>
+                  <div class="text-white-50 ms-4">
+                    <p class="mb-1">Mon - Fri: 9:00 AM - 8:00 PM</p>
+                    <p class="mb-1">Saturday: 10:00 AM - 6:00 PM</p>
+                    <p class="mb-0">Sunday: 11:00 AM - 5:00 PM</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="col-md-6">
+              <div class="p-4 p-md-5">
+                <h3 class="fs-4 fw-bold mb-4">Send us a Message</h3>
+                <form id="contactForm" action="/contact" method="POST">
+                  <div class="mb-3">
+                    <label for="name" class="form-label fw-medium">Full Name</label>
+                    <input type="text" class="form-control contact-input" id="name" name="name" required>
+                    <div class="error-message" id="name-error"></div>
+                  </div>
+
+                  <div class="mb-3">
+                    <label for="email" class="form-label fw-medium">Email Address</label>
+                    <input type="email" class="form-control contact-input" id="email" name="email" required>
+                    <div class="error-message" id="email-error"></div>
+                  </div>
+
+                  <div class="mb-3">
+                    <label for="phone" class="form-label fw-medium">Phone Number</label>
+                    <input type="tel" class="form-control contact-input" id="phone" name="phone">
+                    <div class="error-message" id="phone-error"></div>
+                  </div>
+
+                  <div class="mb-3">
+                    <label for="subject" class="form-label fw-medium">Subject</label>
+                    <select class="form-select contact-input" id="subject" name="subject" required>
+                      <option value="">Choose a subject...</option>
+                      <option value="general">General Inquiry</option>
+                      <option value="order">Order Support</option>
+                      <option value="recommendation">Book Recommendation</option>
+                      <option value="feedback">Feedback</option>
+                      <option value="partnership">Partnership</option>
+                      <option value="other">Other</option>
+                    </select>
+                    <div class="error-message" id="subject-error"></div>
+                  </div>
+
+                  <div class="mb-4">
+                    <label for="message" class="form-label fw-medium">Message</label>
+                    <textarea class="form-control contact-input" id="message" name="message" rows="5" placeholder="Tell us how we can help you..." required></textarea>
+                    <div class="error-message" id="message-error"></div>
+                  </div>
+                  
+                  <button type="submit" class="btn btn-dark w-100 py-3 fw-medium">
+                    Send Message
+                    <i class="ri-send-plane-line ms-2"></i>
+                  </button>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ Section -->
+<section class="py-5 bg-light">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-lg-8">
+        <div class="text-center mb-5">
+          <h2 class="fs-1 fw-bold mb-3">Frequently Asked Questions</h2>
+          <p class="text-muted">Quick answers to common questions about Chapterless</p>
+        </div>
+        
+        <div class="accordion" id="faqAccordion">
+          <div class="accordion-item border-0 mb-3 shadow-sm">
+            <h2 class="accordion-header">
+              <button class="accordion-button collapsed fw-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">
+                How do you curate your book collection?
+              </button>
+            </h2>
+            <div id="faq1" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+              <div class="accordion-body text-muted">
+                Our curation process involves a team of literary experts who carefully select books based on quality, uniqueness, and emotional resonance. We focus on stories that have the power to find and connect with lost souls seeking meaningful narratives.
+              </div>
+            </div>
+          </div>
+          
+          <div class="accordion-item border-0 mb-3 shadow-sm">
+            <h2 class="accordion-header">
+              <button class="accordion-button collapsed fw-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">
+                Do you offer personalized book recommendations?
+              </button>
+            </h2>
+            <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+              <div class="accordion-body text-muted">
+                Yes! We offer personalized book recommendations based on your reading history, preferences, and current mood. Contact us with your interests, and our literary curators will suggest books that resonate with your soul.
+              </div>
+            </div>
+          </div>
+          
+          <div class="accordion-item border-0 mb-3 shadow-sm">
+            <h2 class="accordion-header">
+              <button class="accordion-button collapsed fw-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#faq3">
+                What are your shipping and return policies?
+              </button>
+            </h2>
+            <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+              <div class="accordion-body text-muted">
+                We offer free shipping on orders over ₹500 within India. All books can be returned within 30 days of purchase in original condition. We believe every book should find its right reader, so we're happy to help with exchanges.
+              </div>
+            </div>
+          </div>
+          
+          <div class="accordion-item border-0 mb-3 shadow-sm">
+            <h2 class="accordion-header">
+              <button class="accordion-button collapsed fw-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#faq4">
+                Do you host book events or reading sessions?
+              </button>
+            </h2>
+            <div id="faq4" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+              <div class="accordion-body text-muted">
+                Absolutely! We regularly host author readings, book club meetings, and literary discussions. Follow our newsletter and social media for updates on upcoming events where stories and souls connect.
+              </div>
+            </div>
+          </div>
+          
+          <div class="accordion-item border-0 shadow-sm">
+            <h2 class="accordion-header">
+              <button class="accordion-button collapsed fw-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#faq5">
+                Can I sell or trade my books with Chapterless?
+              </button>
+            </h2>
+            <div id="faq5" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+              <div class="accordion-body text-muted">
+                We have a selective book trade program for rare and exceptional titles that align with our curation philosophy. Contact us with details about the books you'd like to trade, and we'll let you know if they fit our collection.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Map Section -->
+<section class="py-5 bg-white">
+  <div class="container">
+    <div class="text-center mb-5">
+      <h2 class="fs-1 fw-bold mb-3">Find Our Store</h2>
+      <p class="text-muted">Visit us in the heart of Kochi's literary district</p>
+    </div>
+    
+    <div class="row justify-content-center">
+      <div class="col-lg-10">
+        <div class="map-container shadow-sm">
+          <iframe 
+            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d31445.344495741748!2d76.26496!3d9.9312!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3b080d514abec6bf%3A0xbd582caa5844192!2sKochi%2C%20Kerala%2C%20India!5e0!3m2!1sen!2sin!4v1234567890"
+            width="100%" 
+            height="400" 
+            style="border:0; border-radius: 0.5rem;" 
+            allowfullscreen="" 
+            loading="lazy" 
+            referrerpolicy="no-referrer-when-downgrade">
+          </iframe>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<%- include("../partials/user/footer") %>
+
+<style>
+.contact-hero-section {
+  background-image: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url("/assets/herosection.jpg");
+  background-size: cover;
+  background-position: center;
+  padding: 6rem 0;
+}
+
+.contact-form-card {
+  border-radius: 0.75rem;
+  overflow: hidden;
+  border: none;
+}
+
+.contact-input {
+  border: 2px solid #e5e5e5;
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+  transition: all 0.3s ease;
+}
+
+.contact-input:focus {
+  border-color: #000;
+  box-shadow: 0 0 0 0.2rem rgba(0, 0, 0, 0.1);
+}
+
+.contact-input.error {
+  border-color: #dc3545;
+  box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.1);
+}
+
+.error-message {
+  color: #dc3545;
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+  display: none;
+}
+
+.error-message.show {
+  display: block;
+}
+
+.contact-item {
+  position: relative;
+}
+
+.contact-item i {
+  color: #fff;
+}
+
+.accordion-button {
+  background-color: #fff;
+  border: none;
+  border-radius: 0.5rem !important;
+  padding: 1.25rem 1.5rem;
+}
+
+.accordion-button:not(.collapsed) {
+  background-color: #f8f9fa;
+  color: #000;
+  box-shadow: none;
+}
+
+.accordion-button:focus {
+  box-shadow: none;
+  border-color: transparent;
+}
+
+.accordion-button::after {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23000'%3e%3cpath fill-rule='evenodd' d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z'/%3e%3c/svg%3e");
+}
+
+.accordion-item {
+  border-radius: 0.5rem !important;
+}
+
+.accordion-body {
+  padding: 1.25rem 1.5rem;
+  line-height: 1.6;
+}
+
+.map-container {
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.btn-dark {
+  background-color: #000;
+  border-color: #000;
+  border-radius: 0.5rem;
+  transition: all 0.3s ease;
+}
+
+.btn-dark:hover {
+  background-color: #333;
+  border-color: #333;
+  transform: translateY(-2px);
+}
+
+@media (max-width: 768px) {
+  .contact-hero-section {
+    padding: 4rem 0;
+  }
+  
+  .contact-form-card .row {
+    flex-direction: column-reverse;
+  }
+  
+  .contact-info {
+    border-radius: 0 0 0.75rem 0.75rem !important;
+  }
+  
+  .accordion-button {
+    padding: 1rem;
+  }
+  
+  .accordion-body {
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .contact-hero-section {
+    padding: 3rem 0;
+  }
+  
+  .contact-hero-section h1 {
+    font-size: 2rem;
+  }
+  
+  .contact-hero-section p {
+    font-size: 1rem;
+  }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const contactForm = document.getElementById('contactForm');
+  
+  // Function to clear all error messages
+  function clearErrors() {
+    const errorMessages = contactForm.querySelectorAll('.error-message');
+    const inputs = contactForm.querySelectorAll('.contact-input');
+
+    errorMessages.forEach(error => {
+      error.classList.remove('show');
+      error.textContent = '';
+    });
+
+    inputs.forEach(input => {
+      input.classList.remove('error');
+    });
+  }
+
+  // Function to show specific field error
+  function showFieldError(fieldName, message) {
+    const field = contactForm.querySelector(`[name="${fieldName}"]`);
+    const errorElement = contactForm.querySelector(`#${fieldName}-error`);
+
+    if (field && errorElement) {
+      field.classList.add('error');
+      errorElement.textContent = message;
+      errorElement.classList.add('show');
+
+      // Scroll to first error (only if this is the first error being shown)
+      const existingErrors = contactForm.querySelectorAll('.error-message.show');
+      if (existingErrors.length === 0) {
+        setTimeout(() => {
+          field.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 100);
+      }
+    }
+  }
+
+  // Function to map server errors to specific fields
+  function displayValidationErrors(errors) {
+    clearErrors();
+
+    errors.forEach(error => {
+      const errorLower = error.toLowerCase();
+
+      if (errorLower.includes('name')) {
+        showFieldError('name', error);
+      } else if (errorLower.includes('email')) {
+        showFieldError('email', error);
+      } else if (errorLower.includes('phone')) {
+        showFieldError('phone', error);
+      } else if (errorLower.includes('subject')) {
+        showFieldError('subject', error);
+      } else if (errorLower.includes('message')) {
+        showFieldError('message', error);
+      } else {
+        // For general errors, show in a toast
+        Swal.fire({
+          icon: 'error',
+          title: 'Validation Error',
+          text: error,
+          confirmButtonColor: '#000',
+          toast: true,
+          position: 'top-end',
+          showConfirmButton: false,
+          timer: 4000
+        });
+      }
+    });
+  }
+
+  contactForm.addEventListener('submit', async function(e) {
+    e.preventDefault();
+
+    // Clear previous errors
+    clearErrors();
+
+    const formData = new FormData(contactForm);
+    const data = Object.fromEntries(formData);
+
+    try {
+      // Show loading state
+      const submitBtn = contactForm.querySelector('button[type="submit"]');
+      const originalText = submitBtn.innerHTML;
+      submitBtn.innerHTML = '<i class="ri-loader-4-line"></i> Sending...';
+      submitBtn.disabled = true;
+
+      // Make actual API request
+      const response = await fetch('/contact', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        // Show success message
+        Swal.fire({
+          icon: 'success',
+          title: 'Message Sent!',
+          text: result.message || 'Thank you for reaching out. We\'ll get back to you within 24 hours.',
+          confirmButtonColor: '#000'
+        });
+
+        // Reset form and clear errors
+        contactForm.reset();
+        clearErrors();
+      } else {
+        // Handle validation errors
+        if (result.errors && Array.isArray(result.errors)) {
+          displayValidationErrors(result.errors);
+        } else {
+          // Show general error message
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: result.message || 'Something went wrong. Please try again.',
+            confirmButtonColor: '#000'
+          });
+        }
+      }
+
+      // Reset button
+      submitBtn.innerHTML = originalText;
+      submitBtn.disabled = false;
+
+    } catch (error) {
+      console.error('Contact form error:', error);
+      // Show error message
+      Swal.fire({
+        icon: 'error',
+        title: 'Oops!',
+        text: 'Something went wrong. Please try again later.',
+        confirmButtonColor: '#000'
+      });
+
+      // Reset button
+      const submitBtn = contactForm.querySelector('button[type="submit"]');
+      const originalText = 'Send Message <i class="ri-send-plane-line ms-2"></i>';
+      submitBtn.innerHTML = originalText;
+      submitBtn.disabled = false;
+    }
+  });
+
+  // Clear errors when user starts typing
+  const inputs = contactForm.querySelectorAll('.contact-input');
+  inputs.forEach(input => {
+    input.addEventListener('input', function() {
+      if (this.classList.contains('error')) {
+        this.classList.remove('error');
+        const errorElement = contactForm.querySelector(`#${this.name}-error`);
+        if (errorElement) {
+          errorElement.classList.remove('show');
+          errorElement.textContent = '';
+        }
+      }
+    });
+  });
+});
+</script>

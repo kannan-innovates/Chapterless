@@ -82,7 +82,17 @@ const loadHomePage = async (req, res) => {
   }
 };
 
+const getAboutPage = async (req, res) => {
+  try {
+    res.render("about");
+  } catch (error) {
+    console.log(`Error in rendering About Page: ${error}`);
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).send("Server Error");
+  }
+};
+
 module.exports = {
   loadHomePage,
   pageNotFound,
+  getAboutPage,
 };

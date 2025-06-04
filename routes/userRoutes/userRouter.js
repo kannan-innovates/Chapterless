@@ -38,6 +38,8 @@ const walletController = require('../../controllers/userController/wallet-contro
 
 const referralController = require('../../controllers/userController/referral-controller');
 
+const contactController = require('../../controllers/userController/contact-controller');
+
 // Public routes
 router.get("/", userController.loadHomePage);
 router.get("/pageNotFound", userController.pageNotFound);
@@ -145,5 +147,13 @@ router.get('/wallet',isAuthenticated,walletController.getWallet)
 // Referral routes
 router.get('/referrals', isAuthenticated, referralController.getReferrals);
 router.post('/validate-referral', referralController.validateReferral);
+
+// Contact routes
+const contactValidator = require('../../validators/user/contact-validator');
+router.get('/contact', contactController.getContact);
+router.post('/contact', contactValidator.contactValidator, contactController.postContact);
+
+// About us route
+router.get('/about', userController.getAboutPage);
 
 module.exports = router;
