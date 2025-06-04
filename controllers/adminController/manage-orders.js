@@ -512,25 +512,41 @@ const updateOrderStatus = async (req, res) => {
       return res.status(HttpStatus.OK).json({ success: true, message: "Item status updated successfully" });
     }
 
-    // Define allowed status transitions for the entire order
+    // **FIXED: PARTIALLY CANCELLED ORDERS CAN STILL BE UPDATED**
     // Note: Returns are handled separately through the Return Management system
     const statusTransitions = {
       Placed: ["Processing", "Cancelled"],
       Processing: ["Shipped", "Cancelled"],
       Shipped: ["Delivered"],
-      Delivered: [], // Delivered is terminal - returns handled separately
-      Cancelled: [],
-      Returned: [],
-      "Partially Cancelled": ["Shipped", "Cancelled"],
-      "Partially Returned": [],
+      // **CRITICAL FIX: Partially Cancelled orders can still progress**
+      "Partially Cancelled": ["Processing", "Shipped", "Delivered", "Cancelled"],
+      // **ONLY THESE ARE TRULY TERMINAL**
+      Delivered: [], // Terminal - returns handled through Return Management
+      Cancelled: [], // Terminal
+      Returned: [], // Terminal
+      "Partially Returned": [], // Terminal
+      "Return Requested": [], // Terminal - handled through Return Management
+      "Partially Return Requested": [], // Terminal - handled through Return Management
     }
 
-    // Check if the transition is allowed
+    // **PRODUCTION-READY TRANSITION VALIDATION**
     const allowedStatuses = statusTransitions[order.orderStatus] || []
     if (!allowedStatuses.includes(status)) {
+      let errorMessage = '';
+
+      if (order.orderStatus.includes('Return')) {
+        errorMessage = `This order has return requests. Please use the Return Management page to handle returns.`;
+      } else if (order.orderStatus === 'Delivered') {
+        errorMessage = `This order has been delivered successfully. No further status updates are needed.`;
+      } else if (['Cancelled', 'Returned', 'Partially Cancelled', 'Partially Returned'].includes(order.orderStatus)) {
+        errorMessage = `Cannot update status from ${order.orderStatus} - this is a terminal state.`;
+      } else {
+        errorMessage = `Cannot transition from ${order.orderStatus} to ${status}. Allowed transitions: ${allowedStatuses.join(', ') || 'None'}`;
+      }
+
       return res.status(400).json({
         success: false,
-        message: `Cannot update order status from ${order.orderStatus} to ${status}`,
+        message: errorMessage
       })
     }
 

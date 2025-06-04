@@ -427,6 +427,41 @@
         color: #4338ca;
       }
 
+      /* Terminal status note styling */
+      .terminal-status-note {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 0.75rem;
+        background-color: #f3f4f6;
+        color: #6b7280;
+        border-radius: 0.375rem;
+        font-size: 0.75rem;
+        font-weight: 500;
+        border: 1px solid #e5e7eb;
+      }
+
+      .terminal-status-note i {
+        font-size: 0.875rem;
+      }
+
+      /* Auto-selected next status styling */
+      .status-select option[selected] {
+        background-color: #e3f2fd;
+        font-weight: 600;
+      }
+
+      .status-select {
+        background-color: #f8f9fa;
+        border: 2px solid #e9ecef;
+        transition: all 0.2s ease;
+      }
+
+      .status-select:focus {
+        border-color: #6f42c1;
+        box-shadow: 0 0 0 0.2rem rgba(111, 66, 193, 0.25);
+      }
+
       @media (max-width: 1024px) {
         .main-content {
           margin-left: 0;
@@ -679,44 +714,78 @@
                     <td>
                       <div class="actions">
                         <div class="status-actions">
-                          <% 
-                            // Define allowed transitions for dropdown
+                          <%
+                            // **PRODUCTION-READY STATUS TRANSITIONS**
                             let allowedStatuses = [];
+
+                            // **AUTO-NEXT STATUS LOGIC - CONSISTENT WITH ORDER DETAILS**
+                            let nextStatus = '';
                             if (order.orderStatus === 'Placed') {
+                              nextStatus = 'Processing';
                               allowedStatuses = ['Processing', 'Cancelled'];
                             } else if (order.orderStatus === 'Processing') {
+                              nextStatus = 'Shipped';
                               allowedStatuses = ['Shipped', 'Cancelled'];
                             } else if (order.orderStatus === 'Shipped') {
+                              nextStatus = 'Delivered';
                               allowedStatuses = ['Delivered'];
-                            } else if (order.orderStatus === 'Delivered') {
-                              allowedStatuses = ['Returned'];
                             } else if (order.orderStatus === 'Partially Cancelled') {
-                              allowedStatuses = ['Shipped', 'Cancelled'];
-                            } else if (order.orderStatus === 'Partially Returned') {
-                              allowedStatuses = ['Returned'];
+                              // **For partially cancelled, next logical step is usually Processing**
+                              nextStatus = 'Processing';
+                              allowedStatuses = ['Processing', 'Shipped', 'Delivered', 'Cancelled'];
                             } else {
-                              allowedStatuses = []; // Cancelled or Returned are terminal states
+                              // Only these are truly terminal: Delivered, Cancelled, Returned, Return statuses
+                              allowedStatuses = []; // All other statuses are terminal in order listing
                             }
+
+                            // **FIXED: PARTIALLY CANCELLED IS NOT TERMINAL**
+                            const isTerminalStatus = ['Delivered', 'Cancelled', 'Returned', 'Partially Returned', 'Return Requested', 'Partially Return Requested'].includes(order.orderStatus);
                           %>
-                          <select class="status-select" id="status-<%= order._id %>" <%= (order.orderStatus === 'Cancelled' || order.orderStatus === 'Returned') ? 'disabled' : '' %>>
-                            <option value="<%= order.orderStatus %>" selected><%= order.orderStatus %></option>
-                            <% if (allowedStatuses.includes('Processing')) { %>
-                              <option value="Processing">Processing</option>
-                            <% } %>
-                            <% if (allowedStatuses.includes('Shipped')) { %>
-                              <option value="Shipped">Shipped</option>
-                            <% } %>
-                            <% if (allowedStatuses.includes('Delivered')) { %>
-                              <option value="Delivered">Delivered</option>
-                            <% } %>
-                            <% if (allowedStatuses.includes('Cancelled')) { %>
-                              <option value="Cancelled">Cancelled</option>
-                            <% } %>
-                            <% if (allowedStatuses.includes('Returned')) { %>
-                              <option value="Returned">Returned</option>
+                          <select class="status-select" id="status-<%= order._id %>" <%= isTerminalStatus ? 'disabled' : '' %>>
+                            <% if (nextStatus && !isTerminalStatus) { %>
+                              <!-- **AUTO-SELECT NEXT STATUS** -->
+                              <option value="<%= order.orderStatus %>"><%= order.orderStatus %></option>
+                              <option value="<%= nextStatus %>" selected><%= nextStatus %></option>
+                              <% allowedStatuses.forEach(status => { %>
+                                <% if (status !== nextStatus && status !== order.orderStatus) { %>
+                                  <option value="<%= status %>"><%= status %></option>
+                                <% } %>
+                              <% }); %>
+                            <% } else { %>
+                              <!-- **TERMINAL STATUS** -->
+                              <option value="<%= order.orderStatus %>" selected><%= order.orderStatus %></option>
                             <% } %>
                           </select>
-                          <button class="btn-update-status" data-order-id="<%= order._id %>" <%= (order.orderStatus === 'Cancelled' || order.orderStatus === 'Returned') ? 'disabled' : '' %>>Update</button>
+                          <% if (isTerminalStatus) { %>
+                            <span class="terminal-status-note">
+                              <i class="fas fa-info-circle"></i>
+                              <%
+                                let statusMessage = '';
+                                if (order.orderStatus.includes('Return')) {
+                                  statusMessage = 'Use Return Management';
+                                } else if (order.orderStatus === 'Delivered') {
+                                  statusMessage = 'Order Complete';
+                                } else if (order.orderStatus === 'Cancelled') {
+                                  statusMessage = 'Order Cancelled';
+                                } else if (order.orderStatus === 'Returned') {
+                                  statusMessage = 'Order Returned';
+                                } else {
+                                  statusMessage = 'Final Status';
+                                }
+                              %>
+                              <%= statusMessage %>
+                            </span>
+                          <% } else { %>
+                            <button class="btn-update-status" data-order-id="<%= order._id %>">
+                              <% if (order.orderStatus === 'Partially Cancelled') { %>
+                                Update Remaining Items
+                              <% } else if (nextStatus) { %>
+                                Update to <%= nextStatus %>
+                              <% } else { %>
+                                Update
+                              <% } %>
+                            </button>
+                          <% } %>
                         </div>
                         
                         <div class="view-actions">

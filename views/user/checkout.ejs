@@ -387,16 +387,7 @@
                             />
                           </div>
                         </div>
-                        <div class="form-check mt-3">
-                          <input
-                            class="form-check-input"
-                            type="checkbox"
-                            id="confirmRazorpay"
-                          />
-                          <label class="form-check-label" for="confirmRazorpay">
-                            I agree to the terms and conditions for online payment
-                          </label>
-                        </div>
+
                       </div>
                     </div>
                   </div>
@@ -451,17 +442,7 @@
                             exact change ready.
                           </div>
                         </div>
-                        <div class="form-check mt-3">
-                          <input
-                            class="form-check-input"
-                            type="checkbox"
-                            id="confirmCod"
-                          />
-                          <label class="form-check-label" for="confirmCod">
-                            I understand that I need to pay when the order is
-                            delivered
-                          </label>
-                        </div>
+
                       </div>
                     </div>
                   <% } else { %>
@@ -553,16 +534,7 @@
                             Remaining Balance: ₹<%= (walletBalance - totalAmount).toFixed(2) %>
                           </div>
                         </div>
-                        <div class="form-check mt-3">
-                          <input
-                            class="form-check-input"
-                            type="checkbox"
-                            id="confirmWallet"
-                          />
-                          <label class="form-check-label" for="confirmWallet">
-                            I confirm to pay ₹<%= totalAmount ? totalAmount.toFixed(2) : '0.00' %> from my wallet
-                          </label>
-                        </div>
+
                       <% } else { %>
                         <!-- Insufficient balance -->
                         <div class="alert alert-warning d-flex align-items-center" role="alert">
@@ -746,21 +718,7 @@
                 </div>
               </div>
 
-              <!-- Terms and Conditions -->
-              <div class="form-check mb-4">
-                <input
-                  class="form-check-input"
-                  type="checkbox"
-                  id="termsCheck"
-                  required
-                />
-                <label class="form-check-label" for="termsCheck">
-                  I agree to the
-                  <a href="/terms" target="_blank">Terms and Conditions</a> and
-                  <a href="/privacy" target="_blank">Privacy Policy</a>
-                </label>
-                <div id="termsCheckError" class="text-danger small mt-1"></div>
-              </div>
+
             </div>
           </div>
           <div
@@ -2219,14 +2177,7 @@
         return false;
       }
 
-      const confirmRazorpay = document.getElementById('confirmRazorpay');
-      if (!confirmRazorpay.checked) {
-        Toast.fire({
-          icon: 'error',
-          title: 'Please agree to the terms and conditions for online payment'
-        });
-        return false;
-      }
+
 
       try {
         const response = await fetch('/checkout/create-razorpay-order', {
@@ -2347,8 +2298,6 @@
     const placeOrderBtn = document.getElementById("placeOrderBtn");
     if (placeOrderBtn) {
       placeOrderBtn.addEventListener("click", async function () {
-        const termsCheck = document.getElementById("termsCheck");
-        const termsCheckError = document.getElementById("termsCheckError");
         const selectedAddress = document.querySelector(
           'input[name="selectedAddress"]:checked'
         );
@@ -2356,14 +2305,7 @@
           ".accordion-collapse.show"
         )?.id;
 
-        // Validate terms checkbox
-        if (!termsCheck.checked) {
-          termsCheckError.textContent =
-            "You must agree to the terms and conditions";
-          return;
-        } else {
-          termsCheckError.textContent = "";
-        }
+
 
         // Validate address selection
         if (!selectedAddress) {
@@ -2387,14 +2329,7 @@
             return;
           }
 
-          const confirmCod = document.getElementById("confirmCod");
-          if (!confirmCod.checked) {
-            Toast.fire({
-              icon: "error",
-              title: "Please confirm Cash on Delivery terms",
-            });
-            return;
-          }
+
           paymentMethodValue = "COD";
         } else if (paymentMethod === "razorpayPayment") {
           paymentMethodValue = "Razorpay";
@@ -2430,14 +2365,7 @@
             return;
           }
 
-          const confirmWallet = document.getElementById("confirmWallet");
-          if (!confirmWallet.checked) {
-            Toast.fire({
-              icon: "error",
-              title: "Please confirm wallet payment terms",
-            });
-            return;
-          }
+
           paymentMethodValue = "Wallet";
         } else {
           Toast.fire({

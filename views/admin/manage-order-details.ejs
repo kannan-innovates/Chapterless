@@ -610,6 +610,23 @@
         background-color: #fde68a;
       }
 
+      /* Terminal status indicator styling */
+      .terminal-status-indicator {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.75rem 1rem;
+        background-color: #f8f9fa;
+        color: #28a745;
+        border-radius: 0.375rem;
+        font-weight: 600;
+        border: 2px solid #d4edda;
+      }
+
+      .terminal-status-indicator i {
+        font-size: 1.1rem;
+      }
+
       /* Responsive */
       @media (max-width: 1024px) {
         .main-content {
@@ -817,9 +834,36 @@
             </div>
           </div>
           <div class="action-buttons">
-            <button class="btn btn-purple" id="update-status-btn">
-              <i class="ri-refresh-line"></i> Update Status
-            </button>
+            <%
+              // **FIXED: PARTIALLY CANCELLED IS NOT TERMINAL**
+              const isTerminalStatus = ['Delivered', 'Cancelled', 'Returned', 'Partially Returned', 'Return Requested', 'Partially Return Requested'].includes(order.orderStatus);
+              const hasReturnRequests = order.orderStatus.includes('Return');
+            %>
+
+            <% if (!isTerminalStatus) { %>
+              <button class="btn btn-purple" id="update-status-btn">
+                <i class="ri-refresh-line"></i>
+                <% if (order.orderStatus === 'Partially Cancelled') { %>
+                  Update Remaining Items
+                <% } else { %>
+                  Update Status
+                <% } %>
+              </button>
+            <% } else if (hasReturnRequests) { %>
+              <a href="/admin/return-management/<%= order._id %>" class="btn btn-warning">
+                <i class="ri-arrow-go-back-line"></i> Manage Returns
+              </a>
+            <% } else { %>
+              <span class="terminal-status-indicator">
+                <i class="ri-check-line"></i>
+                <% if (order.orderStatus === 'Delivered') { %>
+                  Order Complete
+                <% } else { %>
+                  Final Status: <%= order.orderStatus %>
+                <% } %>
+              </span>
+            <% } %>
+
             <% if (order.orderStatus !== 'Cancelled' && order.orderStatus !== 'Placed') { %>
               <a href="/admin/orders/<%= order._id %>/invoice" class="btn btn-outline">
                 <i class="ri-file-text-line"></i> Download Invoice
@@ -1255,29 +1299,65 @@
         // Update Status Button Functionality
         const updateStatusBtn = document.getElementById('update-status-btn');
 
-        updateStatusBtn.addEventListener('click', function() {
-          // Define allowed status transitions based on current status
+        // Only add event listener if the button exists (not for terminal statuses)
+        if (updateStatusBtn) {
+          updateStatusBtn.addEventListener('click', function() {
+          // **FIXED: PARTIALLY CANCELLED ORDERS CAN STILL BE UPDATED**
           const currentStatus = '<%= order.orderStatus %>';
           let allowedStatuses = [];
+
+          // **CRITICAL FIX: Include Partially Cancelled in updatable statuses**
           if (currentStatus === 'Placed') {
             allowedStatuses = ['Processing', 'Cancelled'];
           } else if (currentStatus === 'Processing') {
             allowedStatuses = ['Shipped', 'Cancelled'];
           } else if (currentStatus === 'Shipped') {
             allowedStatuses = ['Delivered'];
-          } else if (currentStatus === 'Delivered') {
-            allowedStatuses = []; // Delivered is terminal - returns handled separately
-          } else {
-            allowedStatuses = []; // Cancelled, Returned, Return Requested are terminal states
+          } else if (currentStatus === 'Partially Cancelled') {
+            // **CRITICAL FIX: Partially cancelled orders can still progress**
+            allowedStatuses = ['Processing', 'Shipped', 'Delivered', 'Cancelled'];
+          }
+          // **CLEAN SEPARATION: No return management from order details**
+          // Only truly terminal statuses block updates
+          else {
+            allowedStatuses = []; // All other statuses are terminal
           }
 
-          // If no transitions are allowed, show a message
+          // **PRODUCTION-READY TERMINAL STATUS HANDLING**
           if (allowedStatuses.length === 0) {
-            Swal.fire({
-              title: 'Cannot Update Status',
-              text: `The order is in ${currentStatus} state and cannot be updated further.`,
+            let message = '';
+            let redirectUrl = '';
+
+            if (currentStatus.includes('Return')) {
+              message = `This order has return requests. Please use the Return Management page to handle returns.`;
+              redirectUrl = '/admin/return-management';
+            } else if (currentStatus === 'Delivered') {
+              message = `This order has been delivered successfully. No further status updates are needed.`;
+            } else if (currentStatus === 'Cancelled') {
+              message = `This order has been cancelled. No further status updates are possible.`;
+            } else if (currentStatus === 'Returned') {
+              message = `This order has been returned. No further status updates are possible.`;
+            } else {
+              message = `The order is in ${currentStatus} state and cannot be updated further.`;
+            }
+
+            const swalConfig = {
+              title: 'Status Update Not Available',
+              text: message,
               icon: 'info',
               confirmButtonColor: '#6f42c1'
+            };
+
+            if (redirectUrl) {
+              swalConfig.showCancelButton = true;
+              swalConfig.confirmButtonText = 'Go to Return Management';
+              swalConfig.cancelButtonText = 'Stay Here';
+            }
+
+            Swal.fire(swalConfig).then((result) => {
+              if (result.isConfirmed && redirectUrl) {
+                window.location.href = redirectUrl;
+              }
             });
             return;
           }
@@ -1353,6 +1433,7 @@
             }
           });
         });
+        }
 
         // Note: Return functionality removed from order details page
         // Returns are now handled exclusively through the Return Management page
