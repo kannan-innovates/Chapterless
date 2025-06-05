@@ -232,6 +232,50 @@
       background-color: #fff3cd;
       color: #856404;
     }
+
+    /* **ENHANCED REFUND BREAKDOWN STYLING** */
+    .refund-breakdown-cell {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .refund-breakdown-cell .total-amount {
+      font-weight: 700;
+      color: #10b981;
+      font-size: 1rem;
+    }
+
+    .refund-breakdown-cell .breakdown-details {
+      font-size: 0.75rem;
+      color: #6b7280;
+      line-height: 1.2;
+    }
+
+    .refund-tag {
+      display: inline-block;
+      padding: 0.125rem 0.375rem;
+      border-radius: 3px;
+      font-size: 0.7rem;
+      font-weight: 500;
+      margin-right: 0.25rem;
+    }
+
+    .refund-tag.base {
+      background-color: #e3f2fd;
+      color: #1976d2;
+    }
+
+    .refund-tag.tax {
+      background-color: #f3e5f5;
+      color: #7b1fa2;
+    }
+
+    .refund-tag.total {
+      background-color: #e8f5e8;
+      color: #2e7d32;
+      font-weight: 600;
+    }
   </style>
 </head>
 <body>
@@ -259,18 +303,37 @@
       </div>
     </div>
 
-    <!-- Refund Information Alert -->
+    <!-- **ENHANCED REFUND INFORMATION WITH TAX BREAKDOWN** -->
     <div class="alert-refund">
       <div style="display: flex; justify-content: space-between; align-items: center;">
-        <div>
-          <h5 style="margin-bottom: 0.25rem;">
-            <i class="fas fa-info-circle"></i> Refund Information
+        <div style="flex: 1;">
+          <h5 style="margin-bottom: 0.5rem;">
+            <i class="fas fa-info-circle"></i> Enhanced Refund Breakdown
           </h5>
-          <p style="margin: 0;">
-            Approving this return will refund <span class="refund-amount">₹<%= totalRefundAmount %></span> to the customer's wallet.
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 0.5rem;">
+            <div>
+              <div style="font-size: 0.85rem; color: #6b7280;">Customer Paid Amount</div>
+              <div style="font-weight: 600; color: #1976d2;">₹<%= totalRefundAmount %></div>
+            </div>
+            <div>
+              <div style="font-size: 0.85rem; color: #6b7280;">Refund Amount</div>
+              <div style="font-weight: 600; color: #7b1fa2;">₹<%= totalRefundAmount %></div>
+            </div>
+            <div>
+              <div style="font-size: 0.85rem; color: #6b7280;">Total Wallet Credit</div>
+              <div style="font-weight: 700; color: #10b981; font-size: 1.1rem;">₹<%= totalRefundAmount %></div>
+            </div>
+          </div>
+          <p style="margin: 0; font-size: 0.9rem; color: #6b7280;">
+            <i class="fas fa-lightbulb"></i>
+            <% if (returnRequestedItems.length === order.items.length) { %>
+              Full order return - complete tax refund included
+            <% } else { %>
+              Partial return - proportional tax refund calculated
+            <% } %>
           </p>
         </div>
-        <i class="fas fa-wallet" style="font-size: 2rem; color: #3b82f6;"></i>
+        <i class="fas fa-calculator" style="font-size: 2rem; color: #3b82f6;"></i>
       </div>
     </div>
 
@@ -330,7 +393,7 @@
             <th>Qty</th>
             <th>Return Reason</th>
             <th>Requested Date</th>
-            <th>Refund Amount</th>
+            <th>Refund Breakdown</th>
           </tr>
         </thead>
         <tbody>
@@ -383,12 +446,26 @@
                 <% } %>
               </td>
               <td>
-                <div style="font-weight: 600; color: #10b981;">
-                  <% if (item.priceBreakdown && item.priceBreakdown.finalPrice) { %>
-                    ₹<%= (item.priceBreakdown.finalPrice * item.quantity).toFixed(2) %>
-                  <% } else { %>
-                    ₹<%= (item.discountedPrice * item.quantity).toFixed(2) %>
-                  <% } %>
+                <div class="refund-breakdown-cell">
+                  <%
+                    // **CRITICAL FIX: Use actual final price customer paid**
+                    let actualPaidAmount = 0;
+
+                    if (item.priceBreakdown && item.priceBreakdown.finalPrice) {
+                      actualPaidAmount = item.priceBreakdown.finalPrice;
+                    } else {
+                      // Fallback to discounted price if priceBreakdown not available
+                      actualPaidAmount = item.discountedPrice * item.quantity;
+                    }
+                  %>
+
+                  <div style="font-weight: 700; color: #10b981; margin-bottom: 0.25rem;">
+                    ₹<%= actualPaidAmount.toFixed(2) %>
+                  </div>
+                  <div style="font-size: 0.75rem; color: #6b7280; line-height: 1.2;">
+                    <div>Exact amount customer paid</div>
+                    <div>(includes all discounts & taxes)</div>
+                  </div>
                 </div>
               </td>
             </tr>

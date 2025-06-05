@@ -3,6 +3,18 @@ const Order = require("../../models/orderSchema");
 const { calculateDiscount, getUnifiedPriceBreakdown } = require("../../utils/offer-helper");
 const { HttpStatus } = require("../../helpers/status-code");
 
+/**
+ * ENHANCED REFUND SYSTEM - PRODUCTION OPTIMIZED
+ *
+ * Features:
+ * - Tax refund handling (full for cancellations, proportional for partial returns)
+ * - Complex coupon scenario support
+ * - COD vs online payment differentiation
+ * - Floating point precision management
+ * - Duplicate refund prevention
+ * - Performance optimized calculations
+ */
+
 const getWallet = async (req, res) => {
   try {
     const userId = req.session.user_id;
@@ -46,45 +58,113 @@ const safeCalculation = (value) => {
   return isNaN(num) ? 0 : num;
 };
 
-// Helper function to calculate refund amount for a single item using unified pricing
-const calculateItemRefundAmount = (item, order) => {
+/**
+ * Calculate refund amount for an item - ALWAYS refund exactly what customer paid (including tax)
+ * @param {Object} item - Order item to calculate refund for
+ * @param {Object} order - Complete order object
+ * @param {string} refundType - 'cancellation' or 'return'
+ * @param {boolean} isFullOrderRefund - Whether entire order is being refunded
+ * @returns {Object} { amount: number, breakdown: object }
+ */
+const calculateItemRefundAmount = (item, order, refundType = 'return', isFullOrderRefund = false) => {
   try {
-    if (!item) {
-      console.log('No item provided for refund calculation');
+    // **VALIDATION**
+    if (!item || !order) {
+      return { amount: 0, breakdown: null };
+    }
+
+    // **GET PRICE BREAKDOWN**
+    const priceBreakdown = getUnifiedPriceBreakdown(item, order);
+    if (!priceBreakdown) {
+      return { amount: 0, breakdown: null };
+    }
+
+    // **CRITICAL FIX: Calculate exact amount customer paid INCLUDING TAX**
+    const baseAmount = priceBreakdown.finalPrice || 0; // Amount after all discounts
+
+    // **CALCULATE TAX FOR THIS ITEM**
+    let itemTaxAmount = 0;
+    if (order.tax && order.tax > 0) {
+      if (isFullOrderRefund || order.items.length === 1) {
+        // Full order refund or single item - refund full tax
+        itemTaxAmount = order.tax;
+      } else {
+        // Partial refund - calculate proportional tax
+        const totalOrderValue = order.items.reduce((total, orderItem) => {
+          const itemBreakdown = getUnifiedPriceBreakdown(orderItem, order);
+          return total + (itemBreakdown?.finalPrice || 0);
+        }, 0);
+
+        if (totalOrderValue > 0) {
+          itemTaxAmount = (baseAmount / totalOrderValue) * order.tax;
+        }
+      }
+    }
+
+    // **TOTAL REFUND = BASE AMOUNT + TAX (exactly what customer paid)**
+    const totalRefundAmount = baseAmount + itemTaxAmount;
+
+    const refundBreakdown = {
+      originalPrice: priceBreakdown.originalPrice || 0,
+      offerDiscount: priceBreakdown.offerDiscount || 0,
+      couponDiscount: priceBreakdown.couponDiscount || 0,
+      finalPrice: baseAmount,
+      taxAmount: itemTaxAmount,
+      taxRefundAmount: itemTaxAmount, // Full tax refund
+      totalRefundAmount: totalRefundAmount,
+      refundType,
+      isFullOrderRefund,
+      note: 'Refunding exact amount customer paid (including tax)'
+    };
+
+    return {
+      amount: Number(totalRefundAmount.toFixed(2)),
+      breakdown: refundBreakdown
+    };
+  } catch (error) {
+    console.error('Error calculating refund amount:', error.message);
+    return { amount: 0, breakdown: null };
+  }
+};
+
+/**
+ * Calculate proportional tax refund for partial returns
+ * @param {Object} item - Item being returned
+ * @param {Object} order - Complete order object
+ * @returns {number} Proportional tax amount to refund
+ */
+const calculateProportionalTaxRefund = (item, order) => {
+  try {
+    // **OPTIMIZED: Early validation**
+    if (!order?.tax || order.tax <= 0 || !item || !order.items?.length) {
       return 0;
     }
 
-    console.log('Calculating refund for item using unified pricing:', {
-      itemId: item._id,
-      title: item.title,
-      price: item.price,
-      discountedPrice: item.discountedPrice,
-      quantity: item.quantity,
-      paymentMethod: order.paymentMethod
-    });
+    // **OPTIMIZED: Cache item price breakdown**
+    const itemPriceBreakdown = getUnifiedPriceBreakdown(item, order);
+    if (!itemPriceBreakdown?.finalPrice) {
+      return 0;
+    }
 
-    // **FIX: Use unified price calculation for consistency**
-    const priceBreakdown = getUnifiedPriceBreakdown(item, order);
+    const itemFinalPrice = itemPriceBreakdown.finalPrice;
 
-    // **CRITICAL FIX: For refunds, use the finalPrice (what customer actually paid) NOT finalTotal (which adds tax)**
-    // The finalPrice already includes all discounts and is what's displayed to the customer
-    const refundAmount = priceBreakdown.finalPrice;
+    // **OPTIMIZED: Single pass calculation of total order value**
+    let totalOrderFinalPrice = 0;
+    for (const orderItem of order.items) {
+      const itemBreakdown = getUnifiedPriceBreakdown(orderItem, order);
+      totalOrderFinalPrice += itemBreakdown?.finalPrice || 0;
+    }
 
-    console.log('Unified refund calculation:', {
-      originalPrice: priceBreakdown.originalPrice,
-      discountedPrice: priceBreakdown.discountedPrice,
-      offerDiscount: priceBreakdown.offerDiscount,
-      couponDiscount: priceBreakdown.couponDiscount,
-      finalPrice: priceBreakdown.finalPrice,
-      taxAmount: priceBreakdown.taxAmount,
-      finalTotal: priceBreakdown.finalTotal,
-      refundAmount: refundAmount,
-      note: 'Using finalPrice (not finalTotal) for accurate refund'
-    });
+    // **OPTIMIZED: Direct calculation without intermediate variables**
+    if (totalOrderFinalPrice <= 0) {
+      return 0;
+    }
 
-    return Number(refundAmount.toFixed(2));
+    const proportionalTax = (itemFinalPrice / totalOrderFinalPrice) * order.tax;
+    return Number(proportionalTax.toFixed(2));
+
   } catch (error) {
-    console.error('Error in calculateItemRefundAmount:', error);
+    console.error('Error calculating proportional tax:', error.message);
     return 0;
   }
 };
@@ -170,6 +250,9 @@ const processCancelRefund = async (userId, order, itemId = null) => {
     let refundReason = '';
     let refundedItemsForThisTransaction = [];
 
+    // **ENHANCED CANCELLATION REFUND LOGIC**
+    let refundBreakdowns = [];
+
     if (itemId) {
       // Single item cancellation
       const item = order.items.find(i => i._id.toString() === itemId.toString());
@@ -184,7 +267,10 @@ const processCancelRefund = async (userId, order, itemId = null) => {
         return true;
       }
 
-      refundAmount = calculateItemRefundAmount(item, order);
+      // **CANCELLATION: Include tax refund**
+      const refundResult = calculateItemRefundAmount(item, order, 'cancellation', false);
+      refundAmount = refundResult.amount;
+      refundBreakdowns.push(refundResult.breakdown);
       refundReason = `Refund for cancelled item: ${item.title} from order #${order.orderNumber}`;
       refundedItemsForThisTransaction = [item.product];
     } else {
@@ -198,8 +284,15 @@ const processCancelRefund = async (userId, order, itemId = null) => {
         return true;
       }
 
+      // **DETERMINE IF THIS IS A FULL ORDER CANCELLATION**
+      const totalItems = order.items.length;
+      const totalCancelledItems = order.items.filter(item => item.status === 'Cancelled').length;
+      const isFullOrderCancellation = totalCancelledItems === totalItems;
+
       refundAmount = cancelledItems.reduce((total, item) => {
-        return total + calculateItemRefundAmount(item, order);
+        const refundResult = calculateItemRefundAmount(item, order, 'cancellation', isFullOrderCancellation);
+        refundBreakdowns.push(refundResult.breakdown);
+        return total + refundResult.amount;
       }, 0);
 
       refundReason = cancelledItems.length === 1
@@ -263,16 +356,36 @@ const processCancelRefund = async (userId, order, itemId = null) => {
         return false;
       }
 
-      wallet.balance = Number(wallet.balance) + refundAmount;
+      // **FIX: Ensure both balance and refund amount are valid numbers**
+      const safeBalance = Number(wallet.balance || 0);
+      const safeRefund = Number(refundAmount || 0);
 
+      // **ADDITIONAL SAFETY: Prevent NaN and Infinity**
+      if (isNaN(safeBalance) || !isFinite(safeBalance) || isNaN(safeRefund) || !isFinite(safeRefund)) {
+        console.error('Invalid balance or refund amount detected:', { balance: wallet.balance, refund: refundAmount });
+        return false;
+      }
+
+      wallet.balance = safeBalance + safeRefund;
+
+      // **ENHANCED TRANSACTION RECORD WITH BREAKDOWN**
       wallet.transactions.push({
         type: 'credit',
-        amount: refundAmount,
+        amount: Number(refundAmount), // **FIX: Ensure amount is stored as number**
         orderId: order._id,
         reason: refundReason,
         refundedItems: refundedItemsForThisTransaction,
+        refundType: 'cancellation',
+        refundBreakdowns: refundBreakdowns,
         date: new Date()
       });
+
+      // **PRODUCTION LOGGING**
+      console.log(`✅ Cancellation refund processed: ₹${refundAmount} for order ${order.orderNumber}`);
+      if (refundBreakdowns?.length > 0) {
+        const totalTax = refundBreakdowns.reduce((sum, b) => sum + (b.taxRefundAmount || 0), 0);
+        console.log(`   Tax refunded: ₹${totalTax.toFixed(2)} (cancellation - full tax)`);
+      }
 
       console.log('About to save wallet with transaction:', {
         walletId: wallet._id,
@@ -298,10 +411,10 @@ const processCancelRefund = async (userId, order, itemId = null) => {
           const existingWalletRetry = await Wallet.findOne({ userId: userId });
           if (existingWalletRetry) {
             console.log('Found existing wallet, updating it instead');
-            existingWalletRetry.balance = Number(existingWalletRetry.balance) + refundAmount;
+            existingWalletRetry.balance = Number(existingWalletRetry.balance) + Number(refundAmount);
             existingWalletRetry.transactions.push({
               type: 'credit',
-              amount: refundAmount,
+              amount: Number(refundAmount), // **FIX: Ensure amount is stored as number**
               orderId: order._id,
               reason: refundReason,
               refundedItems: refundedItemsForThisTransaction,
@@ -418,6 +531,9 @@ const processReturnRefund = async (userId, order, itemId = null) => {
       });
     }
 
+    // **ENHANCED RETURN REFUND LOGIC**
+    let refundBreakdowns = [];
+
     if (itemId) {
       // Single item return
       const item = order.items.find(i => i._id.toString() === itemId.toString());
@@ -435,7 +551,15 @@ const processReturnRefund = async (userId, order, itemId = null) => {
         console.warn(`Item ${item.title} is not marked as Returned`);
         return false;
       }
-      refundAmount = calculateItemRefundAmount(item, order);
+
+      // **DETERMINE IF THIS IS A FULL ORDER RETURN**
+      const totalItems = order.items.length;
+      const totalReturnedItems = order.items.filter(item => item.status === 'Returned').length;
+      const isFullOrderReturn = totalReturnedItems === totalItems;
+
+      const refundResult = calculateItemRefundAmount(item, order, 'return', isFullOrderReturn);
+      refundAmount = refundResult.amount;
+      refundBreakdowns.push(refundResult.breakdown);
       refundReason = `Refund for returned item: ${item.title} from order #${order.orderNumber}`;
       refundedItemsForThisTransaction = [item.product];
     } else {
@@ -456,10 +580,16 @@ const processReturnRefund = async (userId, order, itemId = null) => {
         return true;
       }
 
+      // **DETERMINE IF THIS IS A FULL ORDER RETURN**
+      const totalItems = order.items.length;
+      const totalReturnedItems = order.items.filter(item => item.status === 'Returned').length;
+      const isFullOrderReturn = totalReturnedItems === totalItems;
+
       refundAmount = returnedItems.reduce((total, item) => {
-        const itemRefund = calculateItemRefundAmount(item, order);
-        console.log(`Item refund calculation for ${item.title}:`, itemRefund);
-        return total + itemRefund;
+        const refundResult = calculateItemRefundAmount(item, order, 'return', isFullOrderReturn);
+        console.log(`Item refund calculation for ${item.title}:`, refundResult);
+        refundBreakdowns.push(refundResult.breakdown);
+        return total + refundResult.amount;
       }, 0);
 
       refundReason = returnedItems.length === 1
@@ -512,15 +642,36 @@ const processReturnRefund = async (userId, order, itemId = null) => {
       }
 
       refundAmount = Number(refundAmount.toFixed(2));
-      wallet.balance = Number(wallet.balance) + refundAmount;
+      // **FIX: Ensure both balance and refund amount are valid numbers**
+      const safeBalance = Number(wallet.balance || 0);
+      const safeRefund = Number(refundAmount || 0);
+
+      // **ADDITIONAL SAFETY: Prevent NaN and Infinity**
+      if (isNaN(safeBalance) || !isFinite(safeBalance) || isNaN(safeRefund) || !isFinite(safeRefund)) {
+        console.error('Invalid balance or refund amount detected:', { balance: wallet.balance, refund: refundAmount });
+        return false;
+      }
+
+      wallet.balance = safeBalance + safeRefund;
+      // **ENHANCED TRANSACTION RECORD WITH BREAKDOWN**
       wallet.transactions.push({
         type: 'credit',
-        amount: refundAmount,
+        amount: Number(refundAmount), // **FIX: Ensure amount is stored as number**
         orderId: order._id,
         reason: refundReason,
         refundedItems: refundedItemsForThisTransaction,
+        refundType: 'return',
+        refundBreakdowns: refundBreakdowns,
         date: new Date()
       });
+
+      // **PRODUCTION LOGGING**
+      console.log(`✅ Return refund processed: ₹${refundAmount} for order ${order.orderNumber}`);
+      if (refundBreakdowns?.length > 0) {
+        const totalTax = refundBreakdowns.reduce((sum, b) => sum + (b.taxRefundAmount || 0), 0);
+        const isFullReturn = refundBreakdowns[0]?.isFullOrderReturn;
+        console.log(`   Tax refunded: ₹${totalTax.toFixed(2)} (${isFullReturn ? 'full return - complete tax' : 'partial return - proportional tax'})`);
+      }
 
       console.log('About to save return refund wallet with transaction:', {
         walletId: wallet._id,
@@ -546,10 +697,10 @@ const processReturnRefund = async (userId, order, itemId = null) => {
           const existingWalletRetry = await Wallet.findOne({ userId: userId });
           if (existingWalletRetry) {
             console.log('Found existing wallet, updating it instead');
-            existingWalletRetry.balance = Number(existingWalletRetry.balance) + refundAmount;
+            existingWalletRetry.balance = Number(existingWalletRetry.balance) + Number(refundAmount);
             existingWalletRetry.transactions.push({
               type: 'credit',
-              amount: refundAmount,
+              amount: Number(refundAmount), // **FIX: Ensure amount is stored as number**
               orderId: order._id,
               reason: refundReason,
               refundedItems: refundedItemsForThisTransaction,
@@ -578,8 +729,28 @@ const processReturnRefund = async (userId, order, itemId = null) => {
   }
 };
 
+/**
+ * Validate refund amount accuracy (PRODUCTION OPTIMIZED)
+ * @param {number} calculatedAmount - Calculated refund amount
+ * @param {number} expectedAmount - Expected refund amount
+ * @param {number} tolerance - Acceptable difference (default: 0.01)
+ * @returns {boolean} Whether amounts match within tolerance
+ */
+const validateRefundAccuracy = (calculatedAmount, expectedAmount, tolerance = 0.01) => {
+  try {
+    const difference = Math.abs(calculatedAmount - expectedAmount);
+    return difference <= tolerance;
+  } catch (error) {
+    console.error('Error validating refund accuracy:', error.message);
+    return false;
+  }
+};
+
 module.exports = {
   getWallet,
   processCancelRefund,
-  processReturnRefund
+  processReturnRefund,
+  calculateItemRefundAmount,
+  calculateProportionalTaxRefund,
+  validateRefundAccuracy
 };

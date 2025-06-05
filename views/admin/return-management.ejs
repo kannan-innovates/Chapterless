@@ -220,6 +220,54 @@
       color: #495057;
       width: fit-content;
     }
+
+    /* **ENHANCED REFUND BREAKDOWN STYLING** */
+    .refund-breakdown {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .refund-amount {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #28a745;
+    }
+
+    .refund-details {
+      font-size: 0.75rem;
+      line-height: 1.2;
+    }
+
+    .refund-details small {
+      display: block;
+    }
+
+    .refund-tag {
+      display: inline-block;
+      padding: 0.125rem 0.375rem;
+      border-radius: 3px;
+      font-size: 0.7rem;
+      font-weight: 500;
+      margin-right: 0.25rem;
+      margin-bottom: 0.125rem;
+    }
+
+    .refund-tag.base {
+      background-color: #e3f2fd;
+      color: #1976d2;
+    }
+
+    .refund-tag.tax {
+      background-color: #f3e5f5;
+      color: #7b1fa2;
+    }
+
+    .refund-tag.total {
+      background-color: #e8f5e8;
+      color: #2e7d32;
+      font-weight: 600;
+    }
   </style>
 </head>
 <body>
@@ -330,6 +378,7 @@
             <th>Return Info</th>
             <th>Order Date</th>
             <th>Total Amount</th>
+            <th>Expected Refund</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -369,6 +418,23 @@
                 <td><%= order.formattedDate %></td>
                 <td><%= order.formattedTotal %></td>
                 <td>
+                  <div class="refund-breakdown">
+                    <% if (order.estimatedRefund) { %>
+                      <div class="refund-amount">
+                        <strong>₹<%= order.estimatedRefund.total.toFixed(2) %></strong>
+                      </div>
+                      <div class="refund-details">
+                        <small class="text-muted">
+                          Base: ₹<%= order.estimatedRefund.base.toFixed(2) %><br>
+                          Tax: ₹<%= order.estimatedRefund.tax.toFixed(2) %>
+                        </small>
+                      </div>
+                    <% } else { %>
+                      <span class="text-muted">Calculating...</span>
+                    <% } %>
+                  </div>
+                </td>
+                <td>
                   <div class="d-flex gap-1">
                     <a href="/admin/return-management/<%= order._id %>" class="btn-action btn-view">
                       <i class="ri-eye-line"></i> View Details
@@ -379,7 +445,7 @@
             <% }) %>
           <% } else { %>
             <tr>
-              <td colspan="7" class="text-center py-4">
+              <td colspan="8" class="text-center py-4">
                 <i class="ri-inbox-line" style="font-size: 3rem; color: #dee2e6;"></i>
                 <div class="mt-2">No return requests found</div>
               </td>

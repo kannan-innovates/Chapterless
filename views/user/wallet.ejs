@@ -81,31 +81,145 @@
                   <th scope="col">Description</th>
                   <th scope="col">Type</th>
                   <th scope="col" class="text-end pe-4">Amount</th>
+                  <th scope="col" class="text-center">Details</th>
                 </tr>
               </thead>
               <tbody>
                 <% if (wallet.transactions && wallet.transactions.length > 0) { %>
                   <% wallet.transactions.forEach(transaction => { %>
                     <tr class="transaction-row" data-type="<%= transaction.type %>">
-                      <td class="ps-4"><%= transaction.date %></td>
-                      <td><%= transaction.reason %></td>
+                      <td class="ps-4">
+                        <div class="fw-medium"><%= new Date(transaction.date).toLocaleDateString('en-IN') %></div>
+                        <small class="text-muted"><%= new Date(transaction.date).toLocaleTimeString('en-IN', {hour: '2-digit', minute: '2-digit'}) %></small>
+                      </td>
+                      <td>
+                        <div class="transaction-description">
+                          <div class="fw-medium"><%= transaction.reason %></div>
+                          <% if (transaction.orderId) { %>
+                            <small class="text-muted">Order #<%= transaction.orderId %></small>
+                          <% } %>
+                        </div>
+                      </td>
                       <td>
                         <% if (transaction.type === 'credit') { %>
-                          <span class="badge bg-success-subtle text-success">Credit</span>
+                          <% if (transaction.refundType) { %>
+                            <span class="badge bg-success-subtle text-success">
+                              <i class="bi bi-arrow-return-left me-1"></i>
+                              <%= transaction.refundType === 'cancellation' ? 'Cancellation' : 'Return' %> Refund
+                            </span>
+                          <% } else { %>
+                            <span class="badge bg-success-subtle text-success">
+                              <i class="bi bi-plus-circle me-1"></i>Credit
+                            </span>
+                          <% } %>
                         <% } else if (transaction.type === 'debit') { %>
-                          <span class="badge bg-danger-subtle text-danger">Debit</span>
+                          <span class="badge bg-danger-subtle text-danger">
+                            <i class="bi bi-dash-circle me-1"></i>Debit
+                          </span>
                         <% } else { %>
-                          <span class="badge bg-primary-subtle text-primary">Add</span>
+                          <span class="badge bg-primary-subtle text-primary">
+                            <i class="bi bi-wallet me-1"></i>Add
+                          </span>
                         <% } %>
                       </td>
-                      <td class="text-end pe-4 fw-medium <%= transaction.type === 'credit' || transaction.type === 'add' ? 'text-success' : 'text-danger' %>">
-                        <%= transaction.type === 'credit' || transaction.type === 'add' ? '+' : '-' %>₹<%= transaction.amount %>
+                      <td class="text-end pe-4">
+                        <div class="fw-bold <%= transaction.type === 'credit' || transaction.type === 'add' ? 'text-success' : 'text-danger' %>">
+                          <%
+                            // **FIX: Ensure amount is a number and handle all edge cases**
+                            let displayAmount = 0;
+                            try {
+                              displayAmount = typeof transaction.amount === 'number'
+                                ? transaction.amount
+                                : parseFloat(transaction.amount) || 0;
+
+                              // **ADDITIONAL SAFETY: Handle NaN and Infinity**
+                              if (isNaN(displayAmount) || !isFinite(displayAmount)) {
+                                displayAmount = 0;
+                              }
+                            } catch (e) {
+                              displayAmount = 0;
+                            }
+                          %>
+                          <%= transaction.type === 'credit' || transaction.type === 'add' ? '+' : '-' %>₹<%= displayAmount.toFixed(2) %>
+                        </div>
+                      </td>
+                      <td class="text-center">
+                        <% if (transaction.refundBreakdowns && transaction.refundBreakdowns.length > 0) { %>
+                          <button class="btn btn-sm btn-outline-info" type="button" data-bs-toggle="collapse" data-bs-target="#breakdown-<%= transaction._id || Math.random().toString(36).substr(2, 9) %>" aria-expanded="false">
+                            <i class="bi bi-info-circle"></i>
+                          </button>
+                        <% } else { %>
+                          <span class="text-muted">-</span>
+                        <% } %>
                       </td>
                     </tr>
+
+                    <!-- **ENHANCED REFUND BREAKDOWN ROW** -->
+                    <% if (transaction.refundBreakdowns && transaction.refundBreakdowns.length > 0) { %>
+                      <tr class="collapse" id="breakdown-<%= transaction._id || Math.random().toString(36).substr(2, 9) %>">
+                        <td colspan="5" class="p-0">
+                          <div class="refund-breakdown-container">
+                            <div class="row g-3 p-3">
+                              <div class="col-md-6">
+                                <div class="refund-summary-card">
+                                  <h6 class="mb-2"><i class="bi bi-calculator me-2"></i>Refund Breakdown</h6>
+                                  <%
+                                    let totalBase = 0;
+                                    let totalTax = 0;
+                                    transaction.refundBreakdowns.forEach(breakdown => {
+                                      totalBase += breakdown.finalPrice || 0;
+                                      totalTax += breakdown.taxRefundAmount || 0;
+                                    });
+                                  %>
+                                  <div class="breakdown-item">
+                                    <span class="breakdown-label">Base Amount:</span>
+                                    <span class="breakdown-value text-primary">₹<%= (totalBase || 0).toFixed(2) %></span>
+                                  </div>
+                                  <div class="breakdown-item">
+                                    <span class="breakdown-label">Tax Refund:</span>
+                                    <span class="breakdown-value text-info">₹<%= (totalTax || 0).toFixed(2) %></span>
+                                  </div>
+                                  <hr class="my-2">
+                                  <div class="breakdown-item fw-bold">
+                                    <span class="breakdown-label">Total Credited:</span>
+                                    <span class="breakdown-value text-success">₹<%= displayAmount.toFixed(2) %></span>
+                                  </div>
+                                </div>
+                              </div>
+                              <div class="col-md-6">
+                                <div class="refund-info-card">
+                                  <h6 class="mb-2"><i class="bi bi-info-circle me-2"></i>Refund Information</h6>
+                                  <div class="info-item">
+                                    <small class="text-muted">Refund Type:</small>
+                                    <div class="fw-medium">
+                                      <% if (transaction.refundType === 'cancellation') { %>
+                                        <i class="bi bi-x-circle text-warning me-1"></i>Pre-shipment Cancellation
+                                      <% } else { %>
+                                        <i class="bi bi-arrow-return-left text-info me-1"></i>Post-delivery Return
+                                      <% } %>
+                                    </div>
+                                  </div>
+                                  <div class="info-item mt-2">
+                                    <small class="text-muted">Tax Handling:</small>
+                                    <div class="fw-medium">
+                                      <% if (transaction.refundBreakdowns[0] && transaction.refundBreakdowns[0].isFullOrderRefund) { %>
+                                        <i class="bi bi-check-circle text-success me-1"></i>Full tax refunded
+                                      <% } else { %>
+                                        <i class="bi bi-pie-chart text-primary me-1"></i>Proportional tax refund
+                                      <% } %>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    <% } %>
                   <% }); %>
                 <% } else { %>
                   <tr>
-                    <td colspan="4" class="text-center py-4">No transactions found</td>
+                    <td colspan="5" class="text-center py-4">No transactions found</td>
                   </tr>
                 <% } %>
               </tbody>
@@ -475,6 +589,96 @@
   /* Loading animation for balance */
   .balance-loading {
     animation: countUp 2s ease-out;
+  }
+
+  /* **ENHANCED REFUND BREAKDOWN STYLING** */
+  .refund-breakdown-container {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-top: 3px solid #dee2e6;
+    margin: 0;
+  }
+
+  .refund-summary-card, .refund-info-card {
+    background: white;
+    border-radius: 8px;
+    padding: 1rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    border: 1px solid #e9ecef;
+  }
+
+  .refund-summary-card h6, .refund-info-card h6 {
+    color: #495057;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #e9ecef;
+  }
+
+  .breakdown-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.25rem 0;
+  }
+
+  .breakdown-label {
+    color: #6c757d;
+    font-size: 0.9rem;
+  }
+
+  .breakdown-value {
+    font-weight: 600;
+    font-size: 0.95rem;
+  }
+
+  .info-item {
+    margin-bottom: 0.5rem;
+  }
+
+  .info-item small {
+    display: block;
+    margin-bottom: 0.25rem;
+  }
+
+  .transaction-description {
+    line-height: 1.4;
+  }
+
+  .transaction-row:hover .refund-breakdown-container {
+    background: linear-gradient(135deg, #f1f3f4 0%, #e8eaed 100%);
+  }
+
+  /* Badge enhancements */
+  .badge {
+    font-size: 0.75rem;
+    padding: 0.4em 0.6em;
+  }
+
+  .badge i {
+    font-size: 0.8em;
+  }
+
+  /* Collapse animation */
+  .collapse {
+    transition: all 0.3s ease;
+  }
+
+  .collapsing {
+    transition: height 0.3s ease;
+  }
+
+  /* Button styling */
+  .btn-outline-info {
+    border-color: #17a2b8;
+    color: #17a2b8;
+    font-size: 0.8rem;
+    padding: 0.25rem 0.5rem;
+  }
+
+  .btn-outline-info:hover {
+    background-color: #17a2b8;
+    border-color: #17a2b8;
+    color: white;
   }
 </style>
 

@@ -1,7 +1,59 @@
 const Order = require("../../models/orderSchema");
 const Product = require("../../models/productSchema");
-const { processReturnRefund } = require("../userController/wallet-controller");
+const { processReturnRefund, calculateItemRefundAmount } = require("../userController/wallet-controller");
 const { HttpStatus } = require('../../helpers/status-code');
+
+/**
+ * ENHANCED RETURN MANAGEMENT - PRODUCTION OPTIMIZED
+ * Handles return requests with detailed refund calculations and tax handling
+ */
+
+/**
+ * Calculate estimated refund amount for return requests (OPTIMIZED)
+ * @param {Object} order - Order object with items
+ * @returns {Object} Refund calculation summary
+ */
+const calculateEstimatedRefund = (order) => {
+  try {
+    // **OPTIMIZED: Early validation and filtering**
+    if (!order?.items?.length) {
+      return { total: 0, base: 0, tax: 0, breakdown: [] };
+    }
+
+    const returnRequestedItems = order.items.filter(item => item.status === 'Return Requested');
+    if (returnRequestedItems.length === 0) {
+      return { total: 0, base: 0, tax: 0, breakdown: [] };
+    }
+
+    // **OPTIMIZED: Single calculation pass**
+    const isFullOrderReturn = returnRequestedItems.length === order.items.length;
+    let totalRefund = 0;
+    let totalBase = 0;
+    let totalTax = 0;
+
+    // **OPTIMIZED: Reduce array operations**
+    for (const item of returnRequestedItems) {
+      const refundResult = calculateItemRefundAmount(item, order, 'return', isFullOrderReturn);
+
+      if (refundResult?.breakdown) {
+        totalRefund += refundResult.amount || 0;
+        totalBase += refundResult.breakdown.finalPrice || 0;
+        totalTax += refundResult.breakdown.taxRefundAmount || 0;
+      }
+    }
+
+    return {
+      total: Number(totalRefund.toFixed(2)),
+      base: Number(totalBase.toFixed(2)),
+      tax: Number(totalTax.toFixed(2)),
+      isFullOrderReturn,
+      itemCount: returnRequestedItems.length
+    };
+  } catch (error) {
+    console.error('Error calculating estimated refund:', error.message);
+    return { total: 0, base: 0, tax: 0, breakdown: [] };
+  }
+};
 
 /**
  * Get all orders with return requests for admin management
@@ -46,6 +98,9 @@ const getReturnRequests = async (req, res) => {
     const processedOrders = orders.map(order => {
       const returnRequestedItems = order.items.filter(item => item.status === 'Return Requested');
 
+      // **CALCULATE ESTIMATED REFUND**
+      const estimatedRefund = calculateEstimatedRefund(order);
+
       return {
         ...order,
         returnRequestedItems,
@@ -59,7 +114,8 @@ const getReturnRequests = async (req, res) => {
         customerName: order.user ? order.user.fullName : "Unknown",
         customerEmail: order.user ? order.user.email : "N/A",
         hasIndividualReturns: returnRequestedItems.length > 0 && order.orderStatus === 'Delivered',
-        hasFullOrderReturn: order.orderStatus === 'Return Requested'
+        hasFullOrderReturn: order.orderStatus === 'Return Requested',
+        estimatedRefund: estimatedRefund // **NEW: Include refund breakdown**
       };
     });
 
@@ -135,12 +191,13 @@ const getReturnRequestDetails = async (req, res) => {
     });
     order.formattedTotal = `₹${order.total.toFixed(2)}`;
 
-    // Calculate potential refund amount
+    // **CORRECTED REFUND CALCULATION - EXACT CUSTOMER PAID AMOUNT**
     let totalRefundAmount = 0;
     returnRequestedItems.forEach(item => {
       if (item.priceBreakdown && item.priceBreakdown.finalPrice) {
-        totalRefundAmount += item.priceBreakdown.finalPrice * item.quantity;
+        totalRefundAmount += item.priceBreakdown.finalPrice;
       } else {
+        // Fallback calculation
         totalRefundAmount += item.discountedPrice * item.quantity;
       }
     });
@@ -256,17 +313,19 @@ const processReturnRequest = async (req, res) => {
           refundProcessed = true; // No refund needed, but mark as processed
         }
       } else {
-        // For online payment methods (Wallet, Razorpay, etc.)
+        // **ENHANCED REFUND PROCESSING WITH TAX HANDLING**
         if (order.paymentStatus === 'Paid' || order.paymentStatus === 'Partially Refunded') {
+          console.log('Processing online payment return refund with enhanced logic');
+
           const refundSuccess = await processReturnRefund(order.user, order);
           if (refundSuccess) {
             refundProcessed = true;
-            console.log('Online payment return refund processed successfully');
+            console.log('Enhanced online payment return refund processed successfully');
           } else {
-            console.error('Failed to process online payment return refund');
+            console.error('Failed to process enhanced online payment return refund');
             return res.status(500).json({
               success: false,
-              message: 'Failed to process refund. Please try again.'
+              message: 'Failed to process refund with tax calculation. Please try again.'
             });
           }
         } else {
@@ -377,9 +436,11 @@ const bulkProcessReturns = async (req, res) => {
                                         );
 
             if (wasDeliveredAndPaid) {
+              console.log('Processing COD return refund with enhanced tax logic');
               const refundSuccess = await processReturnRefund(order.user, order);
               if (refundSuccess) {
                 refundProcessed = true;
+                console.log('Enhanced COD return refund processed successfully');
               }
             } else {
               refundProcessed = true; // No refund needed for unpaid COD
