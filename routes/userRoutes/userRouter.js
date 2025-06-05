@@ -178,7 +178,8 @@ router.get('/orders', isAuthenticated, orderController.getOrders);
 router.get('/orders/:id', isAuthenticated, orderController.getOrderDetails);
 router.get('/order-success/:id', isAuthenticated, orderController.getOrderSuccess);
 router.get('/payment-failure', isAuthenticated, orderController.getPaymentFailure);
-router.get('/orders/:id/invoice', isAuthenticated, orderController.downloadInvoice);
+router.get('/orders/:id/invoice', isAuthenticated, orderController.viewInvoice);
+router.get('/orders/:id/invoice/download', isAuthenticated, orderController.downloadInvoice);
 
 router.post('/orders/:id/cancel',isAuthenticated,orderController.cancelOrder);
 router.post('/orders/:id/items/:productId/cancel',isAuthenticated, orderController.cancelOrderItem);

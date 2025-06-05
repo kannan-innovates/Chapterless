@@ -1,6 +1,7 @@
 const Order = require("../../models/orderSchema");
 const Product = require("../../models/productSchema");
-const { processReturnRefund, calculateItemRefundAmount } = require("../userController/wallet-controller");
+const { processReturnRefund } = require("../userController/wallet-controller");
+const { calculateExactRefundAmount } = require("../../helpers/money-calculator");
 const { HttpStatus } = require('../../helpers/status-code');
 
 /**
@@ -31,27 +32,18 @@ const calculateEstimatedRefund = (order) => {
     let totalBase = 0;
     let totalTax = 0;
 
-    // **OPTIMIZED: Reduce array operations**
+    // ACCURATE CALCULATION - Using Money Calculator
     for (const item of returnRequestedItems) {
-      const refundResult = calculateItemRefundAmount(item, order, 'return', isFullOrderReturn);
-
-      if (refundResult?.breakdown) {
-        totalRefund += refundResult.amount || 0;
-        totalBase += refundResult.breakdown.finalPrice || 0;
-        totalTax += refundResult.breakdown.taxRefundAmount || 0;
-      }
+      totalRefund += calculateExactRefundAmount(item, order);
     }
 
     return {
       total: Number(totalRefund.toFixed(2)),
-      base: Number(totalBase.toFixed(2)),
-      tax: Number(totalTax.toFixed(2)),
-      isFullOrderReturn,
       itemCount: returnRequestedItems.length
     };
   } catch (error) {
     console.error('Error calculating estimated refund:', error.message);
-    return { total: 0, base: 0, tax: 0, breakdown: [] };
+    return { total: 0 };
   }
 };
 
@@ -98,7 +90,29 @@ const getReturnRequests = async (req, res) => {
     const processedOrders = orders.map(order => {
       const returnRequestedItems = order.items.filter(item => item.status === 'Return Requested');
 
-      // **CALCULATE ESTIMATED REFUND**
+      // **CRITICAL FIX: Apply same total correction as user controller**
+      // Recalculate correct total to ensure consistency
+      let recalculatedSubtotal = 0;
+      order.items.forEach(item => {
+        if (item.priceBreakdown) {
+          recalculatedSubtotal += item.priceBreakdown.subtotal || (item.price * item.quantity);
+        } else {
+          recalculatedSubtotal += item.price * item.quantity;
+        }
+      });
+
+      const useStoredSubtotal = order.subtotal && Math.abs(order.subtotal - recalculatedSubtotal) < 0.01;
+      const displaySubtotal = useStoredSubtotal ? order.subtotal : recalculatedSubtotal;
+
+      // Recalculate correct total
+      const correctTotal = displaySubtotal - (order.discount || 0) - (order.couponDiscount || 0) + (order.tax || 0);
+      const useStoredTotal = order.total && Math.abs(order.total - correctTotal) < 0.01;
+      const displayTotal = useStoredTotal ? order.total : correctTotal;
+
+      // Update order.total for accurate refund calculations
+      order.total = displayTotal;
+
+      // **CALCULATE ESTIMATED REFUND WITH CORRECTED TOTAL**
       const estimatedRefund = calculateEstimatedRefund(order);
 
       return {
@@ -110,12 +124,12 @@ const getReturnRequests = async (req, res) => {
           month: "short",
           day: "numeric",
         }),
-        formattedTotal: `₹${order.total.toFixed(2)}`,
+        formattedTotal: `₹${displayTotal.toFixed(2)}`,
         customerName: order.user ? order.user.fullName : "Unknown",
         customerEmail: order.user ? order.user.email : "N/A",
         hasIndividualReturns: returnRequestedItems.length > 0 && order.orderStatus === 'Delivered',
         hasFullOrderReturn: order.orderStatus === 'Return Requested',
-        estimatedRefund: estimatedRefund // **NEW: Include refund breakdown**
+        estimatedRefund: estimatedRefund // **NEW: Include refund breakdown with corrected total**
       };
     });
 
@@ -183,24 +197,39 @@ const getReturnRequestDetails = async (req, res) => {
       return res.redirect('/admin/return-management');
     }
 
+    // **CRITICAL FIX: Apply same total correction as user controller**
+    // Recalculate correct total to ensure consistency
+    let recalculatedSubtotal = 0;
+    order.items.forEach(item => {
+      if (item.priceBreakdown) {
+        recalculatedSubtotal += item.priceBreakdown.subtotal || (item.price * item.quantity);
+      } else {
+        recalculatedSubtotal += item.price * item.quantity;
+      }
+    });
+
+    const useStoredSubtotal = order.subtotal && Math.abs(order.subtotal - recalculatedSubtotal) < 0.01;
+    const displaySubtotal = useStoredSubtotal ? order.subtotal : recalculatedSubtotal;
+
+    // Recalculate correct total
+    const correctTotal = displaySubtotal - (order.discount || 0) - (order.couponDiscount || 0) + (order.tax || 0);
+    const useStoredTotal = order.total && Math.abs(order.total - correctTotal) < 0.01;
+    const displayTotal = useStoredTotal ? order.total : correctTotal;
+
+    // Update order.total for accurate refund calculations
+    order.total = displayTotal;
+
     // Format order data
     order.formattedDate = new Date(order.createdAt).toLocaleDateString("en-US", {
       year: "numeric",
       month: "long",
       day: "numeric",
     });
-    order.formattedTotal = `₹${order.total.toFixed(2)}`;
+    order.formattedTotal = `₹${displayTotal.toFixed(2)}`;
 
-    // **CORRECTED REFUND CALCULATION - EXACT CUSTOMER PAID AMOUNT**
-    let totalRefundAmount = 0;
-    returnRequestedItems.forEach(item => {
-      if (item.priceBreakdown && item.priceBreakdown.finalPrice) {
-        totalRefundAmount += item.priceBreakdown.finalPrice;
-      } else {
-        // Fallback calculation
-        totalRefundAmount += item.discountedPrice * item.quantity;
-      }
-    });
+    // **FIXED: Use same calculation as wallet controller with corrected total**
+    const estimatedRefund = calculateEstimatedRefund(order);
+    const totalRefundAmount = estimatedRefund.total;
 
     res.render('admin/return-request-details', {
       title: `Return Request - Order #${order.orderNumber}`,

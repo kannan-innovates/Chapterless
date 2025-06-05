@@ -695,13 +695,30 @@ const createRazorpayOrder = async (req, res) => {
     // Ensure exact amount by using string operations to avoid floating point issues
     const finalAmount = (checkoutTotal * 100).toFixed(0);
 
+    // **CRITICAL FIX: Validate data consistency before proceeding**
+    const itemFinalPriceSum = orderItems.reduce((sum, item) => sum + (item.priceBreakdown?.finalPrice || 0), 0);
+    const expectedTotal = itemFinalPriceSum + checkoutTax;
+
+    if (Math.abs(expectedTotal - checkoutTotal) > 0.01) {
+      console.error('Order total inconsistency detected:', {
+        itemFinalPriceSum: itemFinalPriceSum.toFixed(2),
+        calculatedTax: checkoutTax.toFixed(2),
+        expectedTotal: expectedTotal.toFixed(2),
+        actualTotal: checkoutTotal.toFixed(2),
+        difference: (checkoutTotal - expectedTotal).toFixed(2)
+      });
+
+      // Use the consistent calculation
+      checkoutTotal = expectedTotal;
+    }
+
     // Create the display breakdown
     const displayBreakdown = [
       `Subtotal: ₹${checkoutSubtotal.toFixed(2)}`,
       `Offer Discount: -₹${checkoutOfferDiscount.toFixed(2)}`,
       appliedCouponCode ? `Coupon (${appliedCouponCode}): -₹${couponDiscount.toFixed(2)}` : null,
       `Tax (8%): ₹${checkoutTax.toFixed(2)}`,
-      `Final Amount: ₹${(parseInt(finalAmount) / 100).toFixed(2)}`
+      `Final Amount: ₹${checkoutTotal.toFixed(2)}`
     ].filter(Boolean).join('\n');
 
     // Store order details in session for later use
@@ -718,29 +735,34 @@ const createRazorpayOrder = async (req, res) => {
       paymentMethod: "Razorpay"
     };
 
-    // Create Razorpay order with exact amount
-    const razorpayOrder = await razorpay.orders.create({
-      amount: parseInt(finalAmount),  // Use the exact amount in paise
+    // Convert total to paise (Razorpay requires amount in paise)
+    const amountInPaise = Math.round(checkoutTotal * 100);
+
+    // Create Razorpay order
+    const razorpayOrderData = {
+      amount: amountInPaise,
       currency: "INR",
       receipt: orderNumber,
-      payment_capture: 1,
       notes: {
         subtotal: checkoutSubtotal.toFixed(2),
         offerDiscount: checkoutOfferDiscount.toFixed(2),
         tax: checkoutTax.toFixed(2),
-        total: (parseInt(finalAmount) / 100).toFixed(2)
+        total: checkoutTotal.toFixed(2)
       }
-    });
+    };
+
+    // Create Razorpay order
+    const razorpayOrder = await razorpay.orders.create(razorpayOrderData);
 
     // Prepare response with exact amounts
     res.status(200).json({
       success: true,
       order: razorpayOrder,
       key: process.env.RAZORPAY_KEY_ID,
-      amount: parseInt(finalAmount),  // Use the exact amount in paise
+      amount: amountInPaise,  // Amount in paise
       currency: "INR",
       name: "Chapterless",
-      description: `Order Total: ₹${(parseInt(finalAmount) / 100).toFixed(2)}`,
+      description: `Order Total: ₹${checkoutTotal.toFixed(2)}`,
       prefill: {
         name: address.fullName,
         contact: address.phone,
@@ -754,8 +776,8 @@ const createRazorpayOrder = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error("Error creating Razorpay order:", error);
-    res.status(500).json({ success: false, message: "Internal server error" });
+    console.error("Error creating Razorpay order:", error.message);
+    res.status(500).json({ success: false, message: "Failed to create payment order" });
   }
 };
 

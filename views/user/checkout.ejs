@@ -1102,40 +1102,7 @@
   </div>
 </div>
 
-<!-- Order Success Modal -->
-<div
-  class="modal fade"
-  id="orderSuccessModal"
-  tabindex="-1"
-  aria-labelledby="orderSuccessModalLabel"
-  aria-hidden="true"
->
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-body text-center p-5">
-        <div class="mb-4">
-          <i
-            class="bi bi-check-circle-fill text-success"
-            style="font-size: 5rem"
-          ></i>
-        </div>
-        <h3 class="mb-3">Order Placed Successfully!</h3>
-        <p class="mb-4" id="orderSuccessMessage">
-          Your order has been placed successfully. You will receive a
-          confirmation email shortly.
-        </p>
-        <div class="d-grid gap-2">
-          <a href="/orders" class="btn btn-dark">
-            <i class="bi bi-box me-2"></i>Track Your Order
-          </a>
-          <a href="/" class="btn btn-outline-dark">
-            <i class="bi bi-shop me-2"></i>Continue Shopping
-          </a>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
+<!-- Order Success Modal removed - using success page instead -->
 
 <!-- Add Bootstrap Icons CDN -->
 <link
@@ -2407,21 +2374,17 @@
             const data = await response.json();
 
             if (data.success) {
-              const orderSuccessModal = new bootstrap.Modal(
-                document.getElementById("orderSuccessModal")
-              );
-              const modalBody = document.querySelector(
-                "#orderSuccessModal .modal-body"
-              );
-              modalBody.querySelector(
-                "p"
-              ).textContent = `Your order #${data.orderNumber} has been placed successfully. You will receive a confirmation email shortly.`;
-              orderSuccessModal.show();
+              // Show success toast and redirect directly to success page
+              Toast.fire({
+                icon: "success",
+                title: `Order #${data.orderNumber} placed successfully!`,
+                timer: 2000
+              });
 
-              // Redirect to order success page after a delay
+              // Redirect to order success page immediately
               setTimeout(() => {
                 window.location.href = `/order-success/${data.orderId}`;
-              }, 3000);
+              }, 1500);
             } else {
               Toast.fire({
                 icon: "error",
@@ -2444,21 +2407,17 @@
             const data = await response.json();
 
             if (data.success) {
-              const orderSuccessModal = new bootstrap.Modal(
-                document.getElementById("orderSuccessModal")
-              );
-              const modalBody = document.querySelector(
-                "#orderSuccessModal .modal-body"
-              );
-              modalBody.querySelector(
-                "p"
-              ).textContent = `Your order #${data.orderNumber} has been placed successfully and paid from your wallet. You will receive a confirmation email shortly.`;
-              orderSuccessModal.show();
+              // Show success toast and redirect directly to success page
+              Toast.fire({
+                icon: "success",
+                title: `Order #${data.orderNumber} placed and paid successfully!`,
+                timer: 2000
+              });
 
-              // Redirect to order success page after a delay
+              // Redirect to order success page immediately
               setTimeout(() => {
                 window.location.href = `/order-success/${data.orderId}`;
-              }, 3000);
+              }, 1500);
             } else {
               Toast.fire({
                 icon: "error",

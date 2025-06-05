@@ -568,40 +568,19 @@
                           }
                         }
 
-                        // **CRITICAL FIX: Calculate exact amount customer paid INCLUDING TAX**
+                        // ACCURATE REFUND CALCULATION - Using Money Calculator Logic
                         let actualPaidAmount = 0;
-                        let baseAmount = 0;
-                        let taxAmount = 0;
 
-                        if (item.priceBreakdown && item.priceBreakdown.finalPrice) {
-                          baseAmount = item.priceBreakdown.finalPrice;
+                        if (order.items.length === 1) {
+                          // Single item order - refund full order total (what customer paid)
+                          actualPaidAmount = order.total;
                         } else {
-                          baseAmount = item.finalPrice || (item.discountedPrice * item.quantity);
+                          // Multi-item order - calculate proportional amount
+                          const itemFinalPrice = item.priceBreakdown?.finalPrice || (item.discountedPrice * item.quantity);
+                          const orderSubtotal = order.total - (order.tax || 0);
+                          const itemProportion = itemFinalPrice / orderSubtotal;
+                          actualPaidAmount = order.total * itemProportion;
                         }
-
-                        // Calculate tax for this item
-                        if (order.tax && order.tax > 0) {
-                          if (order.items.length === 1) {
-                            // Single item - full tax
-                            taxAmount = order.tax;
-                          } else {
-                            // Multiple items - proportional tax
-                            let totalOrderValue = 0;
-                            order.items.forEach(orderItem => {
-                              if (orderItem.priceBreakdown && orderItem.priceBreakdown.finalPrice) {
-                                totalOrderValue += orderItem.priceBreakdown.finalPrice;
-                              } else {
-                                totalOrderValue += orderItem.finalPrice || (orderItem.discountedPrice * orderItem.quantity);
-                              }
-                            });
-
-                            if (totalOrderValue > 0) {
-                              taxAmount = (baseAmount / totalOrderValue) * order.tax;
-                            }
-                          }
-                        }
-
-                        actualPaidAmount = baseAmount + taxAmount;
                       %>
 
                       <div class="refund-info-card">
@@ -646,11 +625,18 @@
                           showRefund = wasDelivered;
                         }
 
+                        // ACCURATE REFUND CALCULATION - Using Money Calculator Logic
                         let actualPaidAmount = 0;
-                        if (item.priceBreakdown && item.priceBreakdown.finalPrice) {
-                          actualPaidAmount = item.priceBreakdown.finalPrice;
+
+                        if (order.items.length === 1) {
+                          // Single item order - refund full order total (what customer paid)
+                          actualPaidAmount = order.total;
                         } else {
-                          actualPaidAmount = item.finalPrice || (item.discountedPrice * item.quantity);
+                          // Multi-item order - calculate proportional amount
+                          const itemFinalPrice = item.priceBreakdown?.finalPrice || (item.discountedPrice * item.quantity);
+                          const orderSubtotal = order.total - (order.tax || 0);
+                          const itemProportion = itemFinalPrice / orderSubtotal;
+                          actualPaidAmount = order.total * itemProportion;
                         }
                       %>
 
@@ -701,40 +687,19 @@
                         </div>
                         <div class="expected-refund-details mt-1">
                           <%
-                            // **CRITICAL FIX: Calculate exact amount customer paid INCLUDING TAX**
+                            // ACCURATE REFUND CALCULATION - Using Money Calculator Logic
                             let actualPaidAmount = 0;
-                            let baseAmount = 0;
-                            let taxAmount = 0;
 
-                            if (item.priceBreakdown && item.priceBreakdown.finalPrice) {
-                              baseAmount = item.priceBreakdown.finalPrice;
+                            if (order.items.length === 1) {
+                              // Single item order - refund full order total (what customer paid)
+                              actualPaidAmount = order.total;
                             } else {
-                              baseAmount = item.finalPrice || (item.discountedPrice * item.quantity);
+                              // Multi-item order - calculate proportional amount
+                              const itemFinalPrice = item.priceBreakdown?.finalPrice || (item.discountedPrice * item.quantity);
+                              const orderSubtotal = order.total - (order.tax || 0);
+                              const itemProportion = itemFinalPrice / orderSubtotal;
+                              actualPaidAmount = order.total * itemProportion;
                             }
-
-                            // Calculate tax for this item
-                            if (order.tax && order.tax > 0) {
-                              if (order.items.length === 1) {
-                                // Single item - full tax
-                                taxAmount = order.tax;
-                              } else {
-                                // Multiple items - proportional tax
-                                let totalOrderValue = 0;
-                                order.items.forEach(orderItem => {
-                                  if (orderItem.priceBreakdown && orderItem.priceBreakdown.finalPrice) {
-                                    totalOrderValue += orderItem.priceBreakdown.finalPrice;
-                                  } else {
-                                    totalOrderValue += orderItem.finalPrice || (orderItem.discountedPrice * orderItem.quantity);
-                                  }
-                                });
-
-                                if (totalOrderValue > 0) {
-                                  taxAmount = (baseAmount / totalOrderValue) * order.tax;
-                                }
-                              }
-                            }
-
-                            actualPaidAmount = baseAmount + taxAmount;
                           %>
                           <div class="refund-breakdown">
                             <small class="text-muted">Will be refunded to wallet:</small>
@@ -778,40 +743,19 @@
                           <i class="bi bi-info-circle me-2"></i>Refund Information
                         </h6>
                         <%
-                          // **CRITICAL FIX: Calculate exact amount customer paid INCLUDING TAX**
+                          // ACCURATE REFUND CALCULATION - Using Money Calculator Logic
                           let actualPaidAmount = 0;
-                          let baseAmount = 0;
-                          let taxAmount = 0;
 
-                          if (item.priceBreakdown && item.priceBreakdown.finalPrice) {
-                            baseAmount = item.priceBreakdown.finalPrice;
+                          if (order.items.length === 1) {
+                            // Single item order - refund full order total (what customer paid)
+                            actualPaidAmount = order.total;
                           } else {
-                            baseAmount = item.finalPrice || (item.discountedPrice * item.quantity);
+                            // Multi-item order - calculate proportional amount
+                            const itemFinalPrice = item.priceBreakdown?.finalPrice || (item.discountedPrice * item.quantity);
+                            const orderSubtotal = order.total - (order.tax || 0);
+                            const itemProportion = itemFinalPrice / orderSubtotal;
+                            actualPaidAmount = order.total * itemProportion;
                           }
-
-                          // Calculate tax for this item
-                          if (order.tax && order.tax > 0) {
-                            if (order.items.length === 1) {
-                              // Single item - full tax
-                              taxAmount = order.tax;
-                            } else {
-                              // Multiple items - proportional tax
-                              let totalOrderValue = 0;
-                              order.items.forEach(orderItem => {
-                                if (orderItem.priceBreakdown && orderItem.priceBreakdown.finalPrice) {
-                                  totalOrderValue += orderItem.priceBreakdown.finalPrice;
-                                } else {
-                                  totalOrderValue += orderItem.finalPrice || (orderItem.discountedPrice * orderItem.quantity);
-                                }
-                              });
-
-                              if (totalOrderValue > 0) {
-                                taxAmount = (baseAmount / totalOrderValue) * order.tax;
-                              }
-                            }
-                          }
-
-                          actualPaidAmount = baseAmount + taxAmount;
                         %>
                         <% if (order.paymentMethod === 'COD' && order.orderStatus !== 'Delivered' && !order.deliveredAt) { %>
                           <p class="mb-2">This COD order will be cancelled. <strong>No refund is required</strong> as no payment has been collected yet.</p>
@@ -874,40 +818,19 @@
                           <i class="bi bi-exclamation-triangle me-2"></i>Return & Refund Information
                         </h6>
                         <%
-                          // **CRITICAL FIX: Calculate exact amount customer paid INCLUDING TAX**
+                          // ACCURATE REFUND CALCULATION - Using Money Calculator Logic
                           let actualPaidAmount = 0;
-                          let baseAmount = 0;
-                          let taxAmount = 0;
 
-                          if (item.priceBreakdown && item.priceBreakdown.finalPrice) {
-                            baseAmount = item.priceBreakdown.finalPrice;
+                          if (order.items.length === 1) {
+                            // Single item order - refund full order total (what customer paid)
+                            actualPaidAmount = order.total;
                           } else {
-                            baseAmount = item.finalPrice || (item.discountedPrice * item.quantity);
+                            // Multi-item order - calculate proportional amount
+                            const itemFinalPrice = item.priceBreakdown?.finalPrice || (item.discountedPrice * item.quantity);
+                            const orderSubtotal = order.total - (order.tax || 0);
+                            const itemProportion = itemFinalPrice / orderSubtotal;
+                            actualPaidAmount = order.total * itemProportion;
                           }
-
-                          // Calculate tax for this item
-                          if (order.tax && order.tax > 0) {
-                            if (order.items.length === 1) {
-                              // Single item - full tax
-                              taxAmount = order.tax;
-                            } else {
-                              // Multiple items - proportional tax
-                              let totalOrderValue = 0;
-                              order.items.forEach(orderItem => {
-                                if (orderItem.priceBreakdown && orderItem.priceBreakdown.finalPrice) {
-                                  totalOrderValue += orderItem.priceBreakdown.finalPrice;
-                                } else {
-                                  totalOrderValue += orderItem.finalPrice || (orderItem.discountedPrice * orderItem.quantity);
-                                }
-                              });
-
-                              if (totalOrderValue > 0) {
-                                taxAmount = (baseAmount / totalOrderValue) * order.tax;
-                              }
-                            }
-                          }
-
-                          actualPaidAmount = baseAmount + taxAmount;
                         %>
                         <p class="mb-2">If your return is approved, <strong>₹<%= actualPaidAmount.toFixed(2) %></strong> will be refunded to your wallet.</p>
                         <small class="text-muted">
@@ -1078,12 +1001,47 @@
             </div>
 
             <div>
-              <a href="/orders/<%= order._id %>/invoice" class="btn btn-outline-dark btn-sm mb-2 w-100">Download Invoice</a>
+              <a href="/orders/<%= order._id %>/invoice" class="btn btn-outline-primary btn-sm mb-2 w-100">View Invoice</a>
+              <a href="/orders/<%= order._id %>/invoice/download" class="btn btn-outline-dark btn-sm mb-2 w-100" onclick="downloadInvoice(event, '<%= order._id %>', '<%= order.orderNumber %>')">Download Invoice</a>
               <%
                 const orderNotTooFarProgressed = ['Placed', 'Processing', 'Partially Cancelled', 'Partially Returned', 'Partially Return Requested'].includes(order.orderStatus);
                 const hasActiveItems = order.items.some(item => item.status === 'Active');
                 const canCancelOrder = orderNotTooFarProgressed && hasActiveItems;
                 const canReturnOrder = order.orderStatus === 'Delivered' && hasActiveItems;
+
+                // **CALCULATE REMAINING ORDER AMOUNT (excluding cancelled items)**
+                let remainingOrderAmount = 0;
+                if (hasActiveItems) {
+                  // Calculate amount for active items only
+                  const activeItems = order.items.filter(item => item.status === 'Active');
+
+                  if (activeItems.length === order.items.length) {
+                    // No items cancelled yet - use full order total
+                    remainingOrderAmount = order.total;
+                  } else {
+                    // Some items cancelled - calculate proportional amount for remaining items
+                    let activeItemsSubtotal = 0;
+                    activeItems.forEach(item => {
+                      const itemFinalPrice = item.priceBreakdown?.finalPrice || (item.discountedPrice * item.quantity);
+                      activeItemsSubtotal += itemFinalPrice;
+                    });
+
+                    // Calculate total items subtotal for proportion
+                    let totalItemsSubtotal = 0;
+                    order.items.forEach(item => {
+                      const itemFinalPrice = item.priceBreakdown?.finalPrice || (item.discountedPrice * item.quantity);
+                      totalItemsSubtotal += itemFinalPrice;
+                    });
+
+                    // Calculate proportional amount including tax
+                    if (totalItemsSubtotal > 0) {
+                      const proportion = activeItemsSubtotal / totalItemsSubtotal;
+                      remainingOrderAmount = order.total * proportion;
+                    } else {
+                      remainingOrderAmount = 0;
+                    }
+                  }
+                }
               %>
               <% if (canCancelOrder) { %>
                 <button
@@ -1126,9 +1084,59 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
-        <p>Are you sure you want to cancel this entire order?</p>
-        <p><strong>Order #<%= order.orderNumber %></strong></p>
-        <p>Total: <%= order.formattedTotal %></p>
+        <%
+          const activeItems = order.items.filter(item => item.status === 'Active');
+          const cancelledItems = order.items.filter(item => item.status === 'Cancelled');
+        %>
+
+        <% if (cancelledItems.length > 0) { %>
+          <p>Are you sure you want to cancel the remaining items in this order?</p>
+          <p><strong>Order #<%= order.orderNumber %></strong></p>
+
+          <div class="alert alert-info mb-3">
+            <h6 class="alert-heading">
+              <i class="bi bi-info-circle me-2"></i>Order Status
+            </h6>
+            <p class="mb-1"><strong>Total Items:</strong> <%= order.items.length %></p>
+            <p class="mb-1"><strong>Already Cancelled:</strong> <%= cancelledItems.length %> item(s)</p>
+            <p class="mb-0"><strong>Remaining to Cancel:</strong> <%= activeItems.length %> item(s)</p>
+          </div>
+
+          <p><strong>Remaining Amount:</strong> ₹<%= remainingOrderAmount.toFixed(2) %></p>
+
+          <div class="alert alert-warning">
+            <small>
+              <i class="bi bi-exclamation-triangle me-1"></i>
+              This will cancel only the remaining active items. Already cancelled items will not be affected.
+            </small>
+          </div>
+        <% } else { %>
+          <p>Are you sure you want to cancel this entire order?</p>
+          <p><strong>Order #<%= order.orderNumber %></strong></p>
+          <p><strong>Total Amount:</strong> ₹<%= remainingOrderAmount.toFixed(2) %></p>
+        <% } %>
+
+        <!-- **REFUND INFORMATION FOR CANCEL ORDER** -->
+        <div class="alert alert-info mt-3">
+          <h6 class="alert-heading">
+            <i class="bi bi-info-circle me-2"></i>Refund Information
+          </h6>
+          <% if (order.paymentMethod === 'COD' && order.orderStatus !== 'Delivered' && !order.deliveredAt) { %>
+            <p class="mb-2">This COD order will be cancelled. <strong>No refund is required</strong> as no payment has been collected yet.</p>
+            <small class="text-muted">
+              You will pay nothing for this cancelled order.
+            </small>
+          <% } else { %>
+            <p class="mb-2">If you cancel this order, <strong>₹<%= remainingOrderAmount.toFixed(2) %></strong> will be refunded to your wallet.</p>
+            <small class="text-muted">
+              <% if (cancelledItems.length > 0) { %>
+                This is the amount for the remaining active items only.
+              <% } else { %>
+                This is the exact amount you paid for this order (including all discounts and taxes).
+              <% } %>
+            </small>
+          <% } %>
+        </div>
 
         <form id="cancelOrderForm">
           <div class="mb-3">
@@ -1489,6 +1497,30 @@
       console.error('Error:', error);
       showToast('An error occurred while processing your request.', 'error');
     });
+  }
+
+  // Download invoice function
+  function downloadInvoice(event, orderId, orderNumber) {
+    event.preventDefault();
+
+    // Show loading toast
+    showToast('Preparing your invoice download...', 'info');
+
+    // Create a temporary link element
+    const link = document.createElement('a');
+    link.href = `/orders/${orderId}/invoice/download`;
+    link.download = `invoice-${orderNumber}.pdf`;
+    link.style.display = 'none';
+
+    // Add to DOM, click, and remove
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    // Show success message after a short delay
+    setTimeout(() => {
+      showToast('Invoice download started!', 'success');
+    }, 500);
   }
 
   // Return specific item

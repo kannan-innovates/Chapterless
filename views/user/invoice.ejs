@@ -99,7 +99,7 @@
         <% order.items.forEach(item => { %>
           <tr>
             <td><%= item.title || 'Unknown Product' %></td>
-            <td><%= item.formattedPrice %></td>
+            <td>₹<%= item.price.toFixed(2) %></td>
             <td><%= item.quantity || 1 %></td>
             <td>₹<%= (item.price * item.quantity).toFixed(2) %></td>
           </tr>

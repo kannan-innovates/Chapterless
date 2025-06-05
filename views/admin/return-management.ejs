@@ -425,8 +425,11 @@
                       </div>
                       <div class="refund-details">
                         <small class="text-muted">
-                          Base: ₹<%= order.estimatedRefund.base.toFixed(2) %><br>
-                          Tax: ₹<%= order.estimatedRefund.tax.toFixed(2) %>
+                          <% if (order.estimatedRefund.itemCount) { %>
+                            <%= order.estimatedRefund.itemCount %> item(s) to refund
+                          <% } else { %>
+                            Exact amount customer paid
+                          <% } %>
                         </small>
                       </div>
                     <% } else { %>

@@ -362,6 +362,12 @@ const calculateFinalItemPrice = (item, order = null) => {
  */
 const getUnifiedPriceBreakdown = (item, order = null) => {
   try {
+    // **CRITICAL FIX: Add null/undefined validation**
+    if (!item) {
+      console.warn('getUnifiedPriceBreakdown: item is null or undefined');
+      return null;
+    }
+
     const quantity = item.quantity || 1;
 
     // 1. Original price (base price before any discounts)

@@ -111,12 +111,42 @@ const getOrders = async (req, res) => {
         });
       }
 
-      // Format order totals
-      order.formattedSubtotal = `₹${order.subtotal.toFixed(2)}`;
-      order.formattedTax = `₹${order.tax.toFixed(2)}`;
-      order.formattedTotal = `₹${order.total.toFixed(2)}`;
-      order.formattedDiscount = order.discount ? `₹${order.discount.toFixed(2)}` : '₹0.00';
-      order.formattedCouponDiscount = order.couponDiscount ? `₹${order.couponDiscount.toFixed(2)}` : '₹0.00';
+      // **CRITICAL FIX: Ensure consistent order totals**
+      // Recalculate totals from item data to ensure consistency
+      let recalculatedSubtotal = 0;
+      let recalculatedOfferDiscount = 0;
+      let recalculatedCouponDiscount = 0;
+      let recalculatedFinalPriceSum = 0;
+
+      order.items.forEach(item => {
+        if (item.priceBreakdown) {
+          recalculatedSubtotal += item.priceBreakdown.subtotal || (item.price * item.quantity);
+          recalculatedOfferDiscount += item.priceBreakdown.offerDiscount || 0;
+          recalculatedCouponDiscount += item.priceBreakdown.couponDiscount || 0;
+          recalculatedFinalPriceSum += item.priceBreakdown.finalPrice || (item.discountedPrice * item.quantity);
+        } else {
+          // Fallback calculation
+          const itemSubtotal = item.price * item.quantity;
+          recalculatedSubtotal += itemSubtotal;
+          recalculatedFinalPriceSum += item.discountedPrice * item.quantity;
+        }
+      });
+
+      // Use stored values if they exist and are consistent, otherwise use calculated values
+      const useStoredSubtotal = order.subtotal && Math.abs(order.subtotal - recalculatedSubtotal) < 0.01;
+      const displaySubtotal = useStoredSubtotal ? order.subtotal : recalculatedSubtotal;
+
+      // Format order totals using consistent values
+      order.formattedSubtotal = `₹${displaySubtotal.toFixed(2)}`;
+      order.formattedTax = `₹${(order.tax || 0).toFixed(2)}`;
+      order.formattedTotal = `₹${(order.total || 0).toFixed(2)}`;
+      order.formattedDiscount = (order.discount || 0) > 0 ? `₹${order.discount.toFixed(2)}` : '₹0.00';
+      order.formattedCouponDiscount = (order.couponDiscount || 0) > 0 ? `₹${order.couponDiscount.toFixed(2)}` : '₹0.00';
+
+      // Log inconsistency warning if found
+      if (!useStoredSubtotal) {
+        console.warn(`Order ${order.orderNumber}: Subtotal inconsistency detected. Stored: ₹${order.subtotal}, Calculated: ₹${recalculatedSubtotal.toFixed(2)}`);
+      }
 
       // Format items with price breakdowns
       for (const item of order.items) {
@@ -316,12 +346,54 @@ const getOrderDetails = async (req, res) => {
       }
     }
 
-    // Format order totals
-    order.formattedSubtotal = `₹${order.subtotal.toFixed(2)}`;
-    order.formattedTax = `₹${order.tax.toFixed(2)}`;
-    order.formattedTotal = `₹${order.total.toFixed(2)}`;
-    order.formattedDiscount = order.discount ? `₹${order.discount.toFixed(2)}` : '₹0.00';
-    order.formattedCouponDiscount = order.couponDiscount ? `₹${order.couponDiscount.toFixed(2)}` : '₹0.00';
+    // **CRITICAL FIX: Ensure consistent order totals**
+    // Recalculate totals from item data to ensure consistency
+    let recalculatedSubtotal = 0;
+    let recalculatedOfferDiscount = 0;
+    let recalculatedCouponDiscount = 0;
+    let recalculatedFinalPriceSum = 0;
+
+    order.items.forEach(item => {
+      if (item.priceBreakdown) {
+        recalculatedSubtotal += item.priceBreakdown.subtotal || (item.price * item.quantity);
+        recalculatedOfferDiscount += item.priceBreakdown.offerDiscount || 0;
+        recalculatedCouponDiscount += item.priceBreakdown.couponDiscount || 0;
+        recalculatedFinalPriceSum += item.priceBreakdown.finalPrice || (item.discountedPrice * item.quantity);
+      } else {
+        // Fallback calculation
+        const itemSubtotal = item.price * item.quantity;
+        recalculatedSubtotal += itemSubtotal;
+        recalculatedFinalPriceSum += item.discountedPrice * item.quantity;
+      }
+    });
+
+    // Use stored values if they exist and are consistent, otherwise use calculated values
+    const useStoredSubtotal = order.subtotal && Math.abs(order.subtotal - recalculatedSubtotal) < 0.01;
+    const displaySubtotal = useStoredSubtotal ? order.subtotal : recalculatedSubtotal;
+
+    // **CRITICAL FIX: Recalculate correct total**
+    // The stored order.total might be wrong, so recalculate it properly
+    const correctTotal = displaySubtotal - (order.discount || 0) - (order.couponDiscount || 0) + (order.tax || 0);
+    const useStoredTotal = order.total && Math.abs(order.total - correctTotal) < 0.01;
+    const displayTotal = useStoredTotal ? order.total : correctTotal;
+
+    // Format order totals using consistent values
+    order.formattedSubtotal = `₹${displaySubtotal.toFixed(2)}`;
+    order.formattedTax = `₹${(order.tax || 0).toFixed(2)}`;
+    order.formattedTotal = `₹${displayTotal.toFixed(2)}`;
+    order.formattedDiscount = (order.discount || 0) > 0 ? `₹${order.discount.toFixed(2)}` : '₹0.00';
+    order.formattedCouponDiscount = (order.couponDiscount || 0) > 0 ? `₹${order.couponDiscount.toFixed(2)}` : '₹0.00';
+
+    // **IMPORTANT: Update the order.total for refund calculations**
+    order.total = displayTotal;
+
+    // Log inconsistency warnings if found
+    if (!useStoredSubtotal) {
+      console.warn(`Order ${order.orderNumber}: Subtotal inconsistency detected. Stored: ₹${order.subtotal}, Calculated: ₹${recalculatedSubtotal.toFixed(2)}`);
+    }
+    if (!useStoredTotal) {
+      console.warn(`Order ${order.orderNumber}: Total inconsistency detected. Stored: ₹${order.total}, Calculated: ₹${correctTotal.toFixed(2)}`);
+    }
 
     // Generate timeline
     const timeline = [
@@ -546,6 +618,91 @@ const getPaymentFailure = async (req, res) => {
 };
 
 /**
+ * View HTML invoice for an order
+ */
+const viewInvoice = async (req, res) => {
+  try {
+    if (!req.session.user_id) {
+      return res.redirect('/login');
+    }
+
+    const userId = req.session.user_id;
+    const orderId = req.params.id;
+
+    // Fetch the order with all necessary details
+    const order = await Order.findOne({
+      _id: orderId,
+      user: userId,
+      isDeleted: false
+    }).lean();
+
+    if (!order) {
+      return res.status(HttpStatus.NOT_FOUND).render('error', {
+        message: 'Order not found or you do not have access to this order'
+      });
+    }
+
+    // Fetch user data
+    const user = await User.findById(userId, 'fullName email').lean();
+    if (!user) {
+      return res.redirect('/login');
+    }
+
+    // Format order data with CONSISTENT calculation (same as order details)
+    order.formattedDate = new Date(order.createdAt).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+
+    // **CRITICAL FIX: Use consistent subtotal and total calculation**
+    let recalculatedSubtotal = 0;
+    order.items.forEach(item => {
+      if (item.priceBreakdown) {
+        recalculatedSubtotal += item.priceBreakdown.subtotal || (item.price * item.quantity);
+      } else {
+        recalculatedSubtotal += item.price * item.quantity;
+      }
+    });
+
+    const useStoredSubtotal = order.subtotal && Math.abs(order.subtotal - recalculatedSubtotal) < 0.01;
+    const displaySubtotal = useStoredSubtotal ? order.subtotal : recalculatedSubtotal;
+
+    // **CRITICAL FIX: Recalculate correct total (same as getOrderDetails)**
+    const correctTotal = displaySubtotal - (order.discount || 0) - (order.couponDiscount || 0) + (order.tax || 0);
+    const useStoredTotal = order.total && Math.abs(order.total - correctTotal) < 0.01;
+    const displayTotal = useStoredTotal ? order.total : correctTotal;
+
+    // Format order totals using consistent values
+    order.formattedSubtotal = `₹${displaySubtotal.toFixed(2)}`;
+    order.formattedTotal = `₹${displayTotal.toFixed(2)}`;
+    order.formattedTax = `₹${(order.tax || 0).toFixed(2)}`;
+    order.formattedDiscount = `₹${(order.discount || 0).toFixed(2)}`;
+    order.formattedCouponDiscount = `₹${(order.couponDiscount || 0).toFixed(2)}`;
+
+    // **IMPORTANT: Update the order.total for consistency**
+    order.total = displayTotal;
+
+    // Format item prices
+    order.items.forEach(item => {
+      item.formattedPrice = `₹${item.price.toFixed(2)}`;
+    });
+
+    res.render('invoice', {
+      order,
+      user,
+      title: `Invoice - Order #${order.orderNumber}`
+    });
+
+  } catch (error) {
+    console.error('Error viewing invoice:', error);
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).render('error', {
+      message: 'Error loading invoice'
+    });
+  }
+};
+
+/**
  * Generate and download invoice for an order
  */
 const downloadInvoice = async (req, res) => {
@@ -619,11 +776,32 @@ const downloadInvoice = async (req, res) => {
     order.discount = totalDiscount;
     order.total = totalAfterDiscount + (order.tax || 0) - (order.couponDiscount || 0);
 
-    order.formattedSubtotal = `₹${order.subtotal.toFixed(2)}`;
-    order.formattedTotal = `₹${order.total.toFixed(2)}`;
+    // **CRITICAL FIX: Use consistent subtotal and total calculation**
+    let recalculatedSubtotal = 0;
+    order.items.forEach(item => {
+      if (item.priceBreakdown) {
+        recalculatedSubtotal += item.priceBreakdown.subtotal || (item.price * item.quantity);
+      } else {
+        recalculatedSubtotal += item.price * item.quantity;
+      }
+    });
+
+    const useStoredSubtotal = order.subtotal && Math.abs(order.subtotal - recalculatedSubtotal) < 0.01;
+    const displaySubtotal = useStoredSubtotal ? order.subtotal : recalculatedSubtotal;
+
+    // **CRITICAL FIX: Recalculate correct total (same as other functions)**
+    const correctTotal = displaySubtotal - (order.discount || 0) - (order.couponDiscount || 0) + (order.tax || 0);
+    const useStoredTotal = order.total && Math.abs(order.total - correctTotal) < 0.01;
+    const displayTotal = useStoredTotal ? order.total : correctTotal;
+
+    order.formattedSubtotal = `₹${displaySubtotal.toFixed(2)}`;
+    order.formattedTotal = `₹${displayTotal.toFixed(2)}`;
     order.formattedTax = `₹${(order.tax || 0).toFixed(2)}`;
     order.formattedDiscount = `₹${order.discount.toFixed(2)}`;
     order.formattedCouponDiscount = `₹${(order.couponDiscount || 0).toFixed(2)}`;
+
+    // **IMPORTANT: Update the order.total for PDF generation**
+    order.total = displayTotal;
 
     // Create PDF document
     const doc = new PDFDocument({
@@ -633,9 +811,12 @@ const downloadInvoice = async (req, res) => {
 
     const filename = `invoice-${order.orderNumber}.pdf`;
 
-    // Set response headers
+    // Set response headers to force download
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
 
     // Pipe PDF to response
     doc.pipe(res);
@@ -972,13 +1153,13 @@ const downloadInvoice = async (req, res) => {
     const summaryWidth = 200;
     const summaryX = rightMargin - summaryWidth;
 
-    // Subtotal
+    // Subtotal - use consistent calculation
     doc.font('Helvetica')
        .fontSize(10)
        .fillColor(colors.secondary)
        .text('Subtotal:', summaryX, summaryStartY, { width: 100, align: 'left' })
        .fillColor(colors.dark)
-       .text(`₹${order.subtotal.toFixed(2)}`, summaryX + 100, summaryStartY, { width: 100, align: 'right' });
+       .text(`₹${displaySubtotal.toFixed(2)}`, summaryX + 100, summaryStartY, { width: 100, align: 'right' });
 
     // Tax
     doc.fillColor(colors.secondary)
@@ -1103,12 +1284,22 @@ const cancelOrder = async (req, res) => {
       return res.status(HttpStatus.NOT_FOUND).json({ success: false, message: 'Order not found' });
     }
 
-    // Check if order can be cancelled
-    const allowedStatuses = ['Placed', 'Processing'];
+    // **IMPROVED: Check if order can be cancelled based on active items**
+    // Allow cancellation if there are active items, even if order is partially cancelled
+    const allowedStatuses = ['Placed', 'Processing', 'Partially Cancelled'];
     if (!allowedStatuses.includes(order.orderStatus)) {
       return res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: `Order cannot be cancelled in ${order.orderStatus} status`
+      });
+    }
+
+    // **ADDITIONAL CHECK: Ensure there are active items to cancel**
+    const activeItems = order.items.filter(item => item.status === 'Active');
+    if (activeItems.length === 0) {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        success: false,
+        message: 'No active items found to cancel. All items have already been cancelled or returned.'
       });
     }
 
@@ -1227,8 +1418,9 @@ const cancelOrderItem = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Item not found or already cancelled' });
     }
 
-    // Check if item can be cancelled based on order status - simplified
-    const allowedStatuses = ['Placed', 'Processing'];
+    // **IMPROVED: Check if item can be cancelled based on order status**
+    // Allow individual item cancellation even in partially cancelled orders
+    const allowedStatuses = ['Placed', 'Processing', 'Partially Cancelled'];
     if (!allowedStatuses.includes(order.orderStatus)) {
       return res.status(400).json({
         success: false,
@@ -1275,14 +1467,6 @@ const cancelOrderItem = async (req, res) => {
     );
 
     // Handle refund if payment was made - cancelled items should refund immediately
-    console.log('🔄 ATTEMPTING REFUND FOR CANCELLED ITEM:', {
-      orderId: order._id,
-      orderNumber: order.orderNumber,
-      itemId: orderItem._id,
-      itemTitle: orderItem.title,
-      paymentStatus: order.paymentStatus,
-      userId: userId
-    });
 
     // **FIX: Enhanced payment status handling for all scenarios**
     if (order.paymentMethod === 'COD') {
@@ -1298,50 +1482,37 @@ const cancelOrderItem = async (req, res) => {
 
       if (wasDeliveredAndPaid) {
         // COD order was delivered, customer paid cash - process wallet refund
-        console.log('💰 Processing COD cancellation refund (post-delivery)...');
-        const refundSuccess = await processCancelRefund(userId, order, orderItem._id);
-        console.log('💰 COD Refund result:', refundSuccess);
+        const refundSuccess = await processCancelRefund(userId, order, productId);
 
         if (refundSuccess) {
           if (!hasActiveItems) {
             order.paymentStatus = 'Refunded';
-            console.log('✅ COD order fully refunded to wallet');
           } else {
             order.paymentStatus = 'Partially Refunded';
-            console.log('✅ COD order partially refunded to wallet');
           }
         } else {
-          console.error(`❌ Failed to process COD refund for cancelled item ${orderItem._id}`);
           order.paymentStatus = 'Refund Failed';
         }
       } else {
         // COD order not delivered yet - no refund needed
         if (!hasActiveItems) {
           order.paymentStatus = 'Failed'; // All items cancelled, no payment needed
-          console.log('✅ COD order fully cancelled before delivery - no refund needed');
         }
         // For partial cancellations before delivery, keep payment status as 'Pending'
       }
     } else if (order.paymentStatus === 'Paid' || order.paymentStatus === 'Partially Refunded') {
       // For paid orders (Wallet, Razorpay, etc.), process refund to wallet
-      console.log('💰 Processing online payment cancellation refund...');
-      const refundSuccess = await processCancelRefund(userId, order, orderItem._id);
-      console.log('💰 Online payment refund result:', refundSuccess);
+      const refundSuccess = await processCancelRefund(userId, order, productId);
 
       if (refundSuccess) {
         if (!hasActiveItems) {
           order.paymentStatus = 'Refunded';
-          console.log('✅ Online order fully refunded');
         } else {
           order.paymentStatus = 'Partially Refunded';
-          console.log('✅ Online order partially refunded');
         }
       } else {
-        console.error(`❌ Failed to process refund for cancelled item ${orderItem._id} in order ${order._id}`);
         order.paymentStatus = 'Refund Failed';
       }
-    } else {
-      console.log('⚠️ Order payment status does not allow refunds:', order.paymentStatus);
     }
 
     await order.save();
@@ -1754,35 +1925,14 @@ const reorder = async (req, res) => {
         const quantityToAdd = Math.min(item.quantity, product.stock);
 
         if (quantityToAdd > 0) {
-          // Calculate current price with offers (similar to cart controller)
-          let finalPrice = product.salePrice;
+          // **FIX: Use standardized offer calculation (same as cart controller)**
+          // Get active offer for this product using the helper function
+          const offer = await getActiveOfferForProduct(product._id, product.category);
 
-          // Check for active offers
-          const currentDate = new Date();
-          const activeOffers = await Offer.find({
-            isActive: true,
-            startDate: { $lte: currentDate },
-            endDate: { $gte: currentDate },
-            $or: [
-              { appliesTo: 'all_products' },
-              { appliesTo: 'specific_products', applicableProducts: product._id },
-              { appliesTo: 'all_categories' },
-              { appliesTo: 'specific_categories', applicableCategories: product.category._id }
-            ]
-          }).sort({ discountValue: -1 });
+          // Calculate final price with offer discount
+          const { finalPrice } = calculateDiscount(offer, product.regularPrice);
 
-          // Apply the best offer if available
-          if (activeOffers.length > 0) {
-            const bestOffer = activeOffers[0];
-            if (bestOffer.discountType === 'percentage') {
-              const discountAmount = (product.salePrice * bestOffer.discountValue) / 100;
-              finalPrice = product.salePrice - discountAmount;
-            } else if (bestOffer.discountType === 'fixed') {
-              finalPrice = Math.max(0, product.salePrice - bestOffer.discountValue);
-            }
-          }
-
-          // Add item to cart
+          // Add item to cart with correct price
           cart.items.push({
             product: product._id,
             quantity: quantityToAdd,
@@ -1814,6 +1964,7 @@ module.exports = {
   getOrderDetails,
   getOrderSuccess,
   getPaymentFailure,
+  viewInvoice,
   downloadInvoice,
   cancelOrder,
   cancelOrderItem,

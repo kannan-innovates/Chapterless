@@ -448,14 +448,18 @@
               <td>
                 <div class="refund-breakdown-cell">
                   <%
-                    // **CRITICAL FIX: Use actual final price customer paid**
+                    // ACCURATE REFUND CALCULATION - Using Money Calculator Logic
                     let actualPaidAmount = 0;
 
-                    if (item.priceBreakdown && item.priceBreakdown.finalPrice) {
-                      actualPaidAmount = item.priceBreakdown.finalPrice;
+                    if (order.items.length === 1) {
+                      // Single item order - refund full order total (what customer paid)
+                      actualPaidAmount = order.total;
                     } else {
-                      // Fallback to discounted price if priceBreakdown not available
-                      actualPaidAmount = item.discountedPrice * item.quantity;
+                      // Multi-item order - calculate proportional amount
+                      const itemFinalPrice = item.priceBreakdown?.finalPrice || (item.discountedPrice * item.quantity);
+                      const orderSubtotal = order.total - (order.tax || 0);
+                      const itemProportion = itemFinalPrice / orderSubtotal;
+                      actualPaidAmount = order.total * itemProportion;
                     }
                   %>
 

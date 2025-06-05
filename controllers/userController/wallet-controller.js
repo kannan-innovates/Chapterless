@@ -2,18 +2,8 @@ const Wallet = require("../../models/walletSchema");
 const Order = require("../../models/orderSchema");
 const { calculateDiscount, getUnifiedPriceBreakdown } = require("../../utils/offer-helper");
 const { HttpStatus } = require("../../helpers/status-code");
+const { calculateRefundAmount, validateRefundForPaymentMethod } = require("../../helpers/money-calculator");
 
-/**
- * ENHANCED REFUND SYSTEM - PRODUCTION OPTIMIZED
- *
- * Features:
- * - Tax refund handling (full for cancellations, proportional for partial returns)
- * - Complex coupon scenario support
- * - COD vs online payment differentiation
- * - Floating point precision management
- * - Duplicate refund prevention
- * - Performance optimized calculations
- */
 
 const getWallet = async (req, res) => {
   try {
@@ -23,31 +13,36 @@ const getWallet = async (req, res) => {
     }
 
     // Get wallet with transactions
-    const wallet = await Wallet.findOne({ userId }).sort({ 'transactions.date': -1 });
+    const wallet = await Wallet.findOne({ userId });
 
-    // Format transactions for display
+    // Format transactions for display with proper sorting
     const formattedWallet = {
       balance: wallet ? wallet.balance : 0,
-      transactions: wallet ? wallet.transactions.map(transaction => ({
-        type: transaction.type,
-        amount: transaction.amount.toFixed(2),
-        reason: transaction.reason,
-        date: new Date(transaction.date).toLocaleDateString('en-US', {
-          year: 'numeric',
-          month: 'short',
-          day: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit'
-        }),
-        orderId: transaction.orderId
-      })) : []
+      transactions: wallet && wallet.transactions ?
+        wallet.transactions
+          .sort((a, b) => new Date(b.date) - new Date(a.date)) // Sort by date descending
+          .map(transaction => ({
+            type: transaction.type,
+            amount: transaction.amount.toFixed(2),
+            reason: transaction.reason,
+            date: new Date(transaction.date).toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit'
+            }),
+            orderId: transaction.orderId
+          })) : []
     };
+
+
 
     res.render('wallet', {
       wallet: formattedWallet
     });
   } catch (error) {
-    console.error('Error in getWallet:', error);
+    console.error('❌ Error in getWallet:', error);
     res.status(HttpStatus.INTERNAL_SERVER_ERROR).render('error', { message: 'Internal server error' });
   }
 };
@@ -58,74 +53,7 @@ const safeCalculation = (value) => {
   return isNaN(num) ? 0 : num;
 };
 
-/**
- * Calculate refund amount for an item - ALWAYS refund exactly what customer paid (including tax)
- * @param {Object} item - Order item to calculate refund for
- * @param {Object} order - Complete order object
- * @param {string} refundType - 'cancellation' or 'return'
- * @param {boolean} isFullOrderRefund - Whether entire order is being refunded
- * @returns {Object} { amount: number, breakdown: object }
- */
-const calculateItemRefundAmount = (item, order, refundType = 'return', isFullOrderRefund = false) => {
-  try {
-    // **VALIDATION**
-    if (!item || !order) {
-      return { amount: 0, breakdown: null };
-    }
 
-    // **GET PRICE BREAKDOWN**
-    const priceBreakdown = getUnifiedPriceBreakdown(item, order);
-    if (!priceBreakdown) {
-      return { amount: 0, breakdown: null };
-    }
-
-    // **CRITICAL FIX: Calculate exact amount customer paid INCLUDING TAX**
-    const baseAmount = priceBreakdown.finalPrice || 0; // Amount after all discounts
-
-    // **CALCULATE TAX FOR THIS ITEM**
-    let itemTaxAmount = 0;
-    if (order.tax && order.tax > 0) {
-      if (isFullOrderRefund || order.items.length === 1) {
-        // Full order refund or single item - refund full tax
-        itemTaxAmount = order.tax;
-      } else {
-        // Partial refund - calculate proportional tax
-        const totalOrderValue = order.items.reduce((total, orderItem) => {
-          const itemBreakdown = getUnifiedPriceBreakdown(orderItem, order);
-          return total + (itemBreakdown?.finalPrice || 0);
-        }, 0);
-
-        if (totalOrderValue > 0) {
-          itemTaxAmount = (baseAmount / totalOrderValue) * order.tax;
-        }
-      }
-    }
-
-    // **TOTAL REFUND = BASE AMOUNT + TAX (exactly what customer paid)**
-    const totalRefundAmount = baseAmount + itemTaxAmount;
-
-    const refundBreakdown = {
-      originalPrice: priceBreakdown.originalPrice || 0,
-      offerDiscount: priceBreakdown.offerDiscount || 0,
-      couponDiscount: priceBreakdown.couponDiscount || 0,
-      finalPrice: baseAmount,
-      taxAmount: itemTaxAmount,
-      taxRefundAmount: itemTaxAmount, // Full tax refund
-      totalRefundAmount: totalRefundAmount,
-      refundType,
-      isFullOrderRefund,
-      note: 'Refunding exact amount customer paid (including tax)'
-    };
-
-    return {
-      amount: Number(totalRefundAmount.toFixed(2)),
-      breakdown: refundBreakdown
-    };
-  } catch (error) {
-    console.error('Error calculating refund amount:', error.message);
-    return { amount: 0, breakdown: null };
-  }
-};
 
 /**
  * Calculate proportional tax refund for partial returns
@@ -169,579 +97,285 @@ const calculateProportionalTaxRefund = (item, order) => {
   }
 };
 
-// Process refund for cancelled orders/items
-const processCancelRefund = async (userId, order, itemId = null) => {
+/**
+ * **BULLETPROOF CANCEL REFUND PROCESSOR**
+ * Single unified function for all cancellation refunds
+ * Prevents double refunding with validation checks
+ */
+const processCancelRefund = async (userId, order, productId = null) => {
   try {
-    console.log('Starting cancel refund process:', {
-      userId,
-      orderId: order._id,
-      itemId,
-      orderStatus: order.orderStatus,
-      paymentMethod: order.paymentMethod,
-      paymentStatus: order.paymentStatus,
-      total: order.total,
-      tax: order.tax
-    });
-
+    // **STEP 1: VALIDATION**
     if (!userId || !order) {
-      console.error('Missing required parameters in processCancelRefund');
+      console.error('Invalid userId or order for cancel refund');
       return false;
     }
 
-    // **FIX: Handle COD cancellations based on delivery status**
-    if (order.paymentMethod === 'COD') {
-      // For COD cancellations, check if order was delivered (cash was collected)
-      const wasDeliveredAndPaid = order.paymentStatus === 'Paid' ||
-                                  order.orderStatus === 'Delivered' ||
-                                  order.deliveredAt ||
-                                  order.items.some(item =>
-                                    item.status === 'Delivered' ||
-                                    item.status === 'Returned' ||
-                                    (item.status === 'Active' && order.orderStatus === 'Delivered')
-                                  );
-
-      if (!wasDeliveredAndPaid) {
-        console.log('COD order cancellation before delivery - no wallet refund needed (no payment made yet)');
-        return true; // Return success but don't process wallet refund
-      } else {
-        console.log('COD order cancellation after delivery - customer paid cash, wallet refund needed');
-        // Continue with refund processing since customer paid cash upon delivery
-      }
-    }
-
-    // **FIX: Enhanced payment validation for all payment methods including COD post-delivery**
-    const isPaymentValid = order.paymentStatus === 'Paid' ||
-                          order.paymentStatus === 'Partially Refunded' ||
-                          // For COD: if delivered, consider it paid (cash was collected)
-                          (order.paymentMethod === 'COD' && (
-                            order.paymentStatus === 'Paid' ||
-                            order.orderStatus === 'Delivered' ||
-                            order.deliveredAt ||
-                            order.items.some(item =>
-                              item.status === 'Delivered' ||
-                              item.status === 'Returned' ||
-                              (item.status === 'Active' && order.orderStatus === 'Delivered')
-                            )
-                          ));
-
-    if (!isPaymentValid) {
-      console.log('Order payment status does not allow refunds, skipping refund:', {
-        paymentStatus: order.paymentStatus,
-        paymentMethod: order.paymentMethod,
-        orderStatus: order.orderStatus,
-        deliveredAt: order.deliveredAt
-      });
-      return true; // Return true as this is not an error condition
-    }
-
-    // Get existing wallet to check for previous refunds
+    // **STEP 2: PREVENT DOUBLE REFUNDING**
+    // Check if this refund was already processed
     const existingWallet = await Wallet.findOne({ userId });
-    const previouslyRefundedItems = new Set();
+    if (existingWallet) {
+      let existingRefund;
 
-    if (existingWallet && existingWallet.transactions) {
-      existingWallet.transactions.forEach(txn => {
-        if (txn.orderId && txn.orderId.toString() === order._id.toString() && txn.refundedItems) {
-          txn.refundedItems.forEach(refItemId => previouslyRefundedItems.add(refItemId.toString()));
+      if (productId) {
+        // For individual items, check for specific item refund
+        existingRefund = existingWallet.transactions.find(transaction =>
+          transaction.orderId?.toString() === order._id.toString() &&
+          transaction.type === 'credit' &&
+          transaction.reason.includes('cancelled item') &&
+          transaction.reason.includes(productId)
+        );
+      } else {
+        // For full order, check for order-level refund OR calculate remaining amount
+        existingRefund = existingWallet.transactions.find(transaction =>
+          transaction.orderId?.toString() === order._id.toString() &&
+          transaction.type === 'credit' &&
+          (transaction.reason.includes('cancelled items in order') ||
+           transaction.reason.includes('remaining') ||
+           transaction.reason.includes('order #'))
+        );
+
+        // **SPECIAL CASE: Calculate remaining refund amount**
+        if (!existingRefund) {
+          // Check how much has already been refunded for individual items
+          const individualRefunds = existingWallet.transactions.filter(transaction =>
+            transaction.orderId?.toString() === order._id.toString() &&
+            transaction.type === 'credit' &&
+            transaction.reason.includes('cancelled item')
+          );
+
+          if (individualRefunds.length > 0) {
+            const totalIndividualRefunds = individualRefunds.reduce((sum, refund) => sum + refund.amount, 0);
+            const remainingRefund = order.total - totalIndividualRefunds;
+
+            console.log(`💰 REMAINING REFUND CALCULATION:`);
+            console.log(`   Order Total: ₹${order.total}`);
+            console.log(`   Individual Refunds: ₹${totalIndividualRefunds}`);
+            console.log(`   Remaining: ₹${remainingRefund}`);
+
+            if (remainingRefund > 0.01) {
+              // Process the remaining refund
+              const wallet = existingWallet;
+              wallet.balance += remainingRefund;
+              wallet.transactions.push({
+                type: 'credit',
+                amount: remainingRefund,
+                orderId: order._id,
+                reason: `Refund for remaining amount in cancelled order`,
+                date: new Date()
+              });
+
+              await wallet.save();
+              console.log(`✅ Remaining refund processed: ₹${remainingRefund}`);
+              return true;
+            } else {
+              console.log(`✅ No remaining refund needed - order fully refunded`);
+              return true;
+            }
+          }
         }
-      });
+      }
+
+      if (existingRefund) {
+        console.log(`Refund already processed: ${existingRefund.reason}`);
+        return true; // Already processed, return success
+      }
     }
 
-    let refundAmount = 0;
-    let refundReason = '';
-    let refundedItemsForThisTransaction = [];
+    // **STEP 3: CALCULATE REFUND USING UNIFIED SYSTEM**
+    console.log(`🧮 CALCULATING REFUND:`);
+    console.log(`   Order ID: ${order._id}`);
+    console.log(`   Product ID: ${productId || 'ALL ITEMS'}`);
+    console.log(`   Order Total: ₹${order.total}`);
 
-    // **ENHANCED CANCELLATION REFUND LOGIC**
-    let refundBreakdowns = [];
+    let refundResult;
 
-    if (itemId) {
-      // Single item cancellation
-      const item = order.items.find(i => i._id.toString() === itemId.toString());
-      if (!item) {
-        console.error(`Item ${itemId} not found in order ${order._id}`);
-        return false;
-      }
-
-      // Check if item was already refunded
-      if (previouslyRefundedItems.has(item.product.toString())) {
-        console.warn(`Item ${item.title} already refunded for order ${order._id}`);
-        return true;
-      }
-
-      // **CANCELLATION: Include tax refund**
-      const refundResult = calculateItemRefundAmount(item, order, 'cancellation', false);
-      refundAmount = refundResult.amount;
-      refundBreakdowns.push(refundResult.breakdown);
-      refundReason = `Refund for cancelled item: ${item.title} from order #${order.orderNumber}`;
-      refundedItemsForThisTransaction = [item.product];
+    if (productId) {
+      // Individual item cancellation
+      console.log(`   Type: Individual Item Cancellation`);
+      refundResult = calculateRefundAmount('INDIVIDUAL_ITEM', order, productId);
     } else {
-      // Full/partial order cancellation
-      const cancelledItems = order.items.filter(item =>
-        item.status === 'Cancelled' && !previouslyRefundedItems.has(item.product.toString())
-      );
-
-      if (cancelledItems.length === 0) {
-        console.warn(`No new items to refund in order ${order._id}`);
-        return true;
-      }
-
-      // **DETERMINE IF THIS IS A FULL ORDER CANCELLATION**
-      const totalItems = order.items.length;
-      const totalCancelledItems = order.items.filter(item => item.status === 'Cancelled').length;
-      const isFullOrderCancellation = totalCancelledItems === totalItems;
-
-      refundAmount = cancelledItems.reduce((total, item) => {
-        const refundResult = calculateItemRefundAmount(item, order, 'cancellation', isFullOrderCancellation);
-        refundBreakdowns.push(refundResult.breakdown);
-        return total + refundResult.amount;
-      }, 0);
-
-      refundReason = cancelledItems.length === 1
-        ? `Refund for cancelled item: ${cancelledItems[0].title} from order #${order.orderNumber}`
-        : `Refund for cancelled items in order #${order.orderNumber}`;
-
-      refundedItemsForThisTransaction = cancelledItems.map(item => item.product);
+      // Full order or remaining items cancellation
+      console.log(`   Type: Full/Remaining Order Cancellation`);
+      refundResult = calculateRefundAmount('REMAINING_ORDER', order);
     }
 
-    // Process wallet update if there's an amount to refund
-    if (refundAmount > 0) {
-      let wallet = existingWallet;
+    console.log(`🧮 REFUND CALCULATION RESULT:`);
+    console.log(`   Success: ${refundResult.success}`);
+    console.log(`   Amount: ₹${refundResult.amount}`);
+    console.log(`   Reason: ${refundResult.reason}`);
 
-      // If no existing wallet, create a new one with proper userId
-      if (!wallet) {
-        // Validate userId before creating wallet
-        if (!userId) {
-          console.error('Cannot create wallet: userId is null or undefined');
-          return false;
-        }
+    if (!refundResult.success) {
+      console.log(`❌ Refund calculation failed: ${refundResult.reason}`);
+      return true; // No refund needed, but not an error
+    }
 
-        // Check if there's a corrupted wallet with null userId that needs cleanup
-        try {
-          const corruptedWallet = await Wallet.findOne({
-            $or: [
-              { userId: null },
-              { userId: { $exists: false } },
-              { user: { $exists: true } } // Check for old 'user' field
-            ]
-          });
+    // **STEP 4: VALIDATE FOR PAYMENT METHOD**
+    const validation = validateRefundForPaymentMethod(order, refundResult.amount);
+    if (!validation.shouldRefund) {
+      console.log(`Cancel refund skipped: ${validation.reason}`);
+      return true; // Success but no refund needed
+    }
 
-          if (corruptedWallet) {
-            console.log('Found corrupted wallet, cleaning up:', corruptedWallet._id);
-            await Wallet.deleteOne({ _id: corruptedWallet._id });
-          }
-        } catch (cleanupError) {
-          console.error('Error during wallet cleanup:', cleanupError);
-        }
+    const finalRefundAmount = validation.refundAmount;
 
-        wallet = new Wallet({
-          userId: userId,
-          balance: 0,
-          transactions: []
-        });
-      }
+    if (finalRefundAmount <= 0) {
+      console.log('No refund amount calculated');
+      return true; // No refund needed
+    }
 
-      console.log('Processing refund:', {
-        walletExists: !!existingWallet,
+    // **STEP 5: PROCESS WALLET REFUND**
+    let wallet = await Wallet.findOne({ userId });
+    if (!wallet) {
+      wallet = new Wallet({
         userId: userId,
-        currentBalance: wallet.balance,
-        refundAmount,
-        reason: refundReason,
-        items: refundedItemsForThisTransaction
+        balance: 0,
+        transactions: []
       });
-
-      // Ensure refundAmount is a valid number
-      refundAmount = Number(refundAmount.toFixed(2));
-
-      if (isNaN(refundAmount)) {
-        console.error('Invalid refund amount calculated');
-        return false;
-      }
-
-      // **FIX: Ensure both balance and refund amount are valid numbers**
-      const safeBalance = Number(wallet.balance || 0);
-      const safeRefund = Number(refundAmount || 0);
-
-      // **ADDITIONAL SAFETY: Prevent NaN and Infinity**
-      if (isNaN(safeBalance) || !isFinite(safeBalance) || isNaN(safeRefund) || !isFinite(safeRefund)) {
-        console.error('Invalid balance or refund amount detected:', { balance: wallet.balance, refund: refundAmount });
-        return false;
-      }
-
-      wallet.balance = safeBalance + safeRefund;
-
-      // **ENHANCED TRANSACTION RECORD WITH BREAKDOWN**
-      wallet.transactions.push({
-        type: 'credit',
-        amount: Number(refundAmount), // **FIX: Ensure amount is stored as number**
-        orderId: order._id,
-        reason: refundReason,
-        refundedItems: refundedItemsForThisTransaction,
-        refundType: 'cancellation',
-        refundBreakdowns: refundBreakdowns,
-        date: new Date()
-      });
-
-      // **PRODUCTION LOGGING**
-      console.log(`✅ Cancellation refund processed: ₹${refundAmount} for order ${order.orderNumber}`);
-      if (refundBreakdowns?.length > 0) {
-        const totalTax = refundBreakdowns.reduce((sum, b) => sum + (b.taxRefundAmount || 0), 0);
-        console.log(`   Tax refunded: ₹${totalTax.toFixed(2)} (cancellation - full tax)`);
-      }
-
-      console.log('About to save wallet with transaction:', {
-        walletId: wallet._id,
-        userId: wallet.userId,
-        oldBalance: wallet.balance - refundAmount,
-        newBalance: wallet.balance,
-        refundAmount,
-        transactionCount: wallet.transactions.length
-      });
-
-      // Ensure userId is set before saving
-      if (!wallet.userId) {
-        wallet.userId = userId;
-      }
-
-      try {
-        await wallet.save();
-      } catch (saveError) {
-        if (saveError.code === 11000) {
-          console.error('Duplicate key error when saving wallet. Attempting to find existing wallet...');
-
-          // Try to find existing wallet and update it instead
-          const existingWalletRetry = await Wallet.findOne({ userId: userId });
-          if (existingWalletRetry) {
-            console.log('Found existing wallet, updating it instead');
-            existingWalletRetry.balance = Number(existingWalletRetry.balance) + Number(refundAmount);
-            existingWalletRetry.transactions.push({
-              type: 'credit',
-              amount: Number(refundAmount), // **FIX: Ensure amount is stored as number**
-              orderId: order._id,
-              reason: refundReason,
-              refundedItems: refundedItemsForThisTransaction,
-              date: new Date()
-            });
-            await existingWalletRetry.save();
-            wallet = existingWalletRetry;
-          } else {
-            throw saveError; // Re-throw if we can't find existing wallet
-          }
-        } else {
-          throw saveError; // Re-throw non-duplicate key errors
-        }
-      }
-      console.log('Refund processed successfully and saved to database:', {
-        newBalance: wallet.balance,
-        refundAmount,
-        walletId: wallet._id
-      });
-      return true;
     }
 
-    return refundedItemsForThisTransaction.length === 0;
+    // Add refund to wallet
+    const oldBalance = wallet.balance;
+    wallet.balance += finalRefundAmount;
+
+    const newTransaction = {
+      type: 'credit',
+      amount: finalRefundAmount,
+      orderId: order._id,
+      reason: refundResult.reason,
+      date: new Date()
+    };
+
+    wallet.transactions.push(newTransaction);
+
+    console.log(`💳 WALLET UPDATE:`);
+    console.log(`   Old Balance: ₹${oldBalance}`);
+    console.log(`   Refund Amount: ₹${finalRefundAmount}`);
+    console.log(`   New Balance: ₹${wallet.balance}`);
+    console.log(`   Transaction: ${newTransaction.reason}`);
+    console.log(`   Transactions Count: ${wallet.transactions.length}`);
+
+    await wallet.save();
+
+    console.log(`✅ Cancel refund processed and saved: ₹${finalRefundAmount} for ${refundResult.reason}`);
+    return true;
+
   } catch (error) {
     console.error('Error processing cancel refund:', error);
     return false;
   }
 };
 
-// Process refund for returned orders/items
-const processReturnRefund = async (userId, order, itemId = null) => {
+/**
+ * **BULLETPROOF RETURN REFUND PROCESSOR**
+ * Single unified function for all return refunds
+ * Prevents double refunding with validation checks
+ */
+const processReturnRefund = async (userId, order, productId = null) => {
   try {
-    console.log('Starting return refund process:', {
-      userId,
-      orderId: order._id,
-      itemId,
-      orderStatus: order.orderStatus,
-      paymentMethod: order.paymentMethod,
-      paymentStatus: order.paymentStatus
-    });
-
+    // **STEP 1: VALIDATION**
     if (!userId || !order) {
-      console.error('Missing required parameters in processReturnRefund');
+      console.error('Invalid userId or order for return refund');
       return false;
     }
 
-    // **FIX: For COD orders, only process wallet refunds if order was delivered (cash was paid)**
-    if (order.paymentMethod === 'COD') {
-      // For COD returns, check if payment was made (order was delivered and cash collected)
-      // Check multiple indicators that the order was delivered and cash was collected
-      const wasDeliveredAndPaid = order.paymentStatus === 'Paid' ||
-                                  order.orderStatus === 'Delivered' ||
-                                  order.deliveredAt ||
-                                  // Check if any items were delivered (for partial deliveries)
-                                  order.items.some(item =>
-                                    item.status === 'Delivered' ||
-                                    item.status === 'Returned' ||
-                                    // For items that are still "Active" but order is delivered
-                                    (item.status === 'Active' && order.orderStatus === 'Delivered')
-                                  );
-
-      if (!wasDeliveredAndPaid) {
-        console.log('COD order not delivered/paid yet - no wallet refund needed (no cash payment made)');
-        return true; // Return success but don't process wallet refund
-      } else {
-        console.log('COD order was delivered and paid - customer paid cash, wallet refund needed for return');
-        // Continue with refund processing since customer paid cash upon delivery
-      }
-    }
-
-    // **FIX: Improved payment validation logic for all payment methods**
-    const isPaymentValid = order.paymentStatus === 'Paid' ||
-                          order.paymentStatus === 'Partially Refunded' ||
-                          // For COD: if delivered, consider it paid (cash was collected)
-                          (order.paymentMethod === 'COD' && (
-                            order.paymentStatus === 'Paid' ||
-                            order.orderStatus === 'Delivered' ||
-                            order.deliveredAt ||
-                            order.items.some(item =>
-                              item.status === 'Delivered' ||
-                              item.status === 'Returned' ||
-                              (item.status === 'Active' && order.orderStatus === 'Delivered')
-                            )
-                          ));
-
-    if (!isPaymentValid) {
-      console.log('Order payment status does not allow refunds, skipping refund:', {
-        paymentStatus: order.paymentStatus,
-        paymentMethod: order.paymentMethod,
-        orderStatus: order.orderStatus,
-        deliveredAt: order.deliveredAt
-      });
-      return true; // Return true as this is not an error condition
-    }
-
-    let refundAmount = 0;
-    let refundReason = '';
-    let refundedItemsForThisTransaction = [];
-
-    // Validate userId
-    if (!userId) {
-      console.error('Invalid userId provided to processCancelRefund');
-      return false;
-    }
-
-    // Get existing wallet to check for previous refunds
-    const existingWallet = await Wallet.findOne({ userId: userId });
-    const previouslyRefundedItems = new Set();
-    if (existingWallet && existingWallet.transactions) {
-      existingWallet.transactions.forEach(txn => {
-        if (txn.orderId && txn.orderId.toString() === order._id.toString() && txn.refundedItems) {
-          txn.refundedItems.forEach(refItemId => previouslyRefundedItems.add(refItemId.toString()));
-        }
-      });
-    }
-
-    // **ENHANCED RETURN REFUND LOGIC**
-    let refundBreakdowns = [];
-
-    if (itemId) {
-      // Single item return
-      const item = order.items.find(i => i._id.toString() === itemId.toString());
-      if (!item) {
-        console.error(`Item ${itemId} not found in order ${order._id}`);
-        return false;
-      }
-      // Check if item was already refunded
-      if (previouslyRefundedItems.has(item.product.toString())) {
-        console.warn(`Item ${item.title} already refunded for order ${order._id}`);
-        return true;
-      }
-      // Only refund if item.status is 'Returned'
-      if (item.status !== 'Returned') {
-        console.warn(`Item ${item.title} is not marked as Returned`);
-        return false;
-      }
-
-      // **DETERMINE IF THIS IS A FULL ORDER RETURN**
-      const totalItems = order.items.length;
-      const totalReturnedItems = order.items.filter(item => item.status === 'Returned').length;
-      const isFullOrderReturn = totalReturnedItems === totalItems;
-
-      const refundResult = calculateItemRefundAmount(item, order, 'return', isFullOrderReturn);
-      refundAmount = refundResult.amount;
-      refundBreakdowns.push(refundResult.breakdown);
-      refundReason = `Refund for returned item: ${item.title} from order #${order.orderNumber}`;
-      refundedItemsForThisTransaction = [item.product];
-    } else {
-      // Full/partial order return
-      const returnedItems = order.items.filter(item =>
-        item.status === 'Returned' && !previouslyRefundedItems.has(item.product.toString())
+    // **STEP 2: PREVENT DOUBLE REFUNDING**
+    // Check if this refund was already processed
+    const existingWallet = await Wallet.findOne({ userId });
+    if (existingWallet) {
+      const existingRefund = existingWallet.transactions.find(transaction =>
+        transaction.orderId?.toString() === order._id.toString() &&
+        transaction.type === 'credit' &&
+        transaction.reason.includes('return') &&
+        (productId ? transaction.reason.includes(productId) : transaction.reason.includes('order'))
       );
 
-      console.log('Return refund analysis:', {
-        totalItems: order.items.length,
-        returnedItems: returnedItems.length,
-        itemStatuses: order.items.map(item => ({ id: item._id, status: item.status, title: item.title })),
-        previouslyRefundedItems: Array.from(previouslyRefundedItems)
-      });
-
-      if (returnedItems.length === 0) {
-        console.warn(`No new items to refund in order ${order._id}`);
-        return true;
+      if (existingRefund) {
+        console.log('Return refund already processed for this order/item');
+        return true; // Already processed, return success
       }
-
-      // **DETERMINE IF THIS IS A FULL ORDER RETURN**
-      const totalItems = order.items.length;
-      const totalReturnedItems = order.items.filter(item => item.status === 'Returned').length;
-      const isFullOrderReturn = totalReturnedItems === totalItems;
-
-      refundAmount = returnedItems.reduce((total, item) => {
-        const refundResult = calculateItemRefundAmount(item, order, 'return', isFullOrderReturn);
-        console.log(`Item refund calculation for ${item.title}:`, refundResult);
-        refundBreakdowns.push(refundResult.breakdown);
-        return total + refundResult.amount;
-      }, 0);
-
-      refundReason = returnedItems.length === 1
-        ? `Refund for returned item: ${returnedItems[0].title} from order #${order.orderNumber}`
-        : `Refund for returned items in order #${order.orderNumber}`;
-      refundedItemsForThisTransaction = returnedItems.map(item => item.product);
     }
 
-    console.log('Refund calculation complete:', {
-      refundAmount,
-      refundReason,
-      itemsToRefund: refundedItemsForThisTransaction.length
-    });
+    // **STEP 3: CALCULATE REFUND USING UNIFIED SYSTEM**
+    let refundResult;
 
-    // Process wallet update if there's an amount to refund
-    if (refundAmount > 0) {
-      let wallet = existingWallet;
+    if (productId) {
+      // Individual item return
+      refundResult = calculateRefundAmount('INDIVIDUAL_ITEM', order, productId);
 
-      // If no existing wallet, create a new one with proper userId
-      if (!wallet) {
-        // Validate userId before creating wallet
-        if (!userId) {
-          console.error('Cannot create wallet: userId is null or undefined');
-          return false;
-        }
-
-        // Check if there's a corrupted wallet with null userId that needs cleanup
-        try {
-          const corruptedWallet = await Wallet.findOne({
-            $or: [
-              { userId: null },
-              { userId: { $exists: false } },
-              { user: { $exists: true } } // Check for old 'user' field
-            ]
-          });
-
-          if (corruptedWallet) {
-            console.log('Found corrupted wallet, cleaning up:', corruptedWallet._id);
-            await Wallet.deleteOne({ _id: corruptedWallet._id });
-          }
-        } catch (cleanupError) {
-          console.error('Error during wallet cleanup:', cleanupError);
-        }
-
-        wallet = new Wallet({
-          userId: userId,
-          balance: 0,
-          transactions: []
-        });
-      }
-
-      refundAmount = Number(refundAmount.toFixed(2));
-      // **FIX: Ensure both balance and refund amount are valid numbers**
-      const safeBalance = Number(wallet.balance || 0);
-      const safeRefund = Number(refundAmount || 0);
-
-      // **ADDITIONAL SAFETY: Prevent NaN and Infinity**
-      if (isNaN(safeBalance) || !isFinite(safeBalance) || isNaN(safeRefund) || !isFinite(safeRefund)) {
-        console.error('Invalid balance or refund amount detected:', { balance: wallet.balance, refund: refundAmount });
+      // Additional validation for returns - item must be in 'Returned' status
+      const item = order.items.find(i => i.product.toString() === productId.toString());
+      if (!item || item.status !== 'Returned') {
+        console.log('Item not found or not in returned status');
         return false;
       }
-
-      wallet.balance = safeBalance + safeRefund;
-      // **ENHANCED TRANSACTION RECORD WITH BREAKDOWN**
-      wallet.transactions.push({
-        type: 'credit',
-        amount: Number(refundAmount), // **FIX: Ensure amount is stored as number**
-        orderId: order._id,
-        reason: refundReason,
-        refundedItems: refundedItemsForThisTransaction,
-        refundType: 'return',
-        refundBreakdowns: refundBreakdowns,
-        date: new Date()
-      });
-
-      // **PRODUCTION LOGGING**
-      console.log(`✅ Return refund processed: ₹${refundAmount} for order ${order.orderNumber}`);
-      if (refundBreakdowns?.length > 0) {
-        const totalTax = refundBreakdowns.reduce((sum, b) => sum + (b.taxRefundAmount || 0), 0);
-        const isFullReturn = refundBreakdowns[0]?.isFullOrderReturn;
-        console.log(`   Tax refunded: ₹${totalTax.toFixed(2)} (${isFullReturn ? 'full return - complete tax' : 'partial return - proportional tax'})`);
+    } else {
+      // Full order return - only process returned items
+      const returnedItems = order.items.filter(item => item.status === 'Returned');
+      if (returnedItems.length === 0) {
+        console.log('No returned items found for refund');
+        return true; // No items to refund, but not an error
       }
 
-      console.log('About to save return refund wallet with transaction:', {
-        walletId: wallet._id,
-        userId: wallet.userId,
-        oldBalance: wallet.balance - refundAmount,
-        newBalance: wallet.balance,
-        refundAmount,
-        transactionCount: wallet.transactions.length
-      });
-
-      // Ensure userId is set before saving
-      if (!wallet.userId) {
-        wallet.userId = userId;
-      }
-
-      try {
-        await wallet.save();
-      } catch (saveError) {
-        if (saveError.code === 11000) {
-          console.error('Duplicate key error when saving wallet. Attempting to find existing wallet...');
-
-          // Try to find existing wallet and update it instead
-          const existingWalletRetry = await Wallet.findOne({ userId: userId });
-          if (existingWalletRetry) {
-            console.log('Found existing wallet, updating it instead');
-            existingWalletRetry.balance = Number(existingWalletRetry.balance) + Number(refundAmount);
-            existingWalletRetry.transactions.push({
-              type: 'credit',
-              amount: Number(refundAmount), // **FIX: Ensure amount is stored as number**
-              orderId: order._id,
-              reason: refundReason,
-              refundedItems: refundedItemsForThisTransaction,
-              date: new Date()
-            });
-            await existingWalletRetry.save();
-            wallet = existingWalletRetry;
-          } else {
-            throw saveError; // Re-throw if we can't find existing wallet
-          }
-        } else {
-          throw saveError; // Re-throw non-duplicate key errors
-        }
-      }
-      console.log('Return refund processed successfully and saved to database:', {
-        newBalance: wallet.balance,
-        refundAmount,
-        walletId: wallet._id
-      });
-      return true;
+      refundResult = calculateRefundAmount('REMAINING_ORDER', order);
     }
-    return refundedItemsForThisTransaction.length === 0;
+
+    if (!refundResult.success) {
+      console.log(`Return refund calculation failed: ${refundResult.reason}`);
+      return true; // No refund needed, but not an error
+    }
+
+    // **STEP 4: VALIDATE FOR PAYMENT METHOD**
+    const validation = validateRefundForPaymentMethod(order, refundResult.amount);
+    if (!validation.shouldRefund) {
+      console.log(`Return refund skipped: ${validation.reason}`);
+      return true; // Success but no refund needed
+    }
+
+    const finalRefundAmount = validation.refundAmount;
+
+    if (finalRefundAmount <= 0) {
+      console.log('No return refund amount calculated');
+      return true; // No refund needed
+    }
+
+    // **STEP 5: PROCESS WALLET REFUND**
+    let wallet = await Wallet.findOne({ userId });
+    if (!wallet) {
+      wallet = new Wallet({
+        userId: userId,
+        balance: 0,
+        transactions: []
+      });
+    }
+
+    // Add refund to wallet
+    const oldBalance = wallet.balance;
+    wallet.balance += finalRefundAmount;
+
+    const newTransaction = {
+      type: 'credit',
+      amount: finalRefundAmount,
+      orderId: order._id,
+      reason: refundResult.reason.replace('cancelled', 'returned'), // Ensure correct terminology
+      date: new Date()
+    };
+
+    wallet.transactions.push(newTransaction);
+
+    console.log(`💳 RETURN WALLET UPDATE:`);
+    console.log(`   Old Balance: ₹${oldBalance}`);
+    console.log(`   Refund Amount: ₹${finalRefundAmount}`);
+    console.log(`   New Balance: ₹${wallet.balance}`);
+    console.log(`   Transaction: ${newTransaction.reason}`);
+    console.log(`   Transactions Count: ${wallet.transactions.length}`);
+
+    await wallet.save();
+
+    console.log(`✅ Return refund processed and saved: ₹${finalRefundAmount} for ${refundResult.reason}`);
+    return true;
+
   } catch (error) {
     console.error('Error processing return refund:', error);
-    return false;
-  }
-};
-
-/**
- * Validate refund amount accuracy (PRODUCTION OPTIMIZED)
- * @param {number} calculatedAmount - Calculated refund amount
- * @param {number} expectedAmount - Expected refund amount
- * @param {number} tolerance - Acceptable difference (default: 0.01)
- * @returns {boolean} Whether amounts match within tolerance
- */
-const validateRefundAccuracy = (calculatedAmount, expectedAmount, tolerance = 0.01) => {
-  try {
-    const difference = Math.abs(calculatedAmount - expectedAmount);
-    return difference <= tolerance;
-  } catch (error) {
-    console.error('Error validating refund accuracy:', error.message);
     return false;
   }
 };
@@ -749,8 +383,5 @@ const validateRefundAccuracy = (calculatedAmount, expectedAmount, tolerance = 0.
 module.exports = {
   getWallet,
   processCancelRefund,
-  processReturnRefund,
-  calculateItemRefundAmount,
-  calculateProportionalTaxRefund,
-  validateRefundAccuracy
+  processReturnRefund
 };

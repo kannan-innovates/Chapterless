@@ -163,7 +163,7 @@
                           <% if (['Shipped', 'Delivered'].includes(order.orderStatus)) { %>
                             <a href="/orders/<%= order._id %>/track" class="btn btn-outline-dark btn-sm">Track Package</a>
                           <% } %>
-                          <a href="/orders/<%= order._id %>/invoice" class="btn btn-outline-dark btn-sm">Download Invoice</a>
+                          <a href="/orders/<%= order._id %>/invoice/download" class="btn btn-outline-dark btn-sm" onclick="downloadInvoice(event, '<%= order._id %>', '<%= order.orderNumber %>')">Download Invoice</a>
                           <% if (order.orderStatus === 'Delivered' || order.orderStatus === 'Partially Returned') { %>
                             <a href="#" class="btn btn-outline-dark btn-sm">Write a Review</a>
                           <% } %>
@@ -619,6 +619,30 @@
       console.error('Error:', error);
       showToast('An error occurred while processing your request.', 'error');
     });
+  }
+
+  // Download invoice function
+  function downloadInvoice(event, orderId, orderNumber) {
+    event.preventDefault();
+
+    // Show loading toast
+    showToast('Preparing your invoice download...', 'info');
+
+    // Create a temporary link element
+    const link = document.createElement('a');
+    link.href = `/orders/${orderId}/invoice/download`;
+    link.download = `invoice-${orderNumber}.pdf`;
+    link.style.display = 'none';
+
+    // Add to DOM, click, and remove
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    // Show success message after a short delay
+    setTimeout(() => {
+      showToast('Invoice download started!', 'success');
+    }, 500);
   }
 
   // Function to show toast notifications

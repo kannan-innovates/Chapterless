@@ -1,7 +1,8 @@
 const Order = require("../../models/orderSchema")
 const User = require("../../models/userSchema")
 const Product = require("../../models/productSchema")
-const { processReturnRefund } = require("../userController/wallet-controller")
+const { processReturnRefund } = require("../userController/wallet-controller");
+const { calculateExactRefundAmount } = require("../../helpers/money-calculator");
 const { HttpStatus } = require("../../helpers/status-code")
 
 const getManageOrders = async (req, res) => {
@@ -190,20 +191,11 @@ const getOrderDetails = async (req, res) => {
           );
 
           if (shouldShowRefund) {
-            // Calculate tax proportion for this item
-            let taxAmount = 0;
-            if (order.tax && order.totalAmount && order.totalAmount > 0) {
-              // Calculate this item's proportion of total order
-              const itemProportion = finalPricePerUnit / (order.totalAmount - order.tax);
-              taxAmount = Number(order.tax) * itemProportion;
-            }
-
-            item.refundAmount = finalPricePerUnit + taxAmount;
+            // ACCURATE REFUND CALCULATION - Using Money Calculator
+            item.refundAmount = calculateExactRefundAmount(item, order);
             item.formattedRefund = `₹${item.refundAmount.toFixed(2)}`;
-
-            // Store tax details for display
-            item.taxAmount = taxAmount;
-            item.formattedTaxAmount = `₹${taxAmount.toFixed(2)}`;
+            item.taxAmount = 0; // Simplified - no separate tax display
+            item.formattedTaxAmount = null;
           } else {
             // No refund for COD cancellations or unpaid orders
             item.refundAmount = 0;
@@ -242,20 +234,11 @@ const getOrderDetails = async (req, res) => {
           );
 
           if (shouldShowRefund) {
-            // Calculate tax proportion for this item
-            let taxAmount = 0;
-            if (order.tax && order.totalAmount && order.totalAmount > 0) {
-              // Calculate this item's proportion of total order
-              const itemProportion = discountedPrice / (order.totalAmount - order.tax);
-              taxAmount = Number(order.tax) * itemProportion;
-            }
-
-            item.refundAmount = discountedPrice + taxAmount;
+            // ACCURATE REFUND CALCULATION - Using Money Calculator
+            item.refundAmount = calculateExactRefundAmount(item, order);
             item.formattedRefund = `₹${item.refundAmount.toFixed(2)}`;
-
-            // Store tax details for display
-            item.taxAmount = taxAmount;
-            item.formattedTaxAmount = `₹${taxAmount.toFixed(2)}`;
+            item.taxAmount = 0; // Simplified - no separate tax display
+            item.formattedTaxAmount = null;
           } else {
             // No refund for COD cancellations or unpaid orders
             item.refundAmount = 0;
@@ -305,13 +288,35 @@ const getOrderDetails = async (req, res) => {
       }
     });
 
-    // Format order totals
-    order.formattedSubtotal = `₹${totals.subtotal.toFixed(2)}`;
+    // **CRITICAL FIX: Apply same total correction as other controllers**
+    // Recalculate correct total to ensure consistency across all admin pages
+    let recalculatedSubtotal = 0;
+    order.items.forEach(item => {
+      if (item.priceBreakdown) {
+        recalculatedSubtotal += item.priceBreakdown.subtotal || (item.price * item.quantity);
+      } else {
+        recalculatedSubtotal += item.price * item.quantity;
+      }
+    });
+
+    const useStoredSubtotal = order.subtotal && Math.abs(order.subtotal - recalculatedSubtotal) < 0.01;
+    const displaySubtotal = useStoredSubtotal ? order.subtotal : recalculatedSubtotal;
+
+    // Recalculate correct total
+    const correctTotal = displaySubtotal - (order.discount || 0) - (order.couponDiscount || 0) + (order.tax || 0);
+    const useStoredTotal = order.total && Math.abs(order.total - correctTotal) < 0.01;
+    const displayTotal = useStoredTotal ? order.total : correctTotal;
+
+    // Update order.total for accurate display and calculations
+    order.total = displayTotal;
+
+    // Format order totals with corrected values
+    order.formattedSubtotal = `₹${displaySubtotal.toFixed(2)}`;
     order.formattedOfferDiscount = totals.offerDiscount > 0 ? `₹${totals.offerDiscount.toFixed(2)}` : null;
     order.formattedCouponDiscount = totals.couponDiscount > 0 ? `₹${totals.couponDiscount.toFixed(2)}` : null;
     order.formattedTax = `₹${totals.tax.toFixed(2)}`;
     order.formattedShipping = totals.shipping > 0 ? `₹${totals.shipping.toFixed(2)}` : 'Free';
-    order.formattedTotal = `₹${order.total.toFixed(2)}`;
+    order.formattedTotal = `₹${displayTotal.toFixed(2)}`; // Use corrected total
     order.formattedTotalRefunded = totals.totalRefunded > 0 ? `₹${totals.totalRefunded.toFixed(2)}` : null;
 
     // Check item statuses
