@@ -8,20 +8,32 @@ const getSales = async (req, res) => {
     const now = new Date();
     let startDate, endDate;
 
+    // Determine the report type
+    let reportType = req.query.reportType || 'monthly';
+
     // Check if custom date range is provided
     if (req.query.fromDate && req.query.toDate) {
       startDate = new Date(req.query.fromDate);
       endDate = new Date(req.query.toDate);
       endDate.setHours(23, 59, 59, 999); // End of day
+      reportType = 'custom';
     } else if (req.query.quickFilter) {
       // Handle quick filter options
       const { startDate: qStart, endDate: qEnd } = getQuickFilterDates(req.query.quickFilter);
       startDate = qStart;
       endDate = qEnd;
+      reportType = 'custom'; // Quick filters are essentially custom ranges
+    } else if (req.query.reportType) {
+      // Handle predefined report types
+      const { startDate: rStart, endDate: rEnd } = getReportTypeDates(req.query.reportType);
+      startDate = rStart;
+      endDate = rEnd;
+      reportType = req.query.reportType;
     } else {
       // Default to current month
       startDate = new Date(now.getFullYear(), now.getMonth(), 1);
       endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+      reportType = 'monthly';
     }
 
     // Get pagination parameters
@@ -47,7 +59,7 @@ const getSales = async (req, res) => {
       fromDate: req.query.fromDate || startDate.toISOString().split('T')[0],
       toDate: req.query.toDate || endDate.toISOString().split('T')[0],
       quickFilter: req.query.quickFilter || '',
-      reportType: req.query.reportType || 'monthly'
+      reportType: reportType
     });
   } catch (error) {
     console.log('Error in getSales:', error);
@@ -137,6 +149,45 @@ const getQuickFilterDates = (filter) => {
       endDate = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
       break;
     case 'thisyear':
+      startDate = new Date(now.getFullYear(), 0, 1);
+      endDate = new Date(now.getFullYear(), 11, 31, 23, 59, 59);
+      break;
+    default:
+      // Default to current month
+      startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+      endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+  }
+
+  return { startDate, endDate };
+};
+
+// Helper function to get report type dates
+const getReportTypeDates = (reportType) => {
+  const now = new Date();
+  let startDate, endDate;
+
+  switch (reportType) {
+    case 'daily':
+      // Today
+      startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+      break;
+    case 'weekly':
+      // This week (Monday to Sunday)
+      const dayOfWeek = now.getDay();
+      const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek; // If Sunday, go back 6 days
+      startDate = new Date(now.getTime() + mondayOffset * 24 * 60 * 60 * 1000);
+      startDate.setHours(0, 0, 0, 0);
+      endDate = new Date(startDate.getTime() + 6 * 24 * 60 * 60 * 1000);
+      endDate.setHours(23, 59, 59, 999);
+      break;
+    case 'monthly':
+      // This month
+      startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+      endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+      break;
+    case 'yearly':
+      // This year
       startDate = new Date(now.getFullYear(), 0, 1);
       endDate = new Date(now.getFullYear(), 11, 31, 23, 59, 59);
       break;

@@ -311,9 +311,32 @@
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ productId, quantity: 1 })
           });
-          const result = await response.json();
 
-          if (result.success) {
+          // Handle both success and error responses
+          const result = await response.json();
+          console.log('Response status:', response.status);
+          console.log('Response result:', result);
+
+          // Check if it's a 401 Unauthorized or authentication error
+          if (response.status === 401 || !result.success) {
+            // Debug logging
+            console.log('Authentication error detected');
+            console.log('Status:', response.status);
+            console.log('Result:', result);
+
+            // Show authentication required message and redirect
+            Swal.fire({
+              toast: true,
+              position: 'top-end',
+              icon: 'error',
+              title: result.message || 'Please log in to add items to your cart',
+              showConfirmButton: false,
+              timer: 2000
+            }).then(() => {
+              console.log('Redirecting to login...');
+              window.location.href = '/login';
+            });
+          } else if (result.success) {
             if (cartCountElement) {
               cartCountElement.textContent = result.cartCount;
               cartCountElement.dataset.count = result.cartCount;
@@ -328,8 +351,14 @@
               timer: 1500
             });
           } else {
+            // Debug logging
+            console.log('Cart error response:', result);
+            console.log('Message:', result.message);
+            console.log('RequiresAuth:', result.requiresAuth);
+
             // Check if it's an authentication error
-            if (result.message === 'Please log in to add to cart') {
+            if (result.message === 'Please log in to add items to your cart' || result.requiresAuth) {
+              console.log('Authentication required - redirecting to login');
               Swal.fire({
                 toast: true,
                 position: 'top-end',
@@ -338,9 +367,11 @@
                 showConfirmButton: false,
                 timer: 2000
               }).then(() => {
+                console.log('Redirecting to login...');
                 window.location.href = '/login';
               });
             } else {
+              console.log('Other error:', result.message);
               Swal.fire({
                 toast: true,
                 position: 'top-end',
@@ -375,9 +406,32 @@
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ productId })
           });
-          const result = await response.json();
 
-          if (result.success) {
+          // Handle both success and error responses
+          const result = await response.json();
+          console.log('Wishlist response status:', response.status);
+          console.log('Wishlist response result:', result);
+
+          // Check if it's a 401 Unauthorized or authentication error
+          if (response.status === 401 || !result.success) {
+            // Debug logging
+            console.log('Wishlist authentication error detected');
+            console.log('Status:', response.status);
+            console.log('Result:', result);
+
+            // Show authentication required message and redirect
+            Swal.fire({
+              toast: true,
+              position: 'top-end',
+              icon: 'error',
+              title: result.message || 'Please log in to manage your wishlist',
+              showConfirmButton: false,
+              timer: 2000
+            }).then(() => {
+              console.log('Redirecting to login...');
+              window.location.href = '/login';
+            });
+          } else if (result.success) {
             // Update button appearance
             const icon = this.querySelector('i');
             if (result.isWishlisted) {
@@ -403,8 +457,14 @@
               timer: 1500
             });
           } else {
+            // Debug logging
+            console.log('Wishlist error response:', result);
+            console.log('Message:', result.message);
+            console.log('RequiresAuth:', result.requiresAuth);
+
             // Check if it's an authentication error
-            if (result.message === 'Please log in to manage wishlist') {
+            if (result.message === 'Please log in to manage your wishlist' || result.requiresAuth) {
+              console.log('Authentication required - redirecting to login');
               Swal.fire({
                 toast: true,
                 position: 'top-end',
@@ -413,9 +473,11 @@
                 showConfirmButton: false,
                 timer: 2000
               }).then(() => {
+                console.log('Redirecting to login...');
                 window.location.href = '/login';
               });
             } else {
+              console.log('Other error:', result.message);
               Swal.fire({
                 toast: true,
                 position: 'top-end',

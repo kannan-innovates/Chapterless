@@ -103,7 +103,12 @@ const addToCart = async (req, res) => {
     if (!req.session.user_id) {
       return res
         .status(HttpStatus.UNAUTHORIZED)
-        .json({ success: false, message: "Please log in to add to cart" });
+        .json({
+          success: false,
+          message: "Please log in to add items to your cart",
+          requiresAuth: true,
+          redirectTo: "/login"
+        });
     }
 
     const userId = req.session.user_id;

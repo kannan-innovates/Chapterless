@@ -364,6 +364,7 @@
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="/js/auth-handler.js"></script>
 <script src="../../js/product-zoomer.js"></script>
 
 <script>
@@ -418,7 +419,20 @@
           });
           const result = await response.json();
 
-          if (result.success) {
+          // Check if it's a 401 Unauthorized or authentication error
+          if (response.status === 401 || !result.success) {
+            console.log('Cart authentication error - redirecting to login');
+            Swal.fire({
+              toast: true,
+              position: 'top-end',
+              icon: 'error',
+              title: result.message || 'Please log in to add items to your cart',
+              showConfirmButton: false,
+              timer: 2000
+            }).then(() => {
+              window.location.href = '/login';
+            });
+          } else if (result.success) {
             this.dataset.inCart = 'true';
             this.querySelector('span').textContent = 'Added to Cart';
             this.classList.add('btn-success');
@@ -436,7 +450,7 @@
             });
           } else {
             // Check if it's an authentication error
-            if (result.message === 'Please log in to add to cart') {
+            if (result.message === 'Please log in to add items to your cart' || result.requiresAuth) {
               Swal.fire({
                 toast: true,
                 position: 'top-end',
@@ -501,7 +515,7 @@
             });
           } else {
             // Check if it's an authentication error
-            if (result.message === 'Please log in to manage wishlist') {
+            if (result.message === 'Please log in to manage your wishlist' || result.requiresAuth) {
               Swal.fire({
                 toast: true,
                 position: 'top-end',
@@ -569,7 +583,7 @@
             });
           } else {
             // Check if it's an authentication error
-            if (result.message === 'Please log in to add to cart') {
+            if (result.message === 'Please log in to add items to your cart' || result.requiresAuth) {
               Swal.fire({
                 toast: true,
                 position: 'top-end',
@@ -650,7 +664,7 @@
             });
           } else {
             // Check if it's an authentication error
-            if (result.message === 'Please log in to manage wishlist') {
+            if (result.message === 'Please log in to manage your wishlist' || result.requiresAuth) {
               Swal.fire({
                 toast: true,
                 position: 'top-end',

@@ -23,26 +23,27 @@
       <div class="bg-dark text-white p-3 fw-medium">Manage My Account</div>
       <a
         href="/profile"
-        class="list-group-item list-group-item-action primary-bg"
+        class="list-group-item list-group-item-action sidebar-nav-link"
+        data-page="profile"
       >
         <i class="bi bi-person me-2"></i> My Profile
       </a>
-      <a href="/address" class="list-group-item list-group-item-action">
+      <a href="/address" class="list-group-item list-group-item-action sidebar-nav-link" data-page="address">
         <i class="bi bi-geo-alt me-2"></i> Address Book
       </a>
-      <a href="/orders" class="list-group-item list-group-item-action">
+      <a href="/orders" class="list-group-item list-group-item-action sidebar-nav-link" data-page="orders">
         <i class="bi bi-box me-2"></i> My Orders
       </a>
-      <a href="/wishlist" class="list-group-item list-group-item-action">
+      <a href="/wishlist" class="list-group-item list-group-item-action sidebar-nav-link" data-page="wishlist">
         <i class="bi bi-heart me-2"></i> My Wishlist
       </a>
-      <a href="/wallet" class="list-group-item list-group-item-action">
+      <a href="/wallet" class="list-group-item list-group-item-action sidebar-nav-link" data-page="wallet">
         <i class="bi bi-wallet2 me-2"></i> Wallet
       </a>
-      <a href="/user-coupons" class="list-group-item list-group-item-action">
+      <a href="/user-coupons" class="list-group-item list-group-item-action sidebar-nav-link" data-page="coupons">
         <i class="bi bi-ticket-perforated me-2"></i> Coupons
       </a>
-      <a href="/referrals" class="list-group-item list-group-item-action">
+      <a href="/referrals" class="list-group-item list-group-item-action sidebar-nav-link" data-page="referrals">
         <i class="bi bi-share me-2"></i> Referrals
       </a>
       <a href="#" class="list-group-item list-group-item-action" data-bs-toggle="modal" data-bs-target="#passwordChangeModal">
@@ -386,6 +387,49 @@ document.getElementById('passwordChangeForm').addEventListener('submit', async f
       icon: 'error',
       title: 'Server error. Please try again.'
     });
+  }
+});
+
+// Account Sidebar Active State Management
+document.addEventListener('DOMContentLoaded', function() {
+  // Get current URL path
+  const currentPath = window.location.pathname;
+
+  // Remove active class from all sidebar nav links
+  const sidebarLinks = document.querySelectorAll('.sidebar-nav-link');
+  sidebarLinks.forEach(link => {
+    link.classList.remove('primary-bg');
+  });
+
+  // URL to page mapping for account sidebar
+  const urlPageMap = {
+    '/profile': 'profile',
+    '/address': 'address',
+    '/orders': 'orders',
+    '/wishlist': 'wishlist',
+    '/wallet': 'wallet',
+    '/user-coupons': 'coupons',
+    '/referrals': 'referrals'
+  };
+
+  // Get the page identifier for current URL
+  let currentPage = urlPageMap[currentPath];
+
+  // Handle special cases for order details and other nested pages
+  if (!currentPage) {
+    if (currentPath.startsWith('/orders/')) {
+      currentPage = 'orders';
+    } else if (currentPath.startsWith('/address/')) {
+      currentPage = 'address';
+    }
+  }
+
+  // If we have a matching page, set it as active
+  if (currentPage) {
+    const activeLink = document.querySelector(`[data-page="${currentPage}"]`);
+    if (activeLink) {
+      activeLink.classList.add('primary-bg');
+    }
   }
 });
 </script>

@@ -31,7 +31,7 @@
           <div class="col-md-3">
             <label class="form-label">Report Type</label>
             <select class="form-select" id="reportType">
-              <option value="daily">Daily</option>
+              <option value="daily" <%= reportType === 'daily' ? 'selected' : '' %>>Daily</option>
               <option value="weekly" <%= reportType === 'weekly' ? 'selected' : '' %>>Weekly</option>
               <option value="monthly" <%= reportType === 'monthly' ? 'selected' : '' %>>Monthly</option>
               <option value="yearly" <%= reportType === 'yearly' ? 'selected' : '' %>>Yearly</option>
@@ -396,14 +396,23 @@ const salesTrendChart = new Chart(ctx, {
 
 // Date range functionality
 document.getElementById('reportType').addEventListener('change', function() {
-  const customRange = document.getElementById('reportType').value === 'custom';
+  const reportType = this.value;
+  const customRange = reportType === 'custom';
+
+  // Enable/disable date inputs based on selection
   document.getElementById('fromDate').disabled = !customRange;
   document.getElementById('toDate').disabled = !customRange;
 
   // If not custom, clear the quick filter and apply the report type
   if (!customRange) {
     document.getElementById('quickFilter').value = '';
-    applyDateFilter();
+
+    // Build query parameters for predefined report types
+    const params = new URLSearchParams();
+    params.append('reportType', reportType);
+
+    // Reload page with new report type
+    window.location.href = window.location.pathname + '?' + params.toString();
   }
 });
 
@@ -467,11 +476,16 @@ function applyDateFilter() {
   const params = new URLSearchParams();
 
   if (fromDate && toDate && reportType === 'custom') {
+    // Custom date range
     params.append('fromDate', fromDate);
     params.append('toDate', toDate);
-    params.append('reportType', reportType);
+    params.append('reportType', 'custom');
   } else if (quickFilter) {
+    // Quick filter (overrides report type)
     params.append('quickFilter', quickFilter);
+  } else if (reportType && reportType !== 'custom') {
+    // Predefined report type
+    params.append('reportType', reportType);
   }
 
   // Reload page with new parameters
@@ -492,9 +506,11 @@ document.getElementById('downloadPdf').addEventListener('click', function() {
   if (fromDate && toDate && reportType === 'custom') {
     params.append('fromDate', fromDate);
     params.append('toDate', toDate);
-    params.append('reportType', reportType);
+    params.append('reportType', 'custom');
   } else if (quickFilter) {
     params.append('quickFilter', quickFilter);
+  } else if (reportType && reportType !== 'custom') {
+    params.append('reportType', reportType);
   }
 
   // Open PDF export in new window
@@ -514,9 +530,11 @@ document.getElementById('downloadExcel').addEventListener('click', function() {
   if (fromDate && toDate && reportType === 'custom') {
     params.append('fromDate', fromDate);
     params.append('toDate', toDate);
-    params.append('reportType', reportType);
+    params.append('reportType', 'custom');
   } else if (quickFilter) {
     params.append('quickFilter', quickFilter);
+  } else if (reportType && reportType !== 'custom') {
+    params.append('reportType', reportType);
   }
 
   // Trigger Excel download

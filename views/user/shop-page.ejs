@@ -640,7 +640,20 @@
           });
           const result = await response.json();
 
-          if (result.success) {
+          // Check if it's a 401 Unauthorized or authentication error
+          if (response.status === 401 || !result.success) {
+            console.log('Shop cart authentication error - redirecting to login');
+            Swal.fire({
+              toast: true,
+              position: 'top-end',
+              icon: 'error',
+              title: result.message || 'Please log in to add items to your cart',
+              showConfirmButton: false,
+              timer: 2000
+            }).then(() => {
+              window.location.href = '/login';
+            });
+          } else if (result.success) {
             if (cartCountElement) {
               cartCountElement.textContent = result.cartCount;
               cartCountElement.dataset.count = result.cartCount;
@@ -656,7 +669,7 @@
             });
           } else {
             // Check if it's an authentication error
-            if (result.message === 'Please log in to add to cart') {
+            if (result.message === 'Please log in to add items to your cart' || result.requiresAuth) {
               Swal.fire({
                 toast: true,
                 position: 'top-end',
@@ -704,7 +717,20 @@
           });
           const result = await response.json();
 
-          if (result.success) {
+          // Check if it's a 401 Unauthorized or authentication error
+          if (response.status === 401 || !result.success) {
+            console.log('Shop wishlist authentication error - redirecting to login');
+            Swal.fire({
+              toast: true,
+              position: 'top-end',
+              icon: 'error',
+              title: result.message || 'Please log in to manage your wishlist',
+              showConfirmButton: false,
+              timer: 2000
+            }).then(() => {
+              window.location.href = '/login';
+            });
+          } else if (result.success) {
             // Update button appearance
             const icon = this.querySelector('i');
             if (result.isWishlisted) {
@@ -731,7 +757,7 @@
             });
           } else {
             // Check if it's an authentication error
-            if (result.message === 'Please log in to manage wishlist') {
+            if (result.message === 'Please log in to manage your wishlist' || result.requiresAuth) {
               Swal.fire({
                 toast: true,
                 position: 'top-end',
