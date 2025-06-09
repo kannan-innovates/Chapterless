@@ -25,10 +25,18 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.19/dist/sweetalert2.all.min.js"></script>
 
     <link rel="stylesheet" href="/styles/admin/sidebar.css" />
-
+    <link rel="stylesheet" href="/styles/admin/responsive.css" />
     <link rel="stylesheet" href="/styles/admin/adminUserList.css" />
   </head>
   <body>
+    <!-- Mobile Toggle Button -->
+    <button class="mobile-toggle" id="mobileToggle">
+      <i class="ri-menu-line"></i>
+    </button>
+
+    <!-- Mobile Overlay -->
+    <div class="mobile-overlay" id="mobileOverlay"></div>
+
     <!-- Sidebar  -->
     <div class="sidebar">
       <div class="sidebar-header">
@@ -118,6 +126,69 @@
       </div>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Mobile Navigation Script -->
+    <script>
+      // Mobile navigation functionality
+      document.addEventListener('DOMContentLoaded', function() {
+        const mobileToggle = document.getElementById('mobileToggle');
+        const mobileOverlay = document.getElementById('mobileOverlay');
+        const sidebar = document.querySelector('.sidebar');
+
+        // Toggle sidebar on mobile
+        function toggleSidebar() {
+          sidebar.classList.toggle('active');
+          mobileOverlay.classList.toggle('active');
+
+          // Update toggle icon
+          const icon = mobileToggle.querySelector('i');
+          if (sidebar.classList.contains('active')) {
+            icon.className = 'ri-close-line';
+            mobileOverlay.style.display = 'block';
+            document.body.style.overflow = 'hidden'; // Prevent background scroll
+          } else {
+            icon.className = 'ri-menu-line';
+            mobileOverlay.style.display = 'none';
+            document.body.style.overflow = 'auto';
+          }
+        }
+
+        // Close sidebar
+        function closeSidebar() {
+          sidebar.classList.remove('active');
+          mobileOverlay.classList.remove('active');
+          mobileToggle.querySelector('i').className = 'ri-menu-line';
+          mobileOverlay.style.display = 'none';
+          document.body.style.overflow = 'auto';
+        }
+
+        // Event listeners
+        if (mobileToggle) {
+          mobileToggle.addEventListener('click', toggleSidebar);
+        }
+
+        if (mobileOverlay) {
+          mobileOverlay.addEventListener('click', closeSidebar);
+        }
+
+        // Close sidebar when clicking on nav links (mobile)
+        const navLinks = document.querySelectorAll('.sidebar .nav-link');
+        navLinks.forEach(link => {
+          link.addEventListener('click', function() {
+            if (window.innerWidth <= 992) {
+              setTimeout(closeSidebar, 100); // Small delay for better UX
+            }
+          });
+        });
+
+        // Handle window resize
+        window.addEventListener('resize', function() {
+          if (window.innerWidth > 992) {
+            closeSidebar();
+          }
+        });
+      });
+    </script>
 
     <!-- Dynamic Sidebar Active State Script -->
     <script>

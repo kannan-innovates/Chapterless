@@ -1,6 +1,6 @@
 <%- include('../partials/admin/sidebar') %>
 <div class="main-content">
-  <div class="page-header d-flex justify-content-between align-items-center">
+  <div class="page-header">
     <div>
       <h1 class="page-title">Manage Users</h1>
       <p class="text-muted mb-0">View and manage user accounts</p>
@@ -8,12 +8,9 @@
     <div class="d-flex align-items-center">
       <div class="search-container me-2">
         <i class="ri-search-line search-icon"></i>
-        <input type="text" id="userSearch" class="search-input" placeholder="Search users..." 
+        <input type="text" id="userSearch" class="search-input" placeholder="Search users..."
                value="<%= typeof searchTerm !== 'undefined' ? searchTerm : '' %>">
       </div>
-      <button class="toggle-sidebar d-lg-none">
-        <i class="ri-menu-line"></i>
-      </button>
     </div>
   </div>
 
@@ -31,8 +28,8 @@
               <th>ID</th>
               <th>Full Name</th>
               <th>Email</th>
-              <th>Phone</th>
-              <th>User Status</th>
+              <th class="d-none-mobile">Phone</th>
+              <th>Status</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -40,9 +37,12 @@
             <% users.forEach((user, index) => { %>
               <tr data-id="<%= user._id %>">
                 <td><%= startIdx + index + 1 %></td>
-                <td><%= user.fullName %></td>
-                <td><%= user.email %></td>
                 <td>
+                  <div class="fw-semibold"><%= user.fullName %></div>
+                  <div class="small text-muted d-md-none"><%= user.email %></div>
+                </td>
+                <td class="d-none d-md-table-cell"><%= user.email %></td>
+                <td class="d-none-mobile">
                   <% if (user.phone && user.phone.trim() !== '') { %>
                     <%= user.phone %>
                   <% } else { %>
@@ -56,9 +56,9 @@
                 </td>
                 <td>
                   <% if (user.isBlocked) { %>
-                    <button class="btn-unblock" data-user-id="<%= user._id %>">Unblock User</button>
+                    <button class="btn-unblock btn-sm" data-user-id="<%= user._id %>">Unblock</button>
                   <% } else { %>
-                    <button class="btn-block" data-user-id="<%= user._id %>">Block User</button>
+                    <button class="btn-block btn-sm" data-user-id="<%= user._id %>">Block</button>
                   <% } %>
                 </td>
               </tr>

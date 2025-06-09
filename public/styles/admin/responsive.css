@@ -1,0 +1,433 @@
+/* ===================================
+   ADMIN RESPONSIVE DESIGN ENHANCEMENTS
+   =================================== */
+
+/* Mobile Toggle Button */
+.mobile-toggle {
+  display: none;
+  position: fixed;
+  top: 1rem;
+  left: 1rem;
+  z-index: 1001;
+  background: var(--primary, #2D3142);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 0.75rem;
+  font-size: 1.2rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
+}
+
+.mobile-toggle:hover {
+  background: var(--secondary, #4F5D75);
+  transform: scale(1.05);
+}
+
+/* Mobile Overlay */
+.mobile-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 99;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.mobile-overlay.active {
+  opacity: 1;
+}
+
+/* Enhanced Sidebar Responsive Behavior */
+@media (max-width: 1200px) {
+  .main-content {
+    padding: 1.5rem;
+  }
+  
+  /* Reduce stat card padding */
+  .stat-card {
+    padding: 1.25rem;
+  }
+  
+  /* Smaller chart height */
+  #salesChart, #salesTrendChart {
+    height: 250px !important;
+  }
+}
+
+@media (max-width: 992px) {
+  /* Show mobile toggle */
+  .mobile-toggle {
+    display: block;
+  }
+  
+  /* Hide desktop toggle */
+  .toggle-sidebar {
+    display: none !important;
+  }
+  
+  /* Sidebar adjustments */
+  .sidebar {
+    transform: translateX(-100%);
+    width: 280px;
+    z-index: 100;
+  }
+  
+  .sidebar.active {
+    transform: translateX(0);
+  }
+  
+  /* Main content full width */
+  .main-content {
+    margin-left: 0;
+    padding: 1rem;
+    padding-top: 4rem; /* Space for mobile toggle */
+  }
+  
+  /* Page header adjustments */
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .page-header .toggle-sidebar {
+    display: none;
+  }
+  
+  /* Stats cards - 2 per row */
+  .col-lg-3 {
+    flex: 0 0 50%;
+    max-width: 50%;
+  }
+}
+
+@media (max-width: 768px) {
+  /* Main content padding */
+  .main-content {
+    padding: 0.75rem;
+    padding-top: 4rem;
+  }
+  
+  /* Stats cards - 1 per row */
+  .col-lg-3, .col-sm-6 {
+    flex: 0 0 100%;
+    max-width: 100%;
+  }
+  
+  /* Reduce stat card content */
+  .stat-card {
+    padding: 1rem;
+    text-align: center;
+  }
+  
+  .stat-card .icon {
+    margin: 0 auto 0.75rem;
+  }
+  
+  /* Page title smaller */
+  .page-title {
+    font-size: 1.5rem;
+  }
+  
+  /* Chart adjustments */
+  #salesChart, #salesTrendChart {
+    height: 200px !important;
+  }
+  
+  /* Table responsive wrapper */
+  .table-responsive {
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  /* Button groups stack */
+  .btn-group {
+    flex-direction: column;
+    width: 100%;
+  }
+  
+  .btn-group .btn {
+    border-radius: 6px !important;
+    margin-bottom: 0.25rem;
+  }
+  
+  /* Form controls full width */
+  .form-control, .form-select {
+    margin-bottom: 0.75rem;
+  }
+  
+  /* Modal adjustments */
+  .modal-dialog {
+    margin: 1rem;
+    max-width: calc(100% - 2rem);
+  }
+  
+  /* Card adjustments */
+  .card {
+    margin-bottom: 1rem;
+  }
+  
+  .card-body {
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 576px) {
+  /* Sidebar full width on small screens */
+  .sidebar {
+    width: 100%;
+  }
+  
+  /* Very compact main content */
+  .main-content {
+    padding: 0.5rem;
+    padding-top: 4rem;
+  }
+  
+  /* Compact stat cards */
+  .stat-card {
+    padding: 0.75rem;
+  }
+  
+  .stat-value {
+    font-size: 1.5rem;
+  }
+  
+  /* Smaller page title */
+  .page-title {
+    font-size: 1.25rem;
+  }
+  
+  /* Chart very compact */
+  #salesChart, #salesTrendChart {
+    height: 180px !important;
+  }
+  
+  /* Table text smaller */
+  .table {
+    font-size: 0.875rem;
+  }
+  
+  /* Button text smaller */
+  .btn {
+    font-size: 0.875rem;
+    padding: 0.5rem 0.75rem;
+  }
+  
+  /* Form labels smaller */
+  .form-label {
+    font-size: 0.875rem;
+  }
+  
+  /* Breadcrumb smaller */
+  .breadcrumb {
+    font-size: 0.875rem;
+  }
+  
+  /* Modal very compact */
+  .modal-dialog {
+    margin: 0.5rem;
+    max-width: calc(100% - 1rem);
+  }
+  
+  .modal-body {
+    padding: 1rem;
+  }
+  
+  /* Hide some non-essential columns in tables */
+  .table .d-none-mobile {
+    display: none !important;
+  }
+}
+
+/* Table Responsive Enhancements */
+@media (max-width: 992px) {
+  /* Horizontal scroll for tables */
+  .table-responsive {
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+  }
+  
+  /* Compact table cells */
+  .table td, .table th {
+    padding: 0.5rem;
+    font-size: 0.875rem;
+  }
+  
+  /* Action buttons smaller */
+  .btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+  }
+}
+
+/* Form Responsive Enhancements */
+@media (max-width: 768px) {
+  /* Stack form elements */
+  .row.g-3 > .col-md-6,
+  .row.g-3 > .col-md-4,
+  .row.g-3 > .col-md-3 {
+    flex: 0 0 100%;
+    max-width: 100%;
+    margin-bottom: 0.75rem;
+  }
+  
+  /* Full width inputs */
+  .input-group {
+    margin-bottom: 0.75rem;
+  }
+  
+  /* Stack button groups */
+  .d-flex.gap-2 {
+    flex-direction: column;
+    gap: 0.5rem !important;
+  }
+  
+  .d-flex.gap-2 .btn {
+    width: 100%;
+  }
+}
+
+/* Chart Container Responsive */
+.chart-container {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+}
+
+@media (max-width: 768px) {
+  .chart-container {
+    padding: 0.5rem;
+  }
+}
+
+/* Utility Classes for Mobile */
+@media (max-width: 768px) {
+  .d-md-none-mobile {
+    display: none !important;
+  }
+  
+  .text-mobile-center {
+    text-align: center !important;
+  }
+  
+  .mb-mobile-3 {
+    margin-bottom: 1rem !important;
+  }
+}
+
+/* Loading States */
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+
+.loading-spinner {
+  width: 2rem;
+  height: 2rem;
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid var(--primary, #2D3142);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Products Page Specific Responsive */
+@media (max-width: 768px) {
+  .filters {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .filter-group {
+    width: 100%;
+  }
+
+  .search-container {
+    margin-bottom: 1rem;
+  }
+
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .btn-add {
+    width: 100%;
+    text-align: center;
+  }
+
+  .product-image {
+    width: 40px !important;
+    height: 40px !important;
+  }
+
+  .actions {
+    display: flex;
+    gap: 0.25rem;
+  }
+
+  .btn-action {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .pagination {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.25rem;
+  }
+
+  .page-btn {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+  }
+
+  .pagination-info {
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    text-align: center;
+  }
+}
+
+/* Print Styles */
+@media print {
+  .sidebar,
+  .mobile-toggle,
+  .btn,
+  .modal {
+    display: none !important;
+  }
+
+  .main-content {
+    margin-left: 0 !important;
+    padding: 0 !important;
+  }
+
+  .page-header {
+    border-bottom: 2px solid #000;
+    padding-bottom: 1rem;
+    margin-bottom: 2rem;
+  }
+}

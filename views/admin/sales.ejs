@@ -158,12 +158,11 @@
                 <th>Date</th>
                 <th>Order ID</th>
                 <th>Customer</th>
-                <th>Items</th>
-                <th>Gross Amount</th>
-                <th>Discount</th>
-                <th>Coupon Code</th>
-                <th>Net Amount</th>
-                <th>Payment Method</th>
+                <th class="d-none-mobile">Items</th>
+                <th>Amount</th>
+                <th class="d-none-mobile">Discount</th>
+                <th class="d-none-mobile">Coupon</th>
+                <th class="d-none d-lg-table-cell">Payment</th>
                 <th>Status</th>
               </tr>
             </thead>
@@ -171,15 +170,26 @@
               <% if (salesTableData.orders.length > 0) { %>
                 <% salesTableData.orders.forEach(order => { %>
                   <tr>
-                    <td><%= order.date %></td>
-                    <td><%= order.orderNumber %></td>
-                    <td><%= order.customerName %></td>
-                    <td><%= order.totalItems %></td>
-                    <td><%= order.grossAmount %></td>
-                    <td><%= order.discount %></td>
-                    <td><%= order.couponCode %></td>
+                    <td>
+                      <div><%= order.date %></div>
+                      <div class="small text-muted d-md-none">Items: <%= order.totalItems %></div>
+                    </td>
+                    <td>
+                      <div class="fw-semibold"><%= order.orderNumber %></div>
+                      <div class="small text-muted d-lg-none"><%= order.paymentMethod %></div>
+                    </td>
+                    <td>
+                      <div><%= order.customerName %></div>
+                      <div class="small text-muted d-md-none">
+                        <% if (order.discount !== '₹0') { %>Disc: <%= order.discount %><% } %>
+                        <% if (order.couponCode !== '-') { %>| <%= order.couponCode %><% } %>
+                      </div>
+                    </td>
+                    <td class="d-none-mobile"><%= order.totalItems %></td>
                     <td><%= order.netAmount %></td>
-                    <td><%= order.paymentMethod %></td>
+                    <td class="d-none-mobile"><%= order.discount %></td>
+                    <td class="d-none-mobile"><%= order.couponCode %></td>
+                    <td class="d-none d-lg-table-cell"><%= order.paymentMethod %></td>
                     <td><%- order.status %></td>
                   </tr>
                 <% }); %>
@@ -234,10 +244,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
 <script>
-// Toggle sidebar on mobile
-document.querySelector('.toggle-sidebar')?.addEventListener('click', function() {
-  document.querySelector('.sidebar')?.classList.toggle('active');
-});
+// Mobile navigation is handled by the sidebar partial
 
 // Sales Trend Chart with real data
 const ctx = document.getElementById('salesTrendChart').getContext('2d');
