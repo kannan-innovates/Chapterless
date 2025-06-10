@@ -29,7 +29,7 @@
         <div class="otp-body">
           <p class="text-center mb-1">Enter the verification code sent to</p>
           <h5 class="text-center mb-4" id="userEmail">
-            your_email@example.com
+            <%= maskedEmail || 'your***@example.com' %>
           </h5>
 
           <!-- Timer display -->

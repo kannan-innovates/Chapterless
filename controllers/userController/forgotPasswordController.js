@@ -2,6 +2,7 @@ const User = require("../../models/userSchema");
 const OTP = require("../../models/otpSchema");
 const hashPasswordHelper = require("../../helpers/hash");
 const { sendOtpEmail } = require("../../helpers/sendMail");
+const { createOtpMessage } = require("../../helpers/email-mask");
 
 const {
   validateBasicOtp,
@@ -58,8 +59,11 @@ const postForgotPassword = async (req, res) => {
 
     req.session.user_email = email;
 
+    // Create professional OTP message
+    const otpMessage = createOtpMessage(email, 'forgot-password');
+
     return res.status(HttpStatus.OK).json({
-      message: "OTP sent successfully",
+      message: otpMessage.message,
       success: true,
       expiresIn: 60,
     });
@@ -106,8 +110,11 @@ const resendOtp = async (req, res) => {
     let subjectContent = "New Password Reset Code - Chapterless";
     await sendOtpEmail(email, user.fullName, otp, subjectContent, "forgot-password");
 
+    // Create professional resend message
+    const otpMessage = createOtpMessage(email, 'resend');
+
     return res.status(HttpStatus.OK).json({
-      message: "New OTP sent successfully",
+      message: otpMessage.message,
       success: true,
       expiresIn: 60,
     });
@@ -122,7 +129,14 @@ const resendOtp = async (req, res) => {
 
 const getOtpForgotPassword = async (req, res) => {
   try {
-    res.render("otpForgotPassword");
+    // Get email from session and create masked version
+    const email = req.session.user_email;
+    const otpMessage = createOtpMessage(email, 'forgot-password');
+
+    res.render("otpForgotPassword", {
+      maskedEmail: otpMessage.maskedEmail,
+      otpMessage: otpMessage.fullMessage
+    });
   } catch (error) {
     console.log("Error in getting OTP verification page", error);
     res.status(HttpStatus.BAD_REQUEST).json({

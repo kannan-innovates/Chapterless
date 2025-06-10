@@ -9,6 +9,7 @@ const {
   validateBasicOtp,
   validateOtpSession,
 } = require("../../validators/user/basic-otp-validator");
+const { createOtpMessage } = require("../../helpers/email-mask");
 
 const { HttpStatus } = require("../../helpers/status-code");
 // Get Profile
@@ -370,9 +371,12 @@ const requestEmailUpdate = async (req, res) => {
     // Store new email in session for verification
     req.session.newEmail = email.toLowerCase();
 
+    // Create professional OTP message
+    const otpMessage = createOtpMessage(email, 'email-update');
+
     res.status(HttpStatus.OK).json({
       success: true,
-      message: "OTP sent to new email address",
+      message: otpMessage.message,
     });
   } catch (error) {
     console.error("Error requesting email update:", error);
@@ -519,9 +523,12 @@ const resendEmailOtp = async (req, res) => {
       });
     }
 
+    // Create professional resend message
+    const otpMessage = createOtpMessage(req.session.newEmail, 'resend');
+
     res.status(HttpStatus.OK).json({
       success: true,
-      message: "New OTP sent to email address",
+      message: otpMessage.message,
     });
   } catch (error) {
     console.error("Error resending email OTP:", error);

@@ -149,7 +149,16 @@ router.post('/request-email-update',
   profileValidator.validateProfileAuth,
   profileController.requestEmailUpdate
 );
-router.get('/verify-email-otp', isAuthenticated, preventBackButtonCache, (req, res) => res.render('profile-otp'));
+router.get('/verify-email-otp', isAuthenticated, preventBackButtonCache, (req, res) => {
+  const { createOtpMessage } = require('../../helpers/email-mask');
+  const email = req.session.newEmail;
+  const otpMessage = createOtpMessage(email, 'email-update');
+
+  res.render('profile-otp', {
+    maskedEmail: otpMessage.maskedEmail,
+    otpMessage: otpMessage.fullMessage
+  });
+});
 router.post('/verify-email-otp', isAuthenticated, profileController.verifyEmailOtp);
 router.post('/resend-email-otp', isAuthenticated, profileController.resendEmailOtp);
 
@@ -194,7 +203,7 @@ router.post('/change-password', isAuthenticated, newPasswordController.changePas
 router.get('/user-coupons', isAuthenticated, userCouponController.getUserCoupons);
 
 // Wallet routes
-router.get('/wallet',isAuthenticated,walletController.getWallet)
+router.get('/wallet', isAuthenticated, walletController.getWallet);
 
 // Referral routes
 router.get('/referrals', isAuthenticated, referralController.getReferrals);

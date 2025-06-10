@@ -12,31 +12,84 @@ const getWallet = async (req, res) => {
       return res.redirect('/login');
     }
 
+    // Get pagination and filter parameters
+    const page = parseInt(req.query.page) || 1;
+    const filter = req.query.filter || 'all';
+    const transactionsPerPage = 5;
+
     // Get wallet with transactions
     const wallet = await Wallet.findOne({ userId });
 
-    // Format transactions for display with proper sorting
+    if (!wallet || !wallet.transactions) {
+      return res.render('wallet', {
+        wallet: {
+          balance: 0,
+          transactions: [],
+          totalTransactions: 0,
+          currentPage: 1,
+          totalPages: 1,
+          hasNextPage: false,
+          hasPrevPage: false,
+          filter: filter
+        }
+      });
+    }
+
+    // Sort all transactions by date descending
+    let allTransactions = wallet.transactions
+      .sort((a, b) => new Date(b.date) - new Date(a.date))
+      .map(transaction => {
+        const transactionDate = new Date(transaction.date);
+
+        // Format date and time separately for better control
+        const formattedDate = transactionDate.toLocaleDateString('en-IN', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+          timeZone: 'Asia/Kolkata'
+        });
+
+        const formattedTime = transactionDate.toLocaleTimeString('en-IN', {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: true,
+          timeZone: 'Asia/Kolkata'
+        });
+
+        return {
+          type: transaction.type,
+          amount: transaction.amount.toFixed(2),
+          reason: transaction.reason,
+          date: formattedDate,
+          time: formattedTime,
+          fullDateTime: `${formattedDate}, ${formattedTime}`,
+          orderId: transaction.orderId
+        };
+      });
+
+    // Apply filter
+    if (filter !== 'all') {
+      allTransactions = allTransactions.filter(transaction => transaction.type === filter);
+    }
+
+    // Calculate pagination
+    const totalTransactions = allTransactions.length;
+    const totalPages = Math.ceil(totalTransactions / transactionsPerPage);
+    const startIndex = (page - 1) * transactionsPerPage;
+    const endIndex = startIndex + transactionsPerPage;
+    const paginatedTransactions = allTransactions.slice(startIndex, endIndex);
+
     const formattedWallet = {
-      balance: wallet ? wallet.balance : 0,
-      transactions: wallet && wallet.transactions ?
-        wallet.transactions
-          .sort((a, b) => new Date(b.date) - new Date(a.date)) // Sort by date descending
-          .map(transaction => ({
-            type: transaction.type,
-            amount: transaction.amount.toFixed(2),
-            reason: transaction.reason,
-            date: new Date(transaction.date).toLocaleDateString('en-US', {
-              year: 'numeric',
-              month: 'short',
-              day: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit'
-            }),
-            orderId: transaction.orderId
-          })) : []
+      balance: wallet.balance,
+      transactions: paginatedTransactions,
+      totalTransactions: totalTransactions,
+      currentPage: page,
+      totalPages: totalPages,
+      hasNextPage: page < totalPages,
+      hasPrevPage: page > 1,
+      filter: filter,
+      transactionsPerPage: transactionsPerPage
     };
-
-
 
     res.render('wallet', {
       wallet: formattedWallet
@@ -379,6 +432,8 @@ const processReturnRefund = async (userId, order, productId = null) => {
     return false;
   }
 };
+
+
 
 module.exports = {
   getWallet,

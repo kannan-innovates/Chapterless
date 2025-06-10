@@ -65,10 +65,10 @@
               <i class="bi bi-funnel me-1"></i>Filter
             </button>
             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="filterDropdown">
-              <li><a class="dropdown-item filter-link" href="#" data-type="credit"><i class="bi bi-arrow-up me-2"></i>Credits</a></li>
-              <li><a class="dropdown-item filter-link" href="#" data-type="debit"><i class="bi bi-arrow-down me-2"></i>Debits</a></li>
+              <li><a class="dropdown-item filter-link <%= wallet.filter === 'credit' ? 'active' : '' %>" href="?page=1&filter=credit"><i class="bi bi-arrow-up me-2"></i>Credits</a></li>
+              <li><a class="dropdown-item filter-link <%= wallet.filter === 'debit' ? 'active' : '' %>" href="?page=1&filter=debit"><i class="bi bi-arrow-down me-2"></i>Debits</a></li>
               <li><hr class="dropdown-divider"></li>
-              <li><a class="dropdown-item filter-link active" href="#" data-type="all"><i class="bi bi-filter-circle me-2"></i>All Transactions</a></li>
+              <li><a class="dropdown-item filter-link <%= wallet.filter === 'all' ? 'active' : '' %>" href="?page=1&filter=all"><i class="bi bi-filter-circle me-2"></i>All Transactions</a></li>
             </ul>
           </div>
         </div>
@@ -89,8 +89,8 @@
                   <% wallet.transactions.forEach(transaction => { %>
                     <tr class="transaction-row" data-type="<%= transaction.type %>">
                       <td class="ps-4">
-                        <div class="fw-medium"><%= new Date(transaction.date).toLocaleDateString('en-IN') %></div>
-                        <small class="text-muted"><%= new Date(transaction.date).toLocaleTimeString('en-IN', {hour: '2-digit', minute: '2-digit'}) %></small>
+                        <div class="transaction-date"><%= transaction.date %></div>
+                        <small class="transaction-time"><%= transaction.time %></small>
                       </td>
                       <td>
                         <div class="transaction-description">
@@ -226,11 +226,71 @@
             </table>
           </div>
         </div>
-        <div class="card-footer bg-white text-center p-3">
-          <button type="button" class="btn btn-outline-dark btn-sm">
-            <i class="bi bi-arrow-down me-1"></i>Load More
-          </button>
+        <!-- Pagination -->
+        <% if (wallet.totalPages > 1) { %>
+        <div class="card-footer bg-white p-3">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <small class="text-muted">
+                Showing <%= ((wallet.currentPage - 1) * wallet.transactionsPerPage) + 1 %> to
+                <%= Math.min(wallet.currentPage * wallet.transactionsPerPage, wallet.totalTransactions) %>
+                of <%= wallet.totalTransactions %> transactions
+              </small>
+            </div>
+            <nav aria-label="Transaction pagination">
+              <ul class="pagination pagination-sm mb-0">
+                <!-- Previous Button -->
+                <li class="page-item <%= !wallet.hasPrevPage ? 'disabled' : '' %>">
+                  <a class="page-link" href="?page=<%= wallet.currentPage - 1 %>&filter=<%= wallet.filter %>">
+                    <i class="bi bi-chevron-left"></i>
+                  </a>
+                </li>
+
+                <!-- Page Numbers -->
+                <%
+                let startPage = Math.max(1, wallet.currentPage - 2);
+                let endPage = Math.min(wallet.totalPages, wallet.currentPage + 2);
+                %>
+
+                <% if (startPage > 1) { %>
+                  <li class="page-item">
+                    <a class="page-link" href="?page=1&filter=<%= wallet.filter %>">1</a>
+                  </li>
+                  <% if (startPage > 2) { %>
+                    <li class="page-item disabled">
+                      <span class="page-link">...</span>
+                    </li>
+                  <% } %>
+                <% } %>
+
+                <% for (let i = startPage; i <= endPage; i++) { %>
+                  <li class="page-item <%= i === wallet.currentPage ? 'active' : '' %>">
+                    <a class="page-link" href="?page=<%= i %>&filter=<%= wallet.filter %>"><%= i %></a>
+                  </li>
+                <% } %>
+
+                <% if (endPage < wallet.totalPages) { %>
+                  <% if (endPage < wallet.totalPages - 1) { %>
+                    <li class="page-item disabled">
+                      <span class="page-link">...</span>
+                    </li>
+                  <% } %>
+                  <li class="page-item">
+                    <a class="page-link" href="?page=<%= wallet.totalPages %>&filter=<%= wallet.filter %>"><%= wallet.totalPages %></a>
+                  </li>
+                <% } %>
+
+                <!-- Next Button -->
+                <li class="page-item <%= !wallet.hasNextPage ? 'disabled' : '' %>">
+                  <a class="page-link" href="?page=<%= wallet.currentPage + 1 %>&filter=<%= wallet.filter %>">
+                    <i class="bi bi-chevron-right"></i>
+                  </a>
+                </li>
+              </ul>
+            </nav>
+          </div>
         </div>
+        <% } %>
       </div>
     </div>
   </div>
@@ -417,6 +477,19 @@
     -webkit-text-fill-color: transparent;
     background-clip: text;
     animation: gradientShift 3s ease-in-out infinite;
+  }
+
+  /* Date/Time styling */
+  .transaction-date {
+    font-weight: 600;
+    color: #495057;
+    font-size: 0.9rem;
+  }
+
+  .transaction-time {
+    font-size: 0.8rem;
+    color: #6c757d;
+    font-weight: 500;
   }
 
   /* Button Animations */
@@ -732,43 +805,22 @@ function animateBalance() {
   balanceElement.classList.add('balance-loading');
 }
 
-// Initialize animations on page load
+// Simple wallet JavaScript
 document.addEventListener('DOMContentLoaded', function() {
   // Animate balance on load
   const balanceElement = document.querySelector('.balance-amount');
-  const targetBalance = parseFloat(balanceElement.getAttribute('data-balance'));
-  animateBalance(0, targetBalance, balanceElement);
-
-  // Transaction filtering
-  const filterLinks = document.querySelectorAll('.filter-link');
-  const transactionRows = document.querySelectorAll('.transaction-row');
-
-  filterLinks.forEach(link => {
-    link.addEventListener('click', (e) => {
-      e.preventDefault();
-      
-      // Update active state
-      filterLinks.forEach(l => l.classList.remove('active'));
-      link.classList.add('active');
-
-      const filterType = link.getAttribute('data-type');
-      
-      transactionRows.forEach(row => {
-        if (filterType === 'all') {
-          row.style.display = '';
-        } else {
-          const rowType = row.getAttribute('data-type');
-          row.style.display = rowType === filterType ? '' : 'none';
-        }
-      });
-    });
-  });
+  if (balanceElement) {
+    const targetBalance = parseFloat(balanceElement.getAttribute('data-balance'));
+    animateBalance(0, targetBalance, balanceElement);
+  }
 });
+
+
 
 function animateBalance(start, end, element) {
   const duration = 1000;
   const startTime = performance.now();
-  
+
   function update(currentTime) {
     const elapsed = currentTime - startTime;
     const progress = Math.min(elapsed / duration, 1);
@@ -783,7 +835,6 @@ function animateBalance(start, end, element) {
 
   requestAnimationFrame(update);
 }
-
 
 
 

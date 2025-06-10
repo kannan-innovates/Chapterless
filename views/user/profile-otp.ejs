@@ -253,7 +253,8 @@
             </div>
             <div class="card-body">
                 <div class="verification-text">
-                    <p>We've sent a 6-digit code to your email. Please enter the code below to verify.</p>
+                    <p>We've sent a 6-digit code to <strong><%= maskedEmail || 'your***@example.com' %></strong></p>
+                    <p>Please enter the code below to verify.</p>
                 </div>
 
                 <form id="otpForm">

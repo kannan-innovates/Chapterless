@@ -6,10 +6,18 @@ const hashPasswordHelper = require("../../helpers/hash");
 const { sendOtpEmail } = require("../../helpers/sendMail");
 const { validateBasicOtp, validateOtpSession } = require("../../validators/user/basic-otp-validator");
 const { HttpStatus } = require("../../helpers/status-code");
+const { createOtpMessage } = require("../../helpers/email-mask");
 
 const getOtp = async (req, res) => {
   try {
-    res.render("verify-otp");
+    // Get email from session and create masked version
+    const email = req.session.tempUser?.email;
+    const otpMessage = createOtpMessage(email, 'signup');
+
+    res.render("verify-otp", {
+      maskedEmail: otpMessage.maskedEmail,
+      otpMessage: otpMessage.fullMessage
+    });
   } catch (error) {
     console.log("error during render", error);
     res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: "Server error" });
@@ -110,9 +118,12 @@ const postSignup = async (req, res) => {
       referralCode: referralCode || null,
     };
 
+    // Create professional OTP message
+    const otpMessage = createOtpMessage(trimmedEmail, 'signup');
+
     return res.status(HttpStatus.OK).json({
       success: true,
-      message: "OTP sent successfully. Redirecting to OTP page.",
+      message: otpMessage.message,
     });
 
   } catch (error) {
@@ -283,9 +294,12 @@ const resendOtp = async (req, res) => {
 
     await sendOtpEmail(email, fullName, otp, subjectContent, "resend");
 
+    // Create professional resend message
+    const otpMessage = createOtpMessage(email, 'resend');
+
     return res.status(HttpStatus.OK).json({
       success: true,
-      message: "New OTP sent to your email",
+      message: otpMessage.message,
     });
   } catch (error) {
     console.error("Error resending OTP:", error);
