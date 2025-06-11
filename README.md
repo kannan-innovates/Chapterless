@@ -319,9 +319,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 👨‍💻 Developer
 
-**Kannan** - [GitHub Profile](https://github.com/kannan-innovates)
+**Kannan S** - [GitHub Profile](https://github.com/kannan-innovates)
 
-*Passionate full-stack developer*
+*Always curious, always improving*
 
 ---
 
