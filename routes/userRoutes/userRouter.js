@@ -127,26 +127,18 @@ router.post('/wishlist/clear',
 const searchValidator = require('../../validators/user/search-validator');
 router.get('/search', searchValidator.validateSearchQuery, searchProducts);
 
-// Profile Routes with validation
-const profileValidator = require('../../validators/user/profile-validator');
+
 router.get('/profile', isAuthenticated, profileController.getProfile);
 router.patch('/profile',
   isAuthenticated,
-  profileValidator.validateProfileUpdate,
-  profileValidator.validateProfileAuth,
-  profileValidator.validateDateOfBirth,
   profileController.updateProfile
 );
 router.post('/profile/image',
   isAuthenticated,
-  profileValidator.validateProfileImage,
-  profileValidator.validateProfileAuth,
   profileController.uploadProfileImage
 );
 router.post('/request-email-update',
   isAuthenticated,
-  profileValidator.validateEmailUpdate,
-  profileValidator.validateProfileAuth,
   profileController.requestEmailUpdate
 );
 router.get('/verify-email-otp', isAuthenticated, preventBackButtonCache, (req, res) => {
